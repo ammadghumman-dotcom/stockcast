@@ -4,11 +4,13 @@ from fastapi import APIRouter, Query, Request
 from sqlalchemy import select
 
 from app.deps import DB, Ctx, OrgId
+from app.forecast.channels import load_channel_mix
 from app.models import PlanningRun, Product, Recommendation, Supplier
 from app.planning.engine import get_settings, latest_planning_run
 from app.planning.tasks import enqueue_planning
 from app.ratelimit import heavy
 from app.schemas.planning import (
+    ChannelMix,
     PlanningRunRead,
     PlanningSettingsRead,
     PlanningSettingsUpdate,
@@ -123,9 +125,16 @@ def list_recommendations(
         Recommendation.order_by_date.asc().nulls_last(), Recommendation.cash_tied.desc()
     ).limit(limit)
     out = []
-    for rec, sku, name, sname in db.execute(q):
+    rows = db.execute(q).all()
+    mix = (
+        load_channel_mix(db, org_id, run.forecast_run_id, [rec.product_id for rec, *_ in rows])
+        if run.forecast_run_id
+        else {}
+    )
+    for rec, sku, name, sname in rows:
         r = RecommendationRead.model_validate(rec)
         r.sku, r.product_name, r.supplier_name = sku, name, sname
+        r.channel_mix = [ChannelMix(**m) for m in mix.get(rec.product_id, [])]
         out.append(r)
     return out
 
@@ -136,6 +145,10 @@ def get_recommendation(db: DB, org_id: OrgId, rec_id: uuid.UUID):
     r = RecommendationRead.model_validate(rec)
     p = db.get(Product, rec.product_id)
     r.sku, r.product_name = (p.sku, p.name) if p else (None, None)
+    run = db.get(PlanningRun, rec.run_id)
+    if run and run.forecast_run_id:
+        mix = load_channel_mix(db, org_id, run.forecast_run_id, [rec.product_id])
+        r.channel_mix = [ChannelMix(**m) for m in mix.get(rec.product_id, [])]
     if rec.supplier_id:
         s = db.get(Supplier, rec.supplier_id)
         r.supplier_name = s.name if s else None

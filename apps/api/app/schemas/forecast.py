@@ -33,6 +33,16 @@ class ForecastPoint(OrmModel):
     event: str | None
 
 
+class ChannelShare(BaseModel):
+    channel_id: uuid.UUID
+    channel_name: str
+    channel_type: str
+    share: Decimal  # 0..1 of the last 90 days' units
+    units_90d: Decimal
+    p50_30d: Decimal  # share x org-level p50 totals
+    p50_90d: Decimal
+
+
 class ProductForecast(BaseModel):
     product_id: uuid.UUID
     run_id: uuid.UUID
@@ -41,6 +51,7 @@ class ProductForecast(BaseModel):
     points: list[ForecastPoint]
     total_p50_30d: Decimal
     total_p50_90d: Decimal
+    channels: list[ChannelShare] = []  # empty for raw materials (derived demand has no channel)
 
 
 class AccuracyRow(OrmModel):

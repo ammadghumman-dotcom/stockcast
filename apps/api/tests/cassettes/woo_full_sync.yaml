@@ -1,0 +1,84 @@
+version: 1
+interactions:
+- &id001
+  request:
+    method: GET
+    uri: https://shop.example.com/wp-json/wc/v3/products
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+      X-WP-TotalPages:
+      - '1'
+      X-WP-Total:
+      - '2'
+    body:
+      string: '[{"id": 10, "name": "Vanilla Candle", "sku": "", "type": "variable",
+        "status": "publish", "manage_stock": false, "categories": [{"id": 1, "name":
+        "Candles"}]}, {"id": 20, "name": "Oud Oil 10ml", "sku": "OUD-10", "type":
+        "simple", "status": "publish", "manage_stock": true, "stock_quantity": 7,
+        "categories": [{"id": 2, "name": "Perfume Oils"}]}]'
+- &id002
+  request:
+    method: GET
+    uri: https://shop.example.com/wp-json/wc/v3/products/10/variations
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+      X-WP-TotalPages:
+      - '1'
+    body:
+      string: '[{"id": 11, "sku": "CND-VAN-200", "manage_stock": true, "stock_quantity":
+        25, "attributes": [{"name": "Size", "option": "200g"}]}, {"id": 12, "sku":
+        "", "manage_stock": true, "stock_quantity": 3, "attributes": [{"name": "Size",
+        "option": "400g"}]}]'
+- request:
+    method: GET
+    uri: https://shop.example.com/wp-json/wc/v3/orders
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+      X-WP-TotalPages:
+      - '2'
+    body:
+      string: '[{"id": 500, "status": "completed", "date_created_gmt": "2026-09-01T11:00:00",
+        "line_items": [{"product_id": 10, "variation_id": 11, "sku": "CND-VAN-200",
+        "quantity": 2, "total": "28.00"}, {"product_id": 20, "variation_id": 0, "sku":
+        "OUD-10", "quantity": 1, "total": "18.00"}]}]'
+- request:
+    method: GET
+    uri: https://shop.example.com/wp-json/wc/v3/orders
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+      X-WP-TotalPages:
+      - '2'
+    body:
+      string: '[{"id": 501, "status": "processing", "date_created_gmt": "2026-09-02T11:00:00",
+        "line_items": [{"product_id": 10, "variation_id": 12, "sku": "", "quantity":
+        1, "total": "24.00"}]}]'
+- *id001
+- *id002

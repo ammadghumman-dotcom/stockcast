@@ -52,6 +52,13 @@ class PlanningRunRead(Timestamped):
     error: str | None
 
 
+class ChannelMix(BaseModel):
+    channel_id: uuid.UUID
+    channel_name: str
+    channel_type: str
+    share: Decimal
+
+
 class RecommendationRead(OrmModel):
     id: uuid.UUID
     run_id: uuid.UUID
@@ -78,6 +85,7 @@ class RecommendationRead(OrmModel):
     event: str | None
     uplift_pct: Decimal | None
     po_id: uuid.UUID | None
+    channel_mix: list[ChannelMix] = []
 
 
 class DraftPORequest(BaseModel):

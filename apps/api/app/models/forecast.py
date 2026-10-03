@@ -88,3 +88,29 @@ class ForecastAccuracy(OrgScoped, Base):
     wape: Mapped[Decimal | None] = mapped_column(Numeric(10, 4))
     wape_chronos: Mapped[Decimal | None] = mapped_column(Numeric(10, 4))
     wape_stats: Mapped[Decimal | None] = mapped_column(Numeric(10, 4))
+
+
+class ForecastChannelShare(OrgScoped, Base):
+    """Per-channel share of a product's demand (units over the last 90 days before as_of).
+
+    The forecast itself is org-level; this split lets the UI show "60 % Shopify / 40 % Amazon"
+    next to a recommendation and apportion the p50 per channel.
+    """
+
+    __tablename__ = "forecast_channel_shares"
+    __table_args__ = (
+        UniqueConstraint("run_id", "product_id", "channel_id", name="uq_forecast_channel_shares"),
+    )
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    run_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("forecast_runs.id", ondelete="CASCADE"), nullable=False
+    )
+    product_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("products.id", ondelete="CASCADE"), nullable=False
+    )
+    channel_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("channels.id", ondelete="CASCADE"), nullable=False
+    )
+    share: Mapped[Decimal] = mapped_column(Numeric(6, 4), nullable=False)  # 0..1, sums to 1
+    units_90d: Mapped[Decimal] = mapped_column(Numeric(14, 4), nullable=False)

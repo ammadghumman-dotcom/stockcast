@@ -1,0 +1,123 @@
+version: 1
+interactions:
+- request:
+    method: POST
+    uri: https://api.amazon.com/auth/o2/token
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"access_token": "Atza|test", "token_type": "bearer", "expires_in":
+        3600}'
+- request:
+    method: POST
+    uri: https://sellingpartnerapi-na.amazon.com/reports/2021-06-30/reports
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 202
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"reportId": "rep-listings"}'
+- request:
+    method: GET
+    uri: https://sellingpartnerapi-na.amazon.com/reports/2021-06-30/reports/rep-listings
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"reportId": "rep-listings", "processingStatus": "IN_QUEUE"}'
+- request:
+    method: GET
+    uri: https://sellingpartnerapi-na.amazon.com/reports/2021-06-30/reports/rep-listings
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"reportId": "rep-listings", "processingStatus": "IN_PROGRESS"}'
+- request:
+    method: GET
+    uri: https://sellingpartnerapi-na.amazon.com/reports/2021-06-30/reports/rep-listings
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"reportId": "rep-listings", "processingStatus": "DONE", "reportDocumentId":
+        "doc-listings"}'
+- request:
+    method: GET
+    uri: https://sellingpartnerapi-na.amazon.com/reports/2021-06-30/documents/doc-listings
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"reportDocumentId": "doc-listings", "url": "https://tortuga-prod-na.s3.amazonaws.com/report-doc-1"}'
+- request:
+    method: GET
+    uri: https://tortuga-prod-na.s3.amazonaws.com/report-doc-1
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - text/plain
+    body:
+      string: "item-name\titem-description\tlisting-id\tseller-sku\tprice\tquantity\t\
+        open-date\tasin1\tfulfillment-channel\tstatus\nVanilla Candle 200g\t\t0901A\t\
+        CND-VAN-200\t14.00\t40\t2025-01-01\tB0VAN20000\tAMAZON_NA\tActive\n\t\t0902A\t\
+        CND-VAN-400\t24.00\t12\t2025-01-01\tB0VAN40000\tAMAZON_NA\tActive\nOud Oil\
+        \ 10ml\t\t0903A\tOUD-10\t18.00\t0\t2025-02-01\tB0OUD10000\tDEFAULT\tActive\n\
+        \t\t0904A\t\t0\t0\t\t\t\t"
+- request:
+    method: GET
+    uri: https://sellingpartnerapi-na.amazon.com/catalog/2022-04-01/items
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"numberOfResults": 1, "items": [{"asin": "B0VAN40000", "summaries":
+        [{"marketplaceId": "ATVPDKIKX0DER", "itemName": "Vanilla Candle 400g (Catalog)",
+        "productType": "CANDLE"}]}]}'

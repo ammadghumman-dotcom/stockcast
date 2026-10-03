@@ -1,0 +1,56 @@
+version: 1
+interactions:
+- request:
+    method: POST
+    uri: https://api.amazon.com/auth/o2/token
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"access_token": "Atza|test", "token_type": "bearer", "expires_in":
+        3600}'
+- request:
+    method: GET
+    uri: https://sellingpartnerapi-na.amazon.com/fba/inventory/v1/summaries
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"pagination": {"nextToken": "p2"}, "payload": {"granularity": {"granularityType":
+        "Marketplace", "granularityId": "ATVPDKIKX0DER"}, "inventorySummaries": [{"asin":
+        "B0VAN20000", "fnSku": "X000000", "sellerSku": "CND-VAN-200", "condition":
+        "NewItem", "productName": "CND-VAN-200", "totalQuantity": 140, "inventoryDetails":
+        {"fulfillableQuantity": 40, "inboundWorkingQuantity": 50, "inboundShippedQuantity":
+        30, "inboundReceivingQuantity": 20}}, {"asin": "B0VAN40000", "fnSku": "X000000",
+        "sellerSku": "CND-VAN-400", "condition": "NewItem", "productName": "CND-VAN-400",
+        "totalQuantity": 12, "inventoryDetails": {"fulfillableQuantity": 12, "inboundWorkingQuantity":
+        0, "inboundShippedQuantity": 0, "inboundReceivingQuantity": 0}}]}}'
+- request:
+    method: GET
+    uri: https://sellingpartnerapi-na.amazon.com/fba/inventory/v1/summaries
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"payload": {"inventorySummaries": [{"asin": "B0OUD10000", "fnSku":
+        "X000000", "sellerSku": "OUD-10", "condition": "NewItem", "productName": "OUD-10",
+        "totalQuantity": 0, "inventoryDetails": {"fulfillableQuantity": 0, "inboundWorkingQuantity":
+        0, "inboundShippedQuantity": 0, "inboundReceivingQuantity": 0}}]}}'

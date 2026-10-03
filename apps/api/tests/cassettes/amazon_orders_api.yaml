@@ -1,0 +1,86 @@
+version: 1
+interactions:
+- request:
+    method: POST
+    uri: https://api.amazon.com/auth/o2/token
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"access_token": "Atza|test", "token_type": "bearer", "expires_in":
+        3600}'
+- request:
+    method: GET
+    uri: https://sellingpartnerapi-na.amazon.com/orders/v0/orders
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"payload": {"Orders": [{"AmazonOrderId": "222-1", "PurchaseDate":
+        "2026-10-01T15:00:00Z", "OrderStatus": "Shipped", "MarketplaceId": "ATVPDKIKX0DER",
+        "OrderTotal": {"CurrencyCode": "USD", "Amount": "0"}}, {"AmazonOrderId": "222-2",
+        "PurchaseDate": "2026-10-01T16:00:00Z", "OrderStatus": "Canceled", "MarketplaceId":
+        "ATVPDKIKX0DER", "OrderTotal": {"CurrencyCode": "USD", "Amount": "0"}}], "NextToken":
+        "tok2"}}'
+- request:
+    method: GET
+    uri: https://sellingpartnerapi-na.amazon.com/orders/v0/orders
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"payload": {"Orders": [{"AmazonOrderId": "222-3", "PurchaseDate":
+        "2026-10-02T08:00:00Z", "OrderStatus": "Unshipped", "MarketplaceId": "ATVPDKIKX0DER",
+        "OrderTotal": {"CurrencyCode": "USD", "Amount": "0"}}]}}'
+- request:
+    method: GET
+    uri: https://sellingpartnerapi-na.amazon.com/orders/v0/orders/222-1/orderItems
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"payload": {"OrderItems": [{"ASIN": "B0VAN20000", "SellerSKU": "CND-VAN-200",
+        "OrderItemId": "oi-CND-VAN-200", "QuantityOrdered": 2, "ItemPrice": {"CurrencyCode":
+        "USD", "Amount": "28.00"}}, {"ASIN": "B0OUD10000", "SellerSKU": "OUD-10",
+        "OrderItemId": "oi-OUD-10", "QuantityOrdered": 1, "ItemPrice": {"CurrencyCode":
+        "USD", "Amount": "18.00"}}]}}'
+- request:
+    method: GET
+    uri: https://sellingpartnerapi-na.amazon.com/orders/v0/orders/222-3/orderItems
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"payload": {"OrderItems": [{"ASIN": "B0VAN40000", "SellerSKU": "CND-VAN-400",
+        "OrderItemId": "oi-CND-VAN-400", "QuantityOrdered": 3, "ItemPrice": {"CurrencyCode":
+        "USD", "Amount": "72.00"}}]}}'

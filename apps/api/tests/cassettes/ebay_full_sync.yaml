@@ -1,0 +1,84 @@
+version: 1
+interactions:
+- request:
+    method: POST
+    uri: https://api.ebay.com/identity/v1/oauth2/token
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"access_token": "v^1.1#test", "expires_in": 7200, "token_type": "User
+        Access Token"}'
+- &id001
+  request:
+    method: GET
+    uri: https://api.ebay.com/sell/inventory/v1/inventory_item
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"total": 3, "size": 2, "limit": 2, "inventoryItems": [{"sku": "CND-VAN-200",
+        "locale": "en_US", "product": {"title": "Vanilla Soy Candle 200g"}, "availability":
+        {"shipToLocationAvailability": {"quantity": 15}}}, {"sku": "OUD-10", "locale":
+        "en_US", "product": {"title": "Oud Perfume Oil 10ml"}, "availability": {"shipToLocationAvailability":
+        {"quantity": 4}}}]}'
+- &id002
+  request:
+    method: GET
+    uri: https://api.ebay.com/sell/inventory/v1/inventory_item
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"total": 3, "size": 1, "limit": 2, "inventoryItems": [{"sku": "SET-DISC",
+        "locale": "en_US", "product": {"title": "Discovery Set"}, "availability":
+        {"shipToLocationAvailability": {"quantity": 0}}}]}'
+- request:
+    method: GET
+    uri: https://api.ebay.com/sell/fulfillment/v1/order
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"total": 4, "orders": [{"orderId": "01-1", "creationDate": "2026-09-01T09:00:00.000Z",
+        "orderPaymentStatus": "PAID", "cancelStatus": {"cancelState": "NONE_REQUESTED"},
+        "lineItems": [{"lineItemId": "li-CND-VAN-200", "legacyItemId": "1234567890",
+        "sku": "CND-VAN-200", "quantity": 2, "lineItemCost": {"value": "28.00", "currency":
+        "USD"}}]}, {"orderId": "01-2", "creationDate": "2026-09-01T20:00:00.000Z",
+        "orderPaymentStatus": "PAID", "cancelStatus": {"cancelState": "NONE_REQUESTED"},
+        "lineItems": [{"lineItemId": "li-OUD-10", "legacyItemId": "1234567890", "sku":
+        "OUD-10", "quantity": 1, "lineItemCost": {"value": "18.00", "currency": "USD"}}]},
+        {"orderId": "01-3", "creationDate": "2026-09-02T10:00:00.000Z", "orderPaymentStatus":
+        "PAID", "cancelStatus": {"cancelState": "CANCELED"}, "lineItems": [{"lineItemId":
+        "li-OUD-10", "legacyItemId": "1234567890", "sku": "OUD-10", "quantity": 5,
+        "lineItemCost": {"value": "90.00", "currency": "USD"}}]}, {"orderId": "01-4",
+        "creationDate": "2026-09-03T10:00:00.000Z", "orderPaymentStatus": "PENDING",
+        "cancelStatus": {"cancelState": "NONE_REQUESTED"}, "lineItems": [{"lineItemId":
+        "li-SET-DISC", "legacyItemId": "1234567890", "sku": "SET-DISC", "quantity":
+        1, "lineItemCost": {"value": "35.00", "currency": "USD"}}]}]}'
+- *id001
+- *id002
