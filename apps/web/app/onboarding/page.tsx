@@ -16,7 +16,7 @@ const KINDS = ["products", "bom", "inventory", "sales"] as const;
 
 export default function Onboarding() {
   const api = useApi();
-  const { orgId, setOrgId } = useOrg();
+  const { orgId, setOrgId, authHeaders, mode } = useOrg();
   const router = useRouter();
   const channels = useChannels();
   const [shop, setShop] = useState("");
@@ -38,7 +38,7 @@ export default function Onboarding() {
     async () => {
       const fd = new FormData();
       for (const k of KINDS) if (files[k]) fd.append(k, files[k]!);
-      const res = await fetch(`${API_URL}/imports`, { method: "POST", body: fd, headers: { "X-Org-Id": orgId } });
+      const res = await fetch(`${API_URL}/imports`, { method: "POST", body: fd, headers: await authHeaders() });
       if (!res.ok) throw new Error((await res.json()).detail ?? `Upload failed (${res.status})`);
       return (await res.json()) as { results: NonNullable<typeof result> };
     },
@@ -76,16 +76,20 @@ export default function Onboarding() {
         <CardHeader><CardTitle>1. Workspace</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           {org.isLoading ? <Skeleton className="h-9 w-64" /> : org.data ? (
-            <p className="text-sm">Using <strong>{org.data.name}</strong> <span className="text-muted-foreground">({orgId.slice(0, 8)}…)</span></p>
+            <p className="text-sm">Using <strong>{org.data.name}</strong> <span className="text-muted-foreground">({(orgId ?? "").slice(0, 8)}…)</span></p>
           ) : (
             <p className="text-sm text-muted-foreground">No workspace selected yet.</p>
           )}
-          <div className="flex gap-2">
-            <Input placeholder="New workspace name" value={orgName} onChange={(e) => setOrgName(e.target.value)} data-testid="org-name" />
-            <Button variant="outline" loading={createOrg.isPending} disabled={!orgName.trim()} onClick={() => createOrg.mutate(orgName.trim())} data-testid="create-org">
-              Create
-            </Button>
-          </div>
+          {mode === "clerk" ? (
+            <p className="text-xs text-muted-foreground">Workspaces are your Clerk organizations — create or switch with the organization menu in the sidebar.</p>
+          ) : (
+            <div className="flex gap-2">
+              <Input placeholder="New workspace name" value={orgName} onChange={(e) => setOrgName(e.target.value)} data-testid="org-name" />
+              <Button variant="outline" loading={createOrg.isPending} disabled={!orgName.trim()} onClick={() => createOrg.mutate(orgName.trim())} data-testid="create-org">
+                Create
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 

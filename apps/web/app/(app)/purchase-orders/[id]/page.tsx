@@ -19,7 +19,7 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 export default function PurchaseOrderDetail() {
   const { id } = useParams<{ id: string }>();
   const api = useApi();
-  const { orgId } = useOrg();
+  const { authHeaders } = useOrg();
   const po = useOrgQuery(["purchase-orders", id], async () => unwrap(await api.GET("/purchase-orders/{po_id}", { params: { path: { po_id: id } } })));
   const [receiving, setReceiving] = useState(false);
   const [qty, setQty] = useState<Record<string, string>>({});
@@ -39,7 +39,7 @@ export default function PurchaseOrderDetail() {
   const p = po.data;
   const download = (ext: "csv" | "pdf") => {
     const u = `${API_URL}/purchase-orders/${id}/export.${ext}`;
-    fetch(u, { headers: { "X-Org-Id": orgId } }).then(async (r) => {
+    authHeaders().then((h) => fetch(u, { headers: h })).then(async (r) => {
       const blob = await r.blob();
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);

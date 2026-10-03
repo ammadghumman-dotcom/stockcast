@@ -113,7 +113,13 @@ def reset_demo_org(db: Session) -> Organization:
     if existing:
         db.execute(delete(Organization).where(Organization.id == DEMO_ORG_ID))  # cascades
         db.commit()
-    org = Organization(id=DEMO_ORG_ID, name="Demo Candle Co", slug=DEMO_SLUG)
+    org = Organization(
+        id=DEMO_ORG_ID,
+        name="Demo Candle Co",
+        slug=DEMO_SLUG,
+        plan="scale",  # demo org: no limits, no trial countdown
+        plan_status="active",
+    )
     db.add(org)
     db.commit()
     return org

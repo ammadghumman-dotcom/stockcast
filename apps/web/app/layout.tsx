@@ -1,7 +1,9 @@
+import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 
 import { ORG_COOKIE } from "@/lib/api";
+import { clerkEnabled } from "@/lib/auth";
 import { Providers } from "@/lib/query";
 
 import "./globals.css";
@@ -14,11 +16,12 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const jar = await cookies();
   const initialOrgId = jar.get(ORG_COOKIE)?.value ?? null;
-  return (
+  const page = (
     <html lang="en">
       <body className="min-h-screen antialiased">
         <Providers initialOrgId={initialOrgId}>{children}</Providers>
       </body>
     </html>
   );
+  return clerkEnabled ? <ClerkProvider afterSignOutUrl="/">{page}</ClerkProvider> : page;
 }

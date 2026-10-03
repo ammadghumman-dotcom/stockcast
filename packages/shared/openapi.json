@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Stockcast API",
-    "version": "0.6.0"
+    "version": "0.7.0"
   },
   "paths": {
     "/orgs": {
@@ -55,6 +55,22 @@
         "operationId": "current_org_orgs_me_get",
         "parameters": [
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -103,6 +119,22 @@
         "summary": "List Users",
         "operationId": "list_users_users_get",
         "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
           {
             "name": "X-Org-Id",
             "in": "header",
@@ -154,6 +186,22 @@
         "summary": "Create User",
         "operationId": "create_user_users_post",
         "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
           {
             "name": "X-Org-Id",
             "in": "header",
@@ -224,6 +272,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -291,6 +355,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -354,6 +434,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -404,6 +500,22 @@
         "summary": "Create Product",
         "operationId": "create_product_products_post",
         "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
           {
             "name": "X-Org-Id",
             "in": "header",
@@ -474,6 +586,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -528,6 +656,22 @@
               "type": "string",
               "format": "uuid",
               "title": "Product Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           },
           {
@@ -590,6 +734,22 @@
         "operationId": "list_categories_product_categories_get",
         "parameters": [
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -640,6 +800,22 @@
         "summary": "Create Category",
         "operationId": "create_category_product_categories_post",
         "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
           {
             "name": "X-Org-Id",
             "in": "header",
@@ -707,6 +883,22 @@
               "type": "string",
               "format": "uuid",
               "title": "Category Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           },
           {
@@ -791,6 +983,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -851,6 +1059,22 @@
               "type": "string",
               "format": "uuid",
               "title": "Product Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           },
           {
@@ -928,6 +1152,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -978,6 +1218,22 @@
         "summary": "Create Supplier",
         "operationId": "create_supplier_suppliers_post",
         "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
           {
             "name": "X-Org-Id",
             "in": "header",
@@ -1048,6 +1304,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -1102,6 +1374,22 @@
               "type": "string",
               "format": "uuid",
               "title": "Supplier Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           },
           {
@@ -1202,6 +1490,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -1252,6 +1556,22 @@
         "summary": "Create Bom Line",
         "operationId": "create_bom_line_bom_lines_post",
         "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
           {
             "name": "X-Org-Id",
             "in": "header",
@@ -1322,6 +1642,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -1376,6 +1712,22 @@
               "type": "string",
               "format": "uuid",
               "title": "Bom Line Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           },
           {
@@ -1459,6 +1811,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -1509,6 +1877,22 @@
         "summary": "Create Location",
         "operationId": "create_location_locations_post",
         "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
           {
             "name": "X-Org-Id",
             "in": "header",
@@ -1579,6 +1963,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -1633,6 +2033,22 @@
               "type": "string",
               "format": "uuid",
               "title": "Location Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           },
           {
@@ -1716,6 +2132,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -1766,6 +2198,22 @@
         "summary": "Create Channel",
         "operationId": "create_channel_channels_post",
         "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
           {
             "name": "X-Org-Id",
             "in": "header",
@@ -1836,6 +2284,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -1890,6 +2354,22 @@
               "type": "string",
               "format": "uuid",
               "title": "Channel Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           },
           {
@@ -1972,6 +2452,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -2042,6 +2538,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -2094,6 +2606,22 @@
         "summary": "Import Csv",
         "operationId": "import_csv_imports_post",
         "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
           {
             "name": "X-Org-Id",
             "in": "header",
@@ -2179,6 +2707,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -2234,6 +2778,22 @@
             "schema": {
               "type": "string",
               "title": "Shop"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           },
           {
@@ -2420,6 +2980,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -2475,6 +3051,22 @@
               "maximum": 100,
               "default": 20,
               "title": "Limit"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           },
           {
@@ -2570,6 +3162,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -2647,6 +3255,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -2696,6 +3320,22 @@
         "description": "What-if: apply a draft promotion to the latest forecast; returns unit delta per product\n(incl. the post-promo dip) and the raw-material impact via BOM explosion.",
         "operationId": "simulate_promotion_forecasts_simulate_post",
         "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
           {
             "name": "X-Org-Id",
             "in": "header",
@@ -2756,6 +3396,22 @@
         "operationId": "list_regions_regions_get",
         "parameters": [
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -2814,6 +3470,22 @@
               "type": "boolean",
               "default": true,
               "title": "Seed Holidays"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           },
           {
@@ -2905,6 +3577,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -2984,6 +3672,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -3034,6 +3738,22 @@
         "summary": "Create Event",
         "operationId": "create_event_holiday_events_post",
         "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
           {
             "name": "X-Org-Id",
             "in": "header",
@@ -3104,6 +3824,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -3168,6 +3904,22 @@
               "type": "string",
               "format": "uuid",
               "title": "Event Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           },
           {
@@ -3246,6 +3998,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -3307,6 +4075,22 @@
               "type": "string",
               "format": "uuid",
               "title": "Uplift Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           },
           {
@@ -3380,6 +4164,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -3430,6 +4230,22 @@
         "summary": "Create Promotion",
         "operationId": "create_promotion_promotions_post",
         "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
           {
             "name": "X-Org-Id",
             "in": "header",
@@ -3500,6 +4316,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -3554,6 +4386,22 @@
               "type": "string",
               "format": "uuid",
               "title": "Promotion Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           },
           {
@@ -3624,6 +4472,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -3665,6 +4529,22 @@
         "summary": "Read Settings",
         "operationId": "read_settings_planning_settings_get",
         "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
           {
             "name": "X-Org-Id",
             "in": "header",
@@ -3712,6 +4592,22 @@
         "summary": "Update Settings",
         "operationId": "update_settings_planning_settings_patch",
         "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
           {
             "name": "X-Org-Id",
             "in": "header",
@@ -3782,6 +4678,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -3843,6 +4755,22 @@
         "operationId": "trigger_planning_planning_runs_post",
         "parameters": [
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -3898,6 +4826,22 @@
               "maximum": 100,
               "default": 20,
               "title": "Limit"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           },
           {
@@ -4050,6 +4994,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -4113,6 +5073,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -4161,6 +5137,22 @@
         "summary": "From Recommendations",
         "operationId": "from_recommendations_purchase_orders_from_recommendations_post",
         "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
           {
             "name": "X-Org-Id",
             "in": "header",
@@ -4252,6 +5244,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -4315,6 +5323,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -4371,6 +5395,22 @@
               "type": "string",
               "format": "uuid",
               "title": "Po Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           },
           {
@@ -4433,6 +5473,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -4487,6 +5543,22 @@
               "type": "string",
               "format": "uuid",
               "title": "Po Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           },
           {
@@ -4550,6 +5622,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -4609,6 +5697,22 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
             "name": "X-Org-Id",
             "in": "header",
             "required": false,
@@ -4649,6 +5753,260 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PurchaseOrderRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/billing": {
+      "get": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Read Billing",
+        "operationId": "read_billing_billing_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/billing/checkout": {
+      "post": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Checkout",
+        "operationId": "checkout_billing_checkout_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UrlResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/billing/portal": {
+      "post": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Portal",
+        "operationId": "portal_billing_portal_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UrlResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhooks/stripe": {
+      "post": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Stripe Webhook",
+        "operationId": "stripe_webhook_webhooks_stripe_post",
+        "parameters": [
+          {
+            "name": "Stripe-Signature",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Stripe-Signature"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookAck"
                 }
               }
             }
@@ -4857,6 +6215,90 @@
           "worst"
         ],
         "title": "AccuracySummary"
+      },
+      "BillingRead": {
+        "properties": {
+          "plan": {
+            "type": "string",
+            "title": "Plan"
+          },
+          "plan_status": {
+            "type": "string",
+            "title": "Plan Status"
+          },
+          "effective_plan": {
+            "type": "string",
+            "title": "Effective Plan"
+          },
+          "trial_ends_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trial Ends At"
+          },
+          "billing_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Billing Email"
+          },
+          "has_subscription": {
+            "type": "boolean",
+            "title": "Has Subscription"
+          },
+          "limits": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Limits"
+          },
+          "usage": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Usage"
+          },
+          "plans": {
+            "items": {
+              "$ref": "#/components/schemas/PlanInfo"
+            },
+            "type": "array",
+            "title": "Plans"
+          }
+        },
+        "type": "object",
+        "required": [
+          "plan",
+          "plan_status",
+          "effective_plan",
+          "trial_ends_at",
+          "billing_email",
+          "has_subscription",
+          "limits",
+          "usage",
+          "plans"
+        ],
+        "title": "BillingRead"
       },
       "Body_import_csv_imports_post": {
         "properties": {
@@ -5285,6 +6727,20 @@
         },
         "type": "object",
         "title": "ChannelUpdate"
+      },
+      "CheckoutRequest": {
+        "properties": {
+          "plan": {
+            "type": "string",
+            "pattern": "^(starter|growth|scale)$",
+            "title": "Plan"
+          }
+        },
+        "type": "object",
+        "required": [
+          "plan"
+        ],
+        "title": "CheckoutRequest"
       },
       "DraftPORequest": {
         "properties": {
@@ -6029,6 +7485,18 @@
             "minLength": 3,
             "title": "Currency",
             "default": "USD"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "email"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
           }
         },
         "type": "object",
@@ -6061,6 +7529,26 @@
           "slug": {
             "type": "string",
             "title": "Slug"
+          },
+          "plan": {
+            "type": "string",
+            "title": "Plan"
+          },
+          "plan_status": {
+            "type": "string",
+            "title": "Plan Status"
+          },
+          "trial_ends_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trial Ends At"
           }
         },
         "type": "object",
@@ -6069,7 +7557,9 @@
           "created_at",
           "updated_at",
           "name",
-          "slug"
+          "slug",
+          "plan",
+          "plan_status"
         ],
         "title": "OrgRead"
       },
@@ -6135,6 +7625,53 @@
           "received"
         ],
         "title": "POStatus"
+      },
+      "PlanInfo": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "price_usd": {
+            "type": "integer",
+            "title": "Price Usd"
+          },
+          "channels": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channels"
+          },
+          "skus": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skus"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "name",
+          "price_usd",
+          "channels",
+          "skus"
+        ],
+        "title": "PlanInfo"
       },
       "PlanningRunRead": {
         "properties": {
@@ -8286,6 +9823,19 @@
         ],
         "title": "UpliftUpdate"
       },
+      "UrlResponse": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "UrlResponse"
+      },
       "UserCreate": {
         "properties": {
           "email": {
@@ -8430,6 +9980,24 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "WebhookAck": {
+        "properties": {
+          "received": {
+            "type": "boolean",
+            "title": "Received",
+            "default": true
+          },
+          "result": {
+            "type": "string",
+            "title": "Result"
+          }
+        },
+        "type": "object",
+        "required": [
+          "result"
+        ],
+        "title": "WebhookAck"
       }
     }
   }
