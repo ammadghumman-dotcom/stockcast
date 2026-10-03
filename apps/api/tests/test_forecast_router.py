@@ -149,3 +149,28 @@ def test_chronos_selected_only_when_it_wins(monkeypatch) -> None:
 
 
 _ = date  # keep import for readability of fixtures
+
+
+# ---- sync-lag masking (trailing unsynced days must not collapse the model) ----
+def test_sync_lag_masks_short_trailing_zeros_only() -> None:
+    from app.forecast.features import sync_lag_days
+
+    y = np.array([8.0] * 30 + [0.0])
+    assert sync_lag_days(y).tolist()[-2:] == [False, True]
+    y3 = np.array([8.0] * 30 + [0.0, 0.0, 0.0])
+    assert sync_lag_days(y3)[-3:].all() and not sync_lag_days(y3)[:-3].any()
+    y5 = np.array([8.0] * 30 + [0.0] * 5)  # longer than max_lag: a real pattern, not lag
+    assert not sync_lag_days(y5).any()
+    quiet = np.array([0.0] * 30 + [0.0])  # nothing was selling: no mask
+    assert not sync_lag_days(quiet).any()
+
+
+def test_trailing_unsynced_day_does_not_collapse_forecast() -> None:
+    rng = np.random.default_rng(7)
+    y = np.append(8 + np.round(3 * np.sin(np.arange(120) / 3.5)) + rng.normal(0, 0.3, 120), 0.0)
+    s = _series(y)
+    from app.forecast.features import sync_lag_days
+
+    s.y[sync_lag_days(s.y)] = np.nan
+    b = StatsModel.predict(s.y, 14)
+    assert 5 < b.p50.mean() < 11

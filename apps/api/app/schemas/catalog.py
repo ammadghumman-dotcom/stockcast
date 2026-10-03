@@ -36,6 +36,10 @@ class ProductRead(Timestamped):
     unit: str
     category_id: uuid.UUID | None
     is_active: bool
+    service_level: Decimal | None = None
+    target_cover_days: int | None = None
+    lead_time_days: int | None = None
+    preferred_supplier_id: uuid.UUID | None = None
 
 
 # ---- Suppliers ----

@@ -68,12 +68,19 @@ apps/api/            FastAPI service
   scripts/seed.py    demo org: 20 SKUs, 3 raw materials, 1 BOM, 365 days of sales
   tests/             pytest against a real Postgres (TEST_DATABASE_URL), tx-rollback per test
     cassettes/       vcrpy cassettes for Shopify (synthesized by make_cassettes.py; see below)
-apps/web/            Next.js app
-  app/               routes (app router)
-  components/ui/     shadcn-style primitives
-  lib/api.ts         server-side API client
-  tests/             vitest
-packages/shared/     shared TS types (@stockcast/shared); generated client lands here in Step 6
+apps/web/            Next.js 15 app (client components + TanStack Query)
+  app/onboarding     create workspace, connect Shopify or upload CSVs (sync progress), run pipeline
+  app/(app)/         Shell (sidebar nav, mobile menu): dashboard, products(+[id]: forecast chart
+                     p10/p50/p90 + history, inventory, BOM), raw-materials, recommendations
+                     (filters, multi-select -> create PO), purchase-orders(+[id]: CSV/PDF, send,
+                     mark-sent, receive), settings (planning, suppliers, channels+regions,
+                     categories, team), calendar (events, promotions + simulate, uplifts)
+  components/ui/     shadcn-style primitives (button, input, table, dialog, tabs, badge, skeleton, empty)
+  components/        shell, products-table, charts/forecast-chart (Recharts)
+  lib/api.ts         typed client factory (openapi-fetch) + unwrap(); X-Org-Id from cookie
+  lib/org.tsx        OrgProvider/useApi; lib/hooks.ts useOrgQuery/useAction (toast on error) + queries
+  tests/             vitest (utils, badges); e2e/ Playwright (onboarding -> dashboard -> create PO)
+packages/shared/     openapi.json (exported by `make openapi`) -> src/api.d.ts (GENERATED) + makeClient()
 docker-compose.yml   api, web, postgres (timescaledb), redis
 Makefile             make dev / test / lint / fmt
 .github/workflows/   CI
@@ -94,7 +101,11 @@ make worker     # Celery worker + beat (compose runs this as the `worker` servic
 make forecast   # forecast the demo org and print the backtest summary
 make plan       # plan the demo org and print recommendations
 make install-chronos  # optional locally; Docker + CI always install it
+make openapi    # export OpenAPI + regenerate packages/shared/src/api.d.ts (run after API changes)
+make e2e        # Playwright against API :8000 (CELERY_TASK_ALWAYS_EAGER=true) + web :3000
 ```
+
+Web: every page is a client component using `useOrgQuery`/`useAction` from `lib/hooks.ts`; the org comes from the `stockcast_org` cookie (default: demo org) until Clerk (Step 7). After changing any API schema run `make openapi` and commit `packages/shared/openapi.json` + `src/api.d.ts`; the generated types make missing fields a typecheck error. `data-testid` attributes are the e2e contract — keep them when restyling. CI runs the e2e job against a seeded API on a TimescaleDB service.
 
 Forecasting: Chronos-Bolt is **optional at import time** (`requirements-chronos.txt`, CPU torch from the PyTorch index — not in `pyproject` because `uv lock` cannot reach that index everywhere). `chronos_available()` gates it; without it the chronos route uses AutoETS only and `tests/test_chronos_live.py` skips. Docker and CI install it. Backtest = last 28 observed days; the seed-org WAPE is printed as `[backtest] ...` in the test log and the CI job summary.
 
@@ -124,4 +135,4 @@ Requirements: Docker, Node 22 + pnpm 9 (`corepack enable`), Python 3.12 + `uv`.
 
 ## Build plan
 
-Follow the step-by-step plan (Stockcast — Build & Deploy Plan). Each step is a self-contained task that ends in a merged, tested PR. Steps done: **1 — repo and setup**, **2 — core data model and database**, **3 — CSV import + Shopify connector**, **4 — forecast engine**, **4b — holiday seasonality + promotion impact**, **5 — planning engine**. Next: **6 — web dashboard**. Step 6 should generate the typed client from `/openapi.json` into `packages/shared` and build pages on the existing endpoints (recommendations, forecasts, purchase orders, calendar).
+Follow the step-by-step plan (Stockcast — Build & Deploy Plan). Each step is a self-contained task that ends in a merged, tested PR. Steps done: **1 — repo and setup**, **2 — core data model and database**, **3 — CSV import + Shopify connector**, **4 — forecast engine**, **4b — holiday seasonality + promotion impact**, **5 — planning engine**, **6 — web dashboard**. Next: **7 — auth, multi-tenancy, billing** (Clerk replaces the X-Org-Id cookie: `deps.get_org_id` and `lib/org.tsx` are the two seams).

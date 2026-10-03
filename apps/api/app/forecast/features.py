@@ -127,7 +127,7 @@ def load_series(
             continue  # never sold: nothing to learn, planning treats it as new
         y = y[first:]
         dates = idx[first:]
-        mask = stockout_days(y, on_hand_now=stock.get(pid, 0.0))
+        mask = stockout_days(y, on_hand_now=stock.get(pid, 0.0)) | sync_lag_days(y)
         y_masked = y.copy()
         y_masked[mask] = np.nan
         out.append(Series(pid, sku, cat, dates, y_masked, mask))
@@ -157,6 +157,24 @@ def stockout_days(y: np.ndarray, *, on_hand_now: float, min_run: int = 2) -> np.
         i -= 1
     run = len(y) - 1 - i
     if run >= min_run:
+        mask[i + 1 :] = True
+    return mask
+
+
+def sync_lag_days(y: np.ndarray, *, max_lag: int = 3, lookback: int = 14) -> np.ndarray:
+    """Mask a short trailing run of zeros after steady sales: the channel has not synced yet.
+
+    One unsynced day at the end of a series is enough to make an ETS model collapse toward
+    zero, so those days are treated as unobserved rather than as real zero demand.
+    """
+    mask = np.zeros(len(y), dtype=bool)
+    if len(y) <= lookback + max_lag:
+        return mask
+    i = len(y) - 1
+    while i >= 0 and y[i] == 0:
+        i -= 1
+    run = len(y) - 1 - i
+    if 0 < run <= max_lag and np.nanmean(y[max(0, i - lookback + 1) : i + 1]) > 0:
         mask[i + 1 :] = True
     return mask
 

@@ -312,7 +312,8 @@ def _rel_band(fc, bom, comp_id) -> float:
             m = p50.sum()
             if m > 0:
                 ratios.append(float(p90.sum() / m))
-    return float(np.mean(ratios)) if ratios else 1.0
+    # cap: a near-zero parent p50 would otherwise make the derived band (and safety stock) explode
+    return float(np.clip(np.mean(ratios), 1.0, 3.0)) if ratios else 1.0
 
 
 # --------------------------------------------------------------------------- loaders

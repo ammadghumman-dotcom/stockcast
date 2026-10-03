@@ -8,10 +8,12 @@ from app.config import settings
 from app.routers import (
     bom_lines,
     calendar,
+    catalog_extras,
     channels,
     forecasts,
     imports,
     locations,
+    orgs,
     planning,
     products,
     purchase_orders,
@@ -28,7 +30,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(orgs.router)
 app.include_router(products.router)
+app.include_router(catalog_extras.router)
 app.include_router(suppliers.router)
 app.include_router(bom_lines.router)
 app.include_router(locations.router)

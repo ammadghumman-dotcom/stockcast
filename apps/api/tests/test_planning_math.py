@@ -121,3 +121,13 @@ def test_bom_explosion_multi_level() -> None:
     assert np.allclose(out[wax], 16 * 200.0)
     assert np.allclose(out[jar], 16.0)
     assert np.allclose(out[lid], 16.0)
+
+
+def test_derived_band_ratio_is_capped() -> None:
+    import uuid
+
+    from app.planning.engine import _rel_band
+
+    parent, comp = uuid.uuid4(), uuid.uuid4()
+    fc = {parent: (np.full(10, 0.001), np.full(10, 5.0), np.ones(10), [None] * 10)}
+    assert _rel_band(fc, {parent: [(comp, 1.0)]}, comp) == 3.0

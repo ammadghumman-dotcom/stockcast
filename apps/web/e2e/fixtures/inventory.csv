@@ -1,0 +1,6 @@
+sku,location,on_hand,inbound
+CND-VAN-200,Main Warehouse,40,0
+CND-LAV-200,Main Warehouse,500,0
+RM-WAX-SOY,Main Warehouse,900,0
+RM-JAR-200,Main Warehouse,25,0
+RM-WICK-CT,Main Warehouse,5000,0
