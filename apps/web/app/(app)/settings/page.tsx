@@ -9,6 +9,8 @@ import { unwrap } from "@/lib/api";
 import { useAction, useCategories, useChannels, useOrgQuery, useRegions, useSuppliers } from "@/lib/hooks";
 import { useApi } from "@/lib/org";
 import { BillingTab } from "@/components/billing";
+import { ConnectChannelDialog } from "@/components/connect-channel";
+import { SkuMapping } from "@/components/sku-mapping";
 import { PageHeader } from "@/components/shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -129,6 +131,11 @@ function ChannelsTab() {
   const channels = useChannels();
   const regions = useRegions();
   const [code, setCode] = useState("");
+  const [connectOpen, setConnectOpen] = useState(false);
+  const sync = useAction(
+    async (id: string) => unwrap(await api.POST("/channels/{channel_id}/sync", { params: { path: { channel_id: id } } })),
+    { success: "Sync started", invalidate: ["channels", "sync-runs"] },
+  );
   const addRegion = useAction(async () => unwrap(await api.POST("/regions", { body: { code: code.toUpperCase(), name: code.toUpperCase(), currency: "USD" } })), { success: "Region added with its holiday calendar", invalidate: ["regions", "holiday-events"], onSuccess: () => setCode("") });
   const setRegion = useAction(
     async ({ id, region_id }: { id: string; region_id: string | null }) => unwrap(await api.PATCH("/channels/{channel_id}", { params: { path: { channel_id: id } }, body: { region_id } })),
@@ -144,20 +151,28 @@ function ChannelsTab() {
         </CardContent>
       </Card>
       <Card>
-        <CardHeader><CardTitle>Channels</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="flex items-center justify-between">Channels <Button size="sm" variant="outline" onClick={() => setConnectOpen(true)} data-testid="add-channel">Add channel</Button></CardTitle></CardHeader>
         <CardContent>
-          {!channels.data?.length ? <Empty title="No channels" action={{ label: "Connect one", href: "/onboarding" }} /> : (
+          {!channels.data?.length ? <Empty title="No channels" body="Connect Amazon, eBay, WooCommerce or upload CSVs." /> : (
             <div className="space-y-2">{channels.data.map((c) => (
-              <div key={c.id} className="flex items-center justify-between gap-2 rounded border p-2 text-sm">
-                <span>{c.name} <Badge variant="outline">{c.type}</Badge></span>
-                <NativeSelect className="w-28" value={c.region_id ?? ""} onChange={(e) => setRegion.mutate({ id: c.id, region_id: e.target.value || null })}>
-                  <option value="">no region</option>{regions.data?.map((r) => <option key={r.id} value={r.id}>{r.code}</option>)}
-                </NativeSelect>
+              <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded border p-2 text-sm" data-testid="channel-row">
+                <span className="flex items-center gap-2">{c.name} <Badge variant="outline">{c.type}</Badge> <Badge variant={c.is_connected ? "success" : "secondary"}>{c.is_connected ? "connected" : c.type === "csv" ? "uploads" : "not connected"}</Badge></span>
+                <span className="flex items-center gap-2">
+                  {c.is_connected && c.type !== "csv" ? <Button size="sm" variant="ghost" loading={sync.isPending} onClick={() => sync.mutate(c.id)}>Sync now</Button> : null}
+                  <NativeSelect className="w-28" value={c.region_id ?? ""} onChange={(e) => setRegion.mutate({ id: c.id, region_id: e.target.value || null })}>
+                    <option value="">no region</option>{regions.data?.map((r) => <option key={r.id} value={r.id}>{r.code}</option>)}
+                  </NativeSelect>
+                </span>
               </div>
             ))}</div>
           )}
         </CardContent>
       </Card>
+      <Card className="md:col-span-2">
+        <CardHeader><CardTitle>SKU mapping</CardTitle></CardHeader>
+        <CardContent>{channels.isLoading ? <Skeleton className="h-24" /> : <SkuMapping channels={channels.data ?? []} />}</CardContent>
+      </Card>
+      <ConnectChannelDialog open={connectOpen} onOpenChange={setConnectOpen} />
     </div>
   );
 }

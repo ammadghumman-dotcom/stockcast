@@ -15,8 +15,10 @@ from app.routers import (
     calendar,
     catalog_extras,
     channels,
+    connect,
     forecasts,
     imports,
+    listings,
     locations,
     orgs,
     planning,
@@ -46,7 +48,9 @@ app.include_router(bom_lines.router)
 app.include_router(locations.router)
 app.include_router(channels.router)
 app.include_router(imports.router)
+app.include_router(listings.router)
 app.include_router(shopify.router)
+app.include_router(connect.router)
 app.include_router(forecasts.router)
 app.include_router(calendar.router)
 app.include_router(planning.router)

@@ -2763,21 +2763,40 @@
         }
       }
     },
-    "/shopify/install": {
+    "/listings": {
       "get": {
         "tags": [
-          "shopify"
+          "listings"
         ],
-        "summary": "Install",
-        "operationId": "install_shopify_install_get",
+        "summary": "List Listings",
+        "operationId": "list_listings_listings_get",
         "parameters": [
           {
-            "name": "shop",
+            "name": "channel_id",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
-              "type": "string",
-              "title": "Shop"
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Channel Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 2000,
+              "default": 500,
+              "title": "Limit"
             }
           },
           {
@@ -2818,7 +2837,335 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ListingRead"
+                  },
+                  "title": "Response List Listings Listings Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "listings"
+        ],
+        "summary": "Create Listing",
+        "operationId": "create_listing_listings_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListingCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/listings/match": {
+      "post": {
+        "tags": [
+          "listings"
+        ],
+        "summary": "Match",
+        "operationId": "match_listings_match_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MatchResult"
+                  },
+                  "title": "Response Match Listings Match Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/listings/{listing_id}/override": {
+      "post": {
+        "tags": [
+          "listings"
+        ],
+        "summary": "Override",
+        "operationId": "override_listings__listing_id__override_post",
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Listing Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OverrideRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OverrideResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shopify/install": {
+      "get": {
+        "tags": [
+          "shopify"
+        ],
+        "summary": "Install",
+        "description": "Returns {\"url\"} for the web app to navigate to (auth headers can't ride a redirect);\n`redirect=true` answers with a 302 instead.",
+        "operationId": "install_shopify_install_get",
+        "parameters": [
+          {
+            "name": "shop",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Shop"
+            }
+          },
+          {
+            "name": "redirect",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Redirect"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstallUrl"
+                }
               }
             }
           },
@@ -2934,6 +3281,290 @@
                 }
               ],
               "title": "X-Shopify-Shop-Domain"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/amazon/install": {
+      "get": {
+        "tags": [
+          "connect"
+        ],
+        "summary": "Amazon Install",
+        "operationId": "amazon_install_amazon_install_get",
+        "parameters": [
+          {
+            "name": "channel_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Channel Id"
+            }
+          },
+          {
+            "name": "redirect",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Redirect"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UrlResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/amazon/callback": {
+      "get": {
+        "tags": [
+          "connect"
+        ],
+        "summary": "Amazon Callback",
+        "operationId": "amazon_callback_amazon_callback_get",
+        "parameters": [
+          {
+            "name": "state",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "State"
+            }
+          },
+          {
+            "name": "spapi_oauth_code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Spapi Oauth Code"
+            }
+          },
+          {
+            "name": "selling_partner_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Selling Partner Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ebay/install": {
+      "get": {
+        "tags": [
+          "connect"
+        ],
+        "summary": "Ebay Install",
+        "operationId": "ebay_install_ebay_install_get",
+        "parameters": [
+          {
+            "name": "channel_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Channel Id"
+            }
+          },
+          {
+            "name": "redirect",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Redirect"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UrlResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ebay/callback": {
+      "get": {
+        "tags": [
+          "connect"
+        ],
+        "summary": "Ebay Callback",
+        "operationId": "ebay_callback_ebay_callback_get",
+        "parameters": [
+          {
+            "name": "state",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "State"
+            }
+          },
+          {
+            "name": "code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
             }
           }
         ],
@@ -6576,6 +7207,20 @@
               }
             ],
             "title": "External Shop Id"
+          },
+          "credentials": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credentials"
           }
         },
         "type": "object",
@@ -6584,6 +7229,36 @@
           "type"
         ],
         "title": "ChannelCreate"
+      },
+      "ChannelMix": {
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Channel Id"
+          },
+          "channel_name": {
+            "type": "string",
+            "title": "Channel Name"
+          },
+          "channel_type": {
+            "type": "string",
+            "title": "Channel Type"
+          },
+          "share": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Share"
+          }
+        },
+        "type": "object",
+        "required": [
+          "channel_id",
+          "channel_name",
+          "channel_type",
+          "share"
+        ],
+        "title": "ChannelMix"
       },
       "ChannelRead": {
         "properties": {
@@ -6675,6 +7350,54 @@
         "title": "ChannelRead",
         "description": "Never exposes credentials."
       },
+      "ChannelShare": {
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Channel Id"
+          },
+          "channel_name": {
+            "type": "string",
+            "title": "Channel Name"
+          },
+          "channel_type": {
+            "type": "string",
+            "title": "Channel Type"
+          },
+          "share": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Share"
+          },
+          "units_90d": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Units 90D"
+          },
+          "p50_30d": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "P50 30D"
+          },
+          "p50_90d": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "P50 90D"
+          }
+        },
+        "type": "object",
+        "required": [
+          "channel_id",
+          "channel_name",
+          "channel_type",
+          "share",
+          "units_90d",
+          "p50_30d",
+          "p50_90d"
+        ],
+        "title": "ChannelShare"
+      },
       "ChannelType": {
         "type": "string",
         "enum": [
@@ -6723,6 +7446,32 @@
               }
             ],
             "title": "Is Active"
+          },
+          "external_shop_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Shop Id"
+          },
+          "credentials": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credentials"
           }
         },
         "type": "object",
@@ -7255,6 +8004,19 @@
         ],
         "title": "IngestResult"
       },
+      "InstallUrl": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "InstallUrl"
+      },
       "InventoryRow": {
         "properties": {
           "location_id": {
@@ -7285,6 +8047,104 @@
           "inbound"
         ],
         "title": "InventoryRow"
+      },
+      "ListingCreate": {
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Channel Id"
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Product Id"
+          },
+          "external_id": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "External Id"
+          },
+          "external_sku": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Sku"
+          }
+        },
+        "type": "object",
+        "required": [
+          "channel_id",
+          "product_id",
+          "external_id"
+        ],
+        "title": "ListingCreate",
+        "description": "Manual listing (custom stores, marketplaces without a connector)."
+      },
+      "ListingRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "channel_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Channel Id"
+          },
+          "external_id": {
+            "type": "string",
+            "title": "External Id"
+          },
+          "external_sku": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Sku"
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Product Id"
+          },
+          "product_sku": {
+            "type": "string",
+            "title": "Product Sku"
+          },
+          "product_name": {
+            "type": "string",
+            "title": "Product Name"
+          },
+          "product_listing_count": {
+            "type": "integer",
+            "title": "Product Listing Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "channel_id",
+          "external_id",
+          "external_sku",
+          "product_id",
+          "product_sku",
+          "product_name",
+          "product_listing_count"
+        ],
+        "title": "ListingRead"
       },
       "LocationCreate": {
         "properties": {
@@ -7435,6 +8295,66 @@
         "type": "object",
         "title": "LocationUpdate"
       },
+      "MatchRequest": {
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Channel Id"
+          },
+          "external_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Ids"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "default": 5
+          },
+          "only_unmatched": {
+            "type": "boolean",
+            "title": "Only Unmatched",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "channel_id"
+        ],
+        "title": "MatchRequest"
+      },
+      "MatchResult": {
+        "properties": {
+          "listing": {
+            "$ref": "#/components/schemas/ListingRead"
+          },
+          "suggestions": {
+            "items": {
+              "$ref": "#/components/schemas/SuggestionRead"
+            },
+            "type": "array",
+            "title": "Suggestions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "listing",
+          "suggestions"
+        ],
+        "title": "MatchResult"
+      },
       "MaterialDeltaRead": {
         "properties": {
           "product_id": {
@@ -7562,6 +8482,42 @@
           "plan_status"
         ],
         "title": "OrgRead"
+      },
+      "OverrideRequest": {
+        "properties": {
+          "product_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Product Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "product_id"
+        ],
+        "title": "OverrideRequest"
+      },
+      "OverrideResult": {
+        "properties": {
+          "listing": {
+            "$ref": "#/components/schemas/ListingRead"
+          },
+          "moved_sales_rows": {
+            "type": "integer",
+            "title": "Moved Sales Rows"
+          },
+          "deleted_product": {
+            "type": "boolean",
+            "title": "Deleted Product"
+          }
+        },
+        "type": "object",
+        "required": [
+          "listing",
+          "moved_sales_rows",
+          "deleted_product"
+        ],
+        "title": "OverrideResult"
       },
       "POLineRead": {
         "properties": {
@@ -8125,6 +9081,14 @@
             "type": "string",
             "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total P50 90D"
+          },
+          "channels": {
+            "items": {
+              "$ref": "#/components/schemas/ChannelShare"
+            },
+            "type": "array",
+            "title": "Channels",
+            "default": []
           }
         },
         "type": "object",
@@ -9141,6 +10105,14 @@
               }
             ],
             "title": "Po Id"
+          },
+          "channel_mix": {
+            "items": {
+              "$ref": "#/components/schemas/ChannelMix"
+            },
+            "type": "array",
+            "title": "Channel Mix",
+            "default": []
           }
         },
         "type": "object",
@@ -9448,6 +10420,40 @@
           "materials"
         ],
         "title": "SimulateResponse"
+      },
+      "SuggestionRead": {
+        "properties": {
+          "product_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Product Id"
+          },
+          "sku": {
+            "type": "string",
+            "title": "Sku"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "product_id",
+          "sku",
+          "name",
+          "score",
+          "reason"
+        ],
+        "title": "SuggestionRead"
       },
       "SupplierCreate": {
         "properties": {

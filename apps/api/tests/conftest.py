@@ -29,6 +29,10 @@ os.environ.setdefault("STRIPE_PRICE_STARTER", "price_starter")
 os.environ.setdefault("STRIPE_PRICE_GROWTH", "price_growth")
 os.environ.setdefault("STRIPE_PRICE_SCALE", "price_scale")
 os.environ.setdefault("SHOPIFY_API_KEY", "test-key")
+os.environ.setdefault("AMAZON_LWA_CLIENT_ID", "amzn1.application-oa2-client.test")
+os.environ.setdefault("AMAZON_LWA_CLIENT_SECRET", "amzn-secret")
+os.environ.setdefault("EBAY_CLIENT_ID", "ebay-app-test")
+os.environ.setdefault("EBAY_CLIENT_SECRET", "ebay-secret")
 os.environ.setdefault("SHOPIFY_API_SECRET", "test-secret")
 os.environ.setdefault("SHOPIFY_API_VERSION", "2025-07")
 
@@ -132,6 +136,77 @@ def shopify_channel(db: Session, org: Organization):
     db.add(ch)
     db.flush()
     return ch
+
+
+def _channel(db, org, ctype, name, ext, creds):
+    import json
+
+    from app import crypto
+    from app.models import Channel
+
+    ch = Channel(
+        org_id=org.id,
+        name=name,
+        type=ctype,
+        external_shop_id=ext,
+        credentials_encrypted=crypto.encrypt(json.dumps(creds)),
+    )
+    db.add(ch)
+    db.flush()
+    return ch
+
+
+@pytest.fixture
+def amazon_channel(db, org):
+    from app.models import ChannelType
+
+    return _channel(
+        db,
+        org,
+        ChannelType.amazon,
+        "Amazon US",
+        "ATVPDKIKX0DER",
+        {"refresh_token": "Atzr|test", "marketplace_id": "ATVPDKIKX0DER"},
+    )
+
+
+@pytest.fixture
+def ebay_channel(db, org):
+    from app.models import ChannelType
+
+    return _channel(
+        db,
+        org,
+        ChannelType.ebay,
+        "eBay US",
+        "EBAY_US",
+        {"refresh_token": "v^1.1#r", "marketplace_id": "EBAY_US"},
+    )
+
+
+@pytest.fixture
+def woo_channel(db, org):
+    from app.models import ChannelType
+
+    return _channel(
+        db,
+        org,
+        ChannelType.woocommerce,
+        "Woo Store",
+        "https://shop.example.com",
+        {
+            "url": "https://shop.example.com",
+            "consumer_key": "ck_test",
+            "consumer_secret": "cs_test",
+        },
+    )
+
+
+@pytest.fixture(autouse=True)
+def _no_sleep(monkeypatch):
+    """Connectors sleep on throttles / report polls; never in tests."""
+    monkeypatch.setattr("app.ingest.http._sleep", lambda s: None)
+    monkeypatch.setattr("app.ingest.amazon.client._sleep", lambda s: None)
 
 
 # --------------------------------------------------------------------------- planning world

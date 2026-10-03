@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Query, Request, status
 from sqlalchemy import func, select
 
 from app.deps import DB, OrgId
+from app.forecast.channels import load_channel_mix
 from app.forecast.engine import latest_successful_run
 from app.forecast.simulate import DraftPromotion, simulate
 from app.forecast.tasks import enqueue_forecast
@@ -14,6 +15,7 @@ from app.schemas.calendar import SimulateRequest, SimulateResponse
 from app.schemas.forecast import (
     AccuracyRow,
     AccuracySummary,
+    ChannelShare,
     ForecastPoint,
     ForecastRunRead,
     ProductForecast,
@@ -61,14 +63,25 @@ def get_forecast(
     if not rows:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "product has no forecast in this run")
     points = [ForecastPoint.model_validate(r) for r in rows]
+    t30 = sum((p.p50 for p in points[:30]), Decimal(0))
+    t90 = sum((p.p50 for p in points[:90]), Decimal(0))
+    mix = load_channel_mix(db, org_id, run.id, [product_id]).get(product_id, [])
     return ProductForecast(
         product_id=product_id,
         run_id=run.id,
         as_of=run.as_of,
         model=rows[0].model,
         points=points,
-        total_p50_30d=sum((p.p50 for p in points[:30]), Decimal(0)),
-        total_p50_90d=sum((p.p50 for p in points[:90]), Decimal(0)),
+        total_p50_30d=t30,
+        total_p50_90d=t90,
+        channels=[
+            ChannelShare(
+                **m,
+                p50_30d=(t30 * m["share"]).quantize(Decimal("0.01")),
+                p50_90d=(t90 * m["share"]).quantize(Decimal("0.01")),
+            )
+            for m in mix
+        ],
     )
 
 

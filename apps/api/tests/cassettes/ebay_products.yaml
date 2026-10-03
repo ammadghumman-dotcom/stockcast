@@ -1,0 +1,51 @@
+version: 1
+interactions:
+- request:
+    method: POST
+    uri: https://api.ebay.com/identity/v1/oauth2/token
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"access_token": "v^1.1#test", "expires_in": 7200, "token_type": "User
+        Access Token"}'
+- request:
+    method: GET
+    uri: https://api.ebay.com/sell/inventory/v1/inventory_item
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"total": 3, "size": 2, "limit": 2, "inventoryItems": [{"sku": "CND-VAN-200",
+        "locale": "en_US", "product": {"title": "Vanilla Soy Candle 200g"}, "availability":
+        {"shipToLocationAvailability": {"quantity": 15}}}, {"sku": "OUD-10", "locale":
+        "en_US", "product": {"title": "Oud Perfume Oil 10ml"}, "availability": {"shipToLocationAvailability":
+        {"quantity": 4}}}]}'
+- request:
+    method: GET
+    uri: https://api.ebay.com/sell/inventory/v1/inventory_item
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"total": 3, "size": 1, "limit": 2, "inventoryItems": [{"sku": "SET-DISC",
+        "locale": "en_US", "product": {"title": "Discovery Set"}, "availability":
+        {"shipToLocationAvailability": {"quantity": 0}}}]}'

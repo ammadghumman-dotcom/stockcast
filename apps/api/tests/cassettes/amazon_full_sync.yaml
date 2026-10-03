@@ -1,0 +1,224 @@
+version: 1
+interactions:
+- &id001
+  request:
+    method: POST
+    uri: https://api.amazon.com/auth/o2/token
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"access_token": "Atza|test", "token_type": "bearer", "expires_in":
+        3600}'
+- &id002
+  request:
+    method: POST
+    uri: https://sellingpartnerapi-na.amazon.com/reports/2021-06-30/reports
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 202
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"reportId": "rep-listings"}'
+- &id003
+  request:
+    method: GET
+    uri: https://sellingpartnerapi-na.amazon.com/reports/2021-06-30/reports/rep-listings
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"reportId": "rep-listings", "processingStatus": "DONE", "reportDocumentId":
+        "doc-listings"}'
+- &id004
+  request:
+    method: GET
+    uri: https://sellingpartnerapi-na.amazon.com/reports/2021-06-30/documents/doc-listings
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"reportDocumentId": "doc-listings", "url": "https://tortuga-prod-na.s3.amazonaws.com/report-doc-1"}'
+- &id005
+  request:
+    method: GET
+    uri: https://tortuga-prod-na.s3.amazonaws.com/report-doc-1
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - text/plain
+    body:
+      string: "item-name\titem-description\tlisting-id\tseller-sku\tprice\tquantity\t\
+        open-date\tasin1\tfulfillment-channel\tstatus\nVanilla Candle 200g\t\t0901A\t\
+        CND-VAN-200\t14.00\t40\t2025-01-01\tB0VAN20000\tAMAZON_NA\tActive\n\t\t0902A\t\
+        CND-VAN-400\t24.00\t12\t2025-01-01\tB0VAN40000\tAMAZON_NA\tActive\nOud Oil\
+        \ 10ml\t\t0903A\tOUD-10\t18.00\t0\t2025-02-01\tB0OUD10000\tDEFAULT\tActive\n\
+        \t\t0904A\t\t0\t0\t\t\t\t"
+- &id006
+  request:
+    method: GET
+    uri: https://sellingpartnerapi-na.amazon.com/catalog/2022-04-01/items
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"numberOfResults": 1, "items": [{"asin": "B0VAN40000", "summaries":
+        [{"marketplaceId": "ATVPDKIKX0DER", "itemName": "Vanilla Candle 400g (Catalog)",
+        "productType": "CANDLE"}]}]}'
+- &id007
+  request:
+    method: POST
+    uri: https://sellingpartnerapi-na.amazon.com/reports/2021-06-30/reports
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 202
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"reportId": "rep-orders"}'
+- &id008
+  request:
+    method: GET
+    uri: https://sellingpartnerapi-na.amazon.com/reports/2021-06-30/reports/rep-orders
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"reportId": "rep-orders", "processingStatus": "DONE", "reportDocumentId":
+        "doc-orders"}'
+- &id009
+  request:
+    method: GET
+    uri: https://sellingpartnerapi-na.amazon.com/reports/2021-06-30/documents/doc-orders
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"reportDocumentId": "doc-orders", "url": "https://tortuga-prod-na.s3.amazonaws.com/report-doc-1"}'
+- &id010
+  request:
+    method: GET
+    uri: https://tortuga-prod-na.s3.amazonaws.com/report-doc-1
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - text/plain
+    body:
+      string: "amazon-order-id\tmerchant-order-id\tpurchase-date\tlast-updated-date\t\
+        order-status\tfulfillment-channel\tsales-channel\tsku\tasin\titem-status\t\
+        quantity\tcurrency\titem-price\n111-1\t\t2026-09-01T10:00:00+00:00\t\tShipped\t\
+        AFN\tAmazon.com\tCND-VAN-200\tB0VAN20000\tShipped\t2\tUSD\t28.00\n111-2\t\t\
+        2026-09-01T18:30:00+00:00\t\tShipped\tAFN\tAmazon.com\tCND-VAN-200\tB0VAN20000\t\
+        Shipped\t1\tUSD\t14.00\n111-3\t\t2026-09-02T09:00:00+00:00\t\tCancelled\t\
+        AFN\tAmazon.com\tOUD-10\tB0OUD10000\tCancelled\t1\tUSD\t18.00\n111-4\t\t2026-09-02T12:00:00+00:00\t\
+        \tPending\tAFN\tAmazon.com\tOUD-10\tB0OUD10000\tPending\t3\tUSD\t54.00\n111-5\t\
+        \t2026-09-03T12:00:00+00:00\t\tUnshipped\tMFN\tAmazon.com\tCND-VAN-400\tB0VAN40000\t\
+        Unshipped\t1\tUSD\t24.00"
+- &id011
+  request:
+    method: GET
+    uri: https://sellingpartnerapi-na.amazon.com/fba/inventory/v1/summaries
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"pagination": {"nextToken": "p2"}, "payload": {"granularity": {"granularityType":
+        "Marketplace", "granularityId": "ATVPDKIKX0DER"}, "inventorySummaries": [{"asin":
+        "B0VAN20000", "fnSku": "X000000", "sellerSku": "CND-VAN-200", "condition":
+        "NewItem", "productName": "CND-VAN-200", "totalQuantity": 140, "inventoryDetails":
+        {"fulfillableQuantity": 40, "inboundWorkingQuantity": 50, "inboundShippedQuantity":
+        30, "inboundReceivingQuantity": 20}}, {"asin": "B0VAN40000", "fnSku": "X000000",
+        "sellerSku": "CND-VAN-400", "condition": "NewItem", "productName": "CND-VAN-400",
+        "totalQuantity": 12, "inventoryDetails": {"fulfillableQuantity": 12, "inboundWorkingQuantity":
+        0, "inboundShippedQuantity": 0, "inboundReceivingQuantity": 0}}]}}'
+- &id012
+  request:
+    method: GET
+    uri: https://sellingpartnerapi-na.amazon.com/fba/inventory/v1/summaries
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"payload": {"inventorySummaries": [{"asin": "B0OUD10000", "fnSku":
+        "X000000", "sellerSku": "OUD-10", "condition": "NewItem", "productName": "OUD-10",
+        "totalQuantity": 0, "inventoryDetails": {"fulfillableQuantity": 0, "inboundWorkingQuantity":
+        0, "inboundShippedQuantity": 0, "inboundReceivingQuantity": 0}}]}}'
+- *id001
+- *id002
+- *id003
+- *id004
+- *id005
+- *id006
+- *id007
+- *id008
+- *id009
+- *id010
+- *id011
+- *id012

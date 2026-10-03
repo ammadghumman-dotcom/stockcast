@@ -32,6 +32,14 @@ class Settings(BaseSettings):
     clerk_issuer: str = ""  # https://<your-frontend-api>.clerk.accounts.dev
     clerk_secret_key: str = ""  # used to fetch org/user names on first sight (optional)
 
+    # Amazon SP-API (Login with Amazon app credentials) + eBay developer app
+    amazon_lwa_client_id: str = ""
+    amazon_lwa_client_secret: str = ""
+    amazon_app_id: str = ""  # SP-API application id for the Seller Central consent URL
+    ebay_client_id: str = ""
+    ebay_client_secret: str = ""
+    ebay_ru_name: str = ""  # eBay "RuName" (redirect URL name) registered for the app
+
     # Rate limiting (slowapi); memory:// in tests
     rate_limit_enabled: bool = True
     rate_limit_storage: str = "redis://localhost:6379/2"

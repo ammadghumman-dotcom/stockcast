@@ -7,18 +7,31 @@ from app.ingest.records import IngestResult, RowError  # noqa: F401  (re-exporte
 from app.models.enums import ChannelType
 from app.schemas.common import Timestamped
 
+# Required credential keys per channel type when credentials are supplied directly
+# (amazon/ebay can instead go through GET /amazon/install, /ebay/install).
+CREDENTIAL_KEYS: dict[ChannelType, tuple[str, ...]] = {
+    ChannelType.amazon: ("refresh_token", "marketplace_id"),
+    ChannelType.ebay: ("refresh_token", "marketplace_id"),
+    ChannelType.woocommerce: ("url", "consumer_key", "consumer_secret"),
+}
+
 
 class ChannelCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     type: ChannelType
     region_id: uuid.UUID | None = None
+    # amazon: marketplace id (ATVPDKIKX0DER); ebay: EBAY_US; woocommerce: store url
     external_shop_id: str | None = Field(default=None, max_length=200)
+    # stored encrypted, never returned; see CREDENTIAL_KEYS
+    credentials: dict[str, str] | None = None
 
 
 class ChannelUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
     region_id: uuid.UUID | None = None
     is_active: bool | None = None
+    external_shop_id: str | None = Field(default=None, max_length=200)
+    credentials: dict[str, str] | None = None
 
 
 class ChannelRead(Timestamped):

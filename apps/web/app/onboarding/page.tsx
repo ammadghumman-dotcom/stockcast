@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -32,6 +33,11 @@ export default function Onboarding() {
   const createOrg = useAction(
     async (name: string) => unwrap(await api.POST("/orgs", { body: { name, region_code: "US", currency: "USD" } })),
     { success: (o) => `Workspace "${o.name}" created`, onSuccess: (o) => setOrgId(o.id) },
+  );
+
+  const installShopify = useAction(
+    async () => unwrap(await api.GET("/shopify/install", { params: { query: { shop } } })),
+    { onSuccess: (r) => { window.location.href = r.url; } },
   );
 
   const upload = useAction(
@@ -117,12 +123,10 @@ export default function Onboarding() {
                 <Field label="Shop domain">
                   <Input placeholder="my-store.myshopify.com" value={shop} onChange={(e) => setShop(e.target.value)} />
                 </Field>
-                <Button asChild disabled={!shop.includes(".myshopify.com")}>
-                  <a href={`${API_URL}/shopify/install?shop=${encodeURIComponent(shop)}`} onClick={(e) => { if (!shop.includes(".myshopify.com")) e.preventDefault(); }}>
-                    Connect Shopify
-                  </a>
+                <Button disabled={!shop.includes(".myshopify.com")} loading={installShopify.isPending} onClick={() => installShopify.mutate()} data-testid="connect-shopify">
+                  Connect Shopify
                 </Button>
-                <p className="text-xs text-muted-foreground">Requires the Shopify app credentials to be configured on the API.</p>
+                <p className="text-xs text-muted-foreground">Requires the Shopify app credentials to be configured on the API. Amazon, eBay and WooCommerce connect from <Link href="/settings?tab=channels" className="underline">Settings → Channels</Link>.</p>
               </>
             )}
           </CardContent>

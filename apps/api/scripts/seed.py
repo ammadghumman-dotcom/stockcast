@@ -148,9 +148,20 @@ def seed(db: Session, *, days: int = 365, today: date | None = None, seed_value:
         org_id=oid, name="Shopify Store", type=ChannelType.shopify, region_id=regions["US"].id
     )
     amazon = Channel(
-        org_id=oid, name="Amazon US", type=ChannelType.amazon, region_id=regions["US"].id
+        org_id=oid,
+        name="Amazon US",
+        type=ChannelType.amazon,
+        region_id=regions["US"].id,
+        external_shop_id="ATVPDKIKX0DER",
     )
-    db.add_all([shopify, amazon])
+    ebay = Channel(
+        org_id=oid,
+        name="eBay US",
+        type=ChannelType.ebay,
+        region_id=regions["US"].id,
+        external_shop_id="EBAY_US",
+    )
+    db.add_all([shopify, amazon, ebay])
 
     cats = {n: ProductCategory(org_id=oid, name=n) for n in CATEGORIES}
     db.add_all(cats.values())
@@ -235,6 +246,9 @@ def seed(db: Session, *, days: int = 365, today: date | None = None, seed_value:
                 )
             )
             db.add(
+                ChannelListing(org_id=oid, product_id=p.id, channel_id=ebay.id, external_id=p.sku)
+            )
+            db.add(
                 InventoryLevel(
                     org_id=oid,
                     product_id=p.id,
@@ -304,7 +318,7 @@ def seed(db: Session, *, days: int = 365, today: date | None = None, seed_value:
                 elif promo.end_date < day <= promo.end_date + timedelta(days=7):
                     uplift *= 0.85
             mu = rate * weekday_factor * trend * uplift
-            for channel, share in ((shopify, 0.6), (amazon, 0.4)):
+            for channel, share in ((shopify, 0.5), (amazon, 0.35), (ebay, 0.15)):
                 lam = mu * share
                 units = _poisson(rng, lam)
                 if units == 0 and rng.random() < 0.85:

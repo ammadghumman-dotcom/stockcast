@@ -18,7 +18,7 @@ from app.models.enums import (
     PromotionScope,
     PromotionType,
 )
-from app.models.forecast import Forecast, ForecastAccuracy, ForecastRun
+from app.models.forecast import Forecast, ForecastAccuracy, ForecastChannelShare, ForecastRun
 from app.models.inventory import InventoryLevel, PurchaseOrder, PurchaseOrderLine, SalesDaily
 from app.models.planning import PlanningRun, PlanningSettings, Recommendation
 from app.models.sync import ProcessedWebhook, SyncRun
@@ -34,6 +34,7 @@ __all__ = [
     "EmailLog",
     "Forecast",
     "ForecastAccuracy",
+    "ForecastChannelShare",
     "ForecastRun",
     "HolidayEvent",
     "HolidaySource",

@@ -21,9 +21,14 @@ SHOP = "demo-candle.myshopify.com"
 
 def test_install_redirects_to_shopify(client, headers) -> None:
     r = client.get(
-        "/shopify/install", params={"shop": SHOP}, headers=headers, follow_redirects=False
+        "/shopify/install",
+        params={"shop": SHOP, "redirect": "true"},
+        headers=headers,
+        follow_redirects=False,
     )
     assert r.status_code == 302
+    j = client.get("/shopify/install", params={"shop": SHOP}, headers=headers)
+    assert j.status_code == 200 and j.json()["url"].startswith(f"https://{SHOP}/admin/oauth")
     u = urlparse(r.headers["location"])
     assert u.netloc == SHOP and u.path == "/admin/oauth/authorize"
     q = parse_qs(u.query)

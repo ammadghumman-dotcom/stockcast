@@ -123,3 +123,39 @@ test("settings and calendar are editable", async ({ page, request }) => {
   await expect(page.getByTestId("sim-result")).toContainText("Predicted lift");
   void request;
 });
+
+test("channels: add WooCommerce by keys and map a listing to a catalog product", async ({ page, request }) => {
+  const api = process.env.API_URL ?? "http://localhost:8000";
+  await page.goto("/onboarding");
+  await page.getByTestId("org-name").fill(`E2E Channels ${Date.now()}`);
+  await page.getByTestId("create-org").click();
+  await expect(page.getByText(/Workspace ".*" created/)).toBeVisible();
+  const orgId = (await page.evaluate(() => document.cookie.match(/stockcast_org=([^;]+)/)?.[1])) as string;
+  const h = { "X-Org-Id": decodeURIComponent(orgId) };
+
+  // a catalog product + a channel whose sync auto-created a look-alike product
+  const catalog = await (await request.post(`${api}/products`, { headers: h, data: { sku: "CND-VAN-200", name: "Vanilla Candle 200g", type: "finished" } })).json();
+  const auto = await (await request.post(`${api}/products`, { headers: h, data: { sku: "CND_VAN_200_FBA", name: "Vanilla Scented Candle 200 g", type: "finished" } })).json();
+  const ch = await (await request.post(`${api}/channels`, { headers: h, data: { name: "Amazon US", type: "amazon", external_shop_id: "ATVPDKIKX0DER", credentials: { refresh_token: "r", marketplace_id: "ATVPDKIKX0DER" } } })).json();
+  await request.post(`${api}/listings`, { headers: h, data: { channel_id: ch.id, product_id: auto.id, external_id: "B0VAN20000", external_sku: "CND_VAN_200_FBA" } });
+
+  await page.goto("/settings?tab=channels");
+  await page.getByTestId("add-channel").click();
+  await page.getByTestId("channel-kind").selectOption("woocommerce");
+  await page.getByTestId("cred-url").fill("https://shop.example.com");
+  await page.getByTestId("cred-consumer_key").fill("ck_test");
+  await page.getByTestId("cred-consumer_secret").fill("cs_test");
+  await page.getByTestId("connect-channel").click();
+  await expect(page.getByText("WooCommerce added")).toBeVisible();
+  await expect(page.getByTestId("channel-row").filter({ hasText: "WooCommerce" })).toContainText("connected");
+
+  // SKU mapping: the Amazon listing's look-alike product is suggested -> catalog product
+  await page.getByTestId("mapping-channel").selectOption(ch.id);
+  const row = page.getByTestId("mapping-row").first();
+  await expect(row).toContainText("CND_VAN_200_FBA");
+  await expect(row.getByTestId("mapping-pick")).toHaveValue(catalog.id);
+  await row.getByTestId("mapping-apply").click();
+  await expect(page.getByText(/Listing mapped/)).toBeVisible();
+  const products = await (await request.get(`${api}/products`, { headers: h })).json();
+  expect(products.map((p: { sku: string }) => p.sku)).not.toContain("CND_VAN_200_FBA");
+});

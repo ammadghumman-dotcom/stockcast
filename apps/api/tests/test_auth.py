@@ -22,6 +22,8 @@ PUBLIC = {
     ("GET", "/health"),
     ("POST", "/orgs"),
     ("GET", "/shopify/callback"),  # HMAC-signed by Shopify, carries org in `state`
+    ("GET", "/amazon/callback"),  # org + channel in signed `state`
+    ("GET", "/ebay/callback"),
     ("POST", "/webhooks/shopify/orders-create"),  # HMAC-signed
     ("POST", "/webhooks/shopify/inventory-levels-update"),
     ("POST", "/webhooks/stripe"),  # Stripe-Signature

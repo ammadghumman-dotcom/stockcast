@@ -391,6 +391,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/listings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Listings */
+        get: operations["list_listings_listings_get"];
+        put?: never;
+        /** Create Listing */
+        post: operations["create_listing_listings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/listings/match": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Match */
+        post: operations["match_listings_match_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/listings/{listing_id}/override": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Override */
+        post: operations["override_listings__listing_id__override_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/shopify/install": {
         parameters: {
             query?: never;
@@ -398,7 +450,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Install */
+        /**
+         * Install
+         * @description Returns {"url"} for the web app to navigate to (auth headers can't ride a redirect);
+         *     `redirect=true` answers with a 302 instead.
+         */
         get: operations["install_shopify_install_get"];
         put?: never;
         post?: never;
@@ -453,6 +509,74 @@ export interface paths {
         put?: never;
         /** Inventory Levels Update */
         post: operations["inventory_levels_update_webhooks_shopify_inventory_levels_update_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/amazon/install": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Amazon Install */
+        get: operations["amazon_install_amazon_install_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/amazon/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Amazon Callback */
+        get: operations["amazon_callback_amazon_callback_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ebay/install": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ebay Install */
+        get: operations["ebay_install_ebay_install_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ebay/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ebay Callback */
+        get: operations["ebay_callback_ebay_callback_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1178,6 +1302,24 @@ export interface components {
             region_id?: string | null;
             /** External Shop Id */
             external_shop_id?: string | null;
+            /** Credentials */
+            credentials?: {
+                [key: string]: string;
+            } | null;
+        };
+        /** ChannelMix */
+        ChannelMix: {
+            /**
+             * Channel Id
+             * Format: uuid
+             */
+            channel_id: string;
+            /** Channel Name */
+            channel_name: string;
+            /** Channel Type */
+            channel_type: string;
+            /** Share */
+            share: string;
         };
         /**
          * ChannelRead
@@ -1218,6 +1360,26 @@ export interface components {
             /** Last Synced At */
             last_synced_at: string | null;
         };
+        /** ChannelShare */
+        ChannelShare: {
+            /**
+             * Channel Id
+             * Format: uuid
+             */
+            channel_id: string;
+            /** Channel Name */
+            channel_name: string;
+            /** Channel Type */
+            channel_type: string;
+            /** Share */
+            share: string;
+            /** Units 90D */
+            units_90d: string;
+            /** P50 30D */
+            p50_30d: string;
+            /** P50 90D */
+            p50_90d: string;
+        };
         /**
          * ChannelType
          * @enum {string}
@@ -1231,6 +1393,12 @@ export interface components {
             region_id?: string | null;
             /** Is Active */
             is_active?: boolean | null;
+            /** External Shop Id */
+            external_shop_id?: string | null;
+            /** Credentials */
+            credentials?: {
+                [key: string]: string;
+            } | null;
         };
         /** CheckoutRequest */
         CheckoutRequest: {
@@ -1466,6 +1634,11 @@ export interface components {
             /** Errors */
             errors?: components["schemas"]["RowError"][];
         };
+        /** InstallUrl */
+        InstallUrl: {
+            /** Url */
+            url: string;
+        };
         /** InventoryRow */
         InventoryRow: {
             /**
@@ -1479,6 +1652,54 @@ export interface components {
             on_hand: string;
             /** Inbound */
             inbound: string;
+        };
+        /**
+         * ListingCreate
+         * @description Manual listing (custom stores, marketplaces without a connector).
+         */
+        ListingCreate: {
+            /**
+             * Channel Id
+             * Format: uuid
+             */
+            channel_id: string;
+            /**
+             * Product Id
+             * Format: uuid
+             */
+            product_id: string;
+            /** External Id */
+            external_id: string;
+            /** External Sku */
+            external_sku?: string | null;
+        };
+        /** ListingRead */
+        ListingRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Channel Id
+             * Format: uuid
+             */
+            channel_id: string;
+            /** External Id */
+            external_id: string;
+            /** External Sku */
+            external_sku: string | null;
+            /**
+             * Product Id
+             * Format: uuid
+             */
+            product_id: string;
+            /** Product Sku */
+            product_sku: string;
+            /** Product Name */
+            product_name: string;
+            /** Product Listing Count */
+            product_listing_count: number;
         };
         /** LocationCreate */
         LocationCreate: {
@@ -1539,6 +1760,32 @@ export interface components {
             /** Is Default */
             is_default?: boolean | null;
         };
+        /** MatchRequest */
+        MatchRequest: {
+            /**
+             * Channel Id
+             * Format: uuid
+             */
+            channel_id: string;
+            /** External Ids */
+            external_ids?: string[] | null;
+            /**
+             * Limit
+             * @default 5
+             */
+            limit: number;
+            /**
+             * Only Unmatched
+             * @default true
+             */
+            only_unmatched: boolean;
+        };
+        /** MatchResult */
+        MatchResult: {
+            listing: components["schemas"]["ListingRead"];
+            /** Suggestions */
+            suggestions: components["schemas"]["SuggestionRead"][];
+        };
         /** MaterialDeltaRead */
         MaterialDeltaRead: {
             /**
@@ -1597,6 +1844,22 @@ export interface components {
             plan_status: string;
             /** Trial Ends At */
             trial_ends_at?: string | null;
+        };
+        /** OverrideRequest */
+        OverrideRequest: {
+            /**
+             * Product Id
+             * Format: uuid
+             */
+            product_id: string;
+        };
+        /** OverrideResult */
+        OverrideResult: {
+            listing: components["schemas"]["ListingRead"];
+            /** Moved Sales Rows */
+            moved_sales_rows: number;
+            /** Deleted Product */
+            deleted_product: boolean;
         };
         /** POLineRead */
         POLineRead: {
@@ -1810,6 +2073,11 @@ export interface components {
             total_p50_30d: string;
             /** Total P50 90D */
             total_p50_90d: string;
+            /**
+             * Channels
+             * @default []
+             */
+            channels: components["schemas"]["ChannelShare"][];
         };
         /** ProductPlanningUpdate */
         ProductPlanningUpdate: {
@@ -2109,6 +2377,11 @@ export interface components {
             uplift_pct: string | null;
             /** Po Id */
             po_id: string | null;
+            /**
+             * Channel Mix
+             * @default []
+             */
+            channel_mix: components["schemas"]["ChannelMix"][];
         };
         /** RegionCreate */
         RegionCreate: {
@@ -2212,6 +2485,22 @@ export interface components {
             products: components["schemas"]["ProductDeltaRead"][];
             /** Materials */
             materials: components["schemas"]["MaterialDeltaRead"][];
+        };
+        /** SuggestionRead */
+        SuggestionRead: {
+            /**
+             * Product Id
+             * Format: uuid
+             */
+            product_id: string;
+            /** Sku */
+            sku: string;
+            /** Name */
+            name: string;
+            /** Score */
+            score: number;
+            /** Reason */
+            reason: string;
         };
         /** SupplierCreate */
         SupplierCreate: {
@@ -3698,10 +3987,11 @@ export interface operations {
             };
         };
     };
-    install_shopify_install_get: {
+    list_listings_listings_get: {
         parameters: {
-            query: {
-                shop: string;
+            query?: {
+                channel_id?: string | null;
+                limit?: number;
             };
             header?: {
                 authorization?: string | null;
@@ -3718,7 +4008,152 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ListingRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_listing_listings_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ListingCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListingRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    match_listings_match_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MatchResult"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    override_listings__listing_id__override_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                listing_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OverrideRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OverrideResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    install_shopify_install_get: {
+        parameters: {
+            query: {
+                shop: string;
+                redirect?: boolean;
+            };
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstallUrl"];
                 };
             };
             /** @description Validation Error */
@@ -3791,6 +4226,141 @@ export interface operations {
             header?: {
                 "x-shopify-shop-domain"?: string | null;
             };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    amazon_install_amazon_install_get: {
+        parameters: {
+            query: {
+                channel_id: string;
+                redirect?: boolean;
+            };
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UrlResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    amazon_callback_amazon_callback_get: {
+        parameters: {
+            query: {
+                state: string;
+                spapi_oauth_code: string;
+                selling_partner_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ebay_install_ebay_install_get: {
+        parameters: {
+            query: {
+                channel_id: string;
+                redirect?: boolean;
+            };
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UrlResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ebay_callback_ebay_callback_get: {
+        parameters: {
+            query: {
+                state: string;
+                code: string;
+            };
+            header?: never;
             path?: never;
             cookie?: never;
         };

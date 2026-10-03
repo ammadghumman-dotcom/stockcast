@@ -12,6 +12,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.forecast import covariates as cov
+from app.forecast.channels import compute_channel_shares
 from app.forecast.features import Series, load_series
 from app.forecast.models import Bands
 from app.forecast.router import forecast_batch, wape
@@ -112,6 +113,7 @@ def run_forecast(
             db.bulk_insert_mappings(Forecast, fc_rows[i : i + 5000])
         if acc_rows:
             db.bulk_insert_mappings(ForecastAccuracy, acc_rows)
+        compute_channel_shares(db, run.org_id, run.id, as_of, product_ids=product_ids)
         run.wape = _dec(err / act, 4) if act else None
         run.wape_base = _dec(err_base / act, 4) if act and factors else run.wape
         run.status, run.finished_at = "success", datetime.now(UTC)

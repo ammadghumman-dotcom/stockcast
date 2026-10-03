@@ -1,0 +1,50 @@
+version: 1
+interactions:
+- request:
+    method: POST
+    uri: https://api.amazon.com/auth/o2/token
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"access_token": "Atza|test", "token_type": "bearer", "expires_in":
+        3600}'
+- request:
+    method: GET
+    uri: https://sellingpartnerapi-na.amazon.com/fba/inventory/v1/summaries
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 429
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+      Retry-After:
+      - '1'
+    body:
+      string: '{"errors": [{"code": "QuotaExceeded"}]}'
+- request:
+    method: GET
+    uri: https://sellingpartnerapi-na.amazon.com/fba/inventory/v1/summaries
+    body: null
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"payload": {"inventorySummaries": [{"asin": "B0OUD10000", "fnSku":
+        "X000000", "sellerSku": "OUD-10", "condition": "NewItem", "productName": "OUD-10",
+        "totalQuantity": 0, "inventoryDetails": {"fulfillableQuantity": 0, "inboundWorkingQuantity":
+        0, "inboundShippedQuantity": 0, "inboundReceivingQuantity": 0}}]}}'

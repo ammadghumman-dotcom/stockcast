@@ -1,12 +1,20 @@
+import json
 import uuid
 
 from fastapi import APIRouter, HTTPException, Query, status
 
+from app import crypto
 from app.billing.plans import assert_can_add_channel
-from app.deps import DB, OrgId
+from app.deps import DB, Ctx, OrgId
 from app.ingest.tasks import enqueue_sync
 from app.models import Channel, ChannelType, Region, SyncRun
-from app.schemas.ingest import ChannelCreate, ChannelRead, ChannelUpdate, SyncRunRead
+from app.schemas.ingest import (
+    CREDENTIAL_KEYS,
+    ChannelCreate,
+    ChannelRead,
+    ChannelUpdate,
+    SyncRunRead,
+)
 from app.services import crud
 
 router = APIRouter(prefix="/channels", tags=["channels"])
@@ -28,8 +36,26 @@ def get_channel(db: DB, org_id: OrgId, channel_id: uuid.UUID):
     return _read(crud.get_scoped(db, Channel, org_id, channel_id))
 
 
+def _encrypt_credentials(ctype: ChannelType, creds: dict[str, str] | None) -> str | None:
+    if creds is None:
+        return None
+    required = CREDENTIAL_KEYS.get(ctype)
+    if required is None:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            f"{ctype.value} channels take no credentials here",
+        )
+    missing = [k for k in required if not creds.get(k)]
+    if missing:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, f"credentials missing {', '.join(missing)}"
+        )
+    return crypto.encrypt(json.dumps(creds))
+
+
 @router.post("", response_model=ChannelRead, status_code=status.HTTP_201_CREATED)
-def create_channel(db: DB, org_id: OrgId, body: ChannelCreate):
+def create_channel(db: DB, ctx: Ctx, body: ChannelCreate):
+    org_id = ctx.org_id
     if body.region_id:
         crud.assert_owned(db, Region, org_id, body.region_id)
     if body.type == ChannelType.shopify:
@@ -38,14 +64,33 @@ def create_channel(db: DB, org_id: OrgId, body: ChannelCreate):
             "Shopify channels are created by the install flow: GET /shopify/install?shop=...",
         )
     assert_can_add_channel(db, org_id)
-    return _read(crud.create_scoped(db, Channel, org_id, body))
+    encrypted = _encrypt_credentials(body.type, body.credentials)
+    data = body.model_dump(exclude={"credentials"})
+    if body.type in CREDENTIAL_KEYS and body.credentials and not data.get("external_shop_id"):
+        data["external_shop_id"] = body.credentials.get("marketplace_id") or body.credentials.get(
+            "url"
+        )
+    ch = Channel(org_id=org_id, credentials_encrypted=encrypted, **data)
+    db.add(ch)
+    db.commit()
+    db.refresh(ch)
+    return _read(ch)
 
 
 @router.patch("/{channel_id}", response_model=ChannelRead)
-def update_channel(db: DB, org_id: OrgId, channel_id: uuid.UUID, body: ChannelUpdate):
+def update_channel(db: DB, ctx: Ctx, channel_id: uuid.UUID, body: ChannelUpdate):
+    org_id = ctx.org_id
     if body.region_id:
         crud.assert_owned(db, Region, org_id, body.region_id)
-    return _read(crud.update_scoped(db, Channel, org_id, channel_id, body))
+    ch = crud.get_scoped(db, Channel, org_id, channel_id)
+    if body.credentials is not None:
+        ctx.require("admin")
+        ch.credentials_encrypted = _encrypt_credentials(ch.type, body.credentials)
+    for k, v in body.model_dump(exclude_unset=True, exclude={"credentials"}).items():
+        setattr(ch, k, v)
+    db.commit()
+    db.refresh(ch)
+    return _read(ch)
 
 
 @router.post("/{channel_id}/sync", response_model=SyncRunRead, status_code=202)

@@ -9,6 +9,7 @@ import { useAction, useLatestPlanningRun, useRecommendations, useSuppliers } fro
 import { useApi } from "@/lib/org";
 import { fmtDate, fmtNum } from "@/lib/utils";
 import { PageHeader } from "@/components/shell";
+import { ChannelMixBar } from "@/components/channel-mix";
 import { ActionBadge, HealthBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Empty } from "@/components/ui/empty";
@@ -68,7 +69,7 @@ export default function RecommendationsPage() {
           <THead>
             <TR>
               <TH><input type="checkbox" aria-label="select all" checked={orderable.length > 0 && selected.size === orderable.length} onChange={toggleAll} data-testid="select-all" /></TH>
-              <TH>SKU</TH><TH>Health</TH><TH>Action</TH><TH className="text-right">Qty</TH><TH>Order by</TH><TH className="hidden md:table-cell">Supplier</TH><TH className="hidden lg:table-cell">Why</TH><TH>PO</TH>
+              <TH>SKU</TH><TH className="hidden md:table-cell">Channels</TH><TH>Health</TH><TH>Action</TH><TH className="text-right">Qty</TH><TH>Order by</TH><TH className="hidden md:table-cell">Supplier</TH><TH className="hidden lg:table-cell">Why</TH><TH>PO</TH>
             </TR>
           </THead>
           <TBody>
@@ -78,6 +79,7 @@ export default function RecommendationsPage() {
                 <TR key={r.id} data-testid="rec-row">
                   <TD><input type="checkbox" aria-label={`select ${r.sku}`} disabled={!can} checked={selected.has(r.id)} onChange={() => setSelected((s) => { const n = new Set(s); if (n.has(r.id)) n.delete(r.id); else n.add(r.id); return n; })} data-testid="rec-select" /></TD>
                   <TD><Link href={`/products/${r.product_id}`} className="font-medium hover:underline">{r.sku}</Link></TD>
+                  <TD className="hidden md:table-cell"><ChannelMixBar parts={r.channel_mix ?? []} /></TD>
                   <TD><HealthBadge health={r.health} /></TD>
                   <TD><ActionBadge action={r.action} /></TD>
                   <TD className="text-right tabular-nums">{fmtNum(r.qty)}</TD>
