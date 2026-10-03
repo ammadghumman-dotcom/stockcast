@@ -1,4 +1,5 @@
 from app.models.base import Base, OrgScoped, TimestampMixin
+from app.models.billing import AuditLog, EmailLog, StripeEvent
 from app.models.calendar import CategoryHolidayUplift, HolidayEvent, PromoLiftModel, Promotion
 from app.models.catalog import (
     BomLine,
@@ -23,12 +24,14 @@ from app.models.planning import PlanningRun, PlanningSettings, Recommendation
 from app.models.sync import ProcessedWebhook, SyncRun
 
 __all__ = [
+    "AuditLog",
     "Base",
     "BomLine",
     "CategoryHolidayUplift",
     "Channel",
     "ChannelListing",
     "ChannelType",
+    "EmailLog",
     "Forecast",
     "ForecastAccuracy",
     "ForecastRun",
@@ -54,6 +57,7 @@ __all__ = [
     "Recommendation",
     "Region",
     "SalesDaily",
+    "StripeEvent",
     "Supplier",
     "SyncRun",
     "SupplierProduct",
