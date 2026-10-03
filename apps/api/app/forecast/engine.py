@@ -54,6 +54,7 @@ def run_forecast(
         db.execute(delete(Forecast).where(Forecast.run_id == run.id))
         db.execute(delete(ForecastAccuracy).where(ForecastAccuracy.run_id == run.id))
 
+        rescored = _rescore_all(series, adj_series, scored, factors) if factors else {}
         fc_rows, acc_rows = [], []
         err = act = err_base = 0.0
         for s_adj, s_raw, sb in zip(adj_series, series, scored_base, strict=True):
@@ -65,11 +66,7 @@ def run_forecast(
             bands = _multiply(sc.bands, fut_f, fut_prior)
 
             # re-score the adjusted model on the raw holdout (apples to apples with base)
-            w_adj, m_adj = sc.wape, sc.mape
-            if f is not None and sc.holdout_days:
-                w_adj, m_adj = _rescore_holdout(
-                    s_raw, s_adj, sc.holdout_days, hist_f, scored, priors, H
-                )
+            w_adj, m_adj = rescored.get(s_raw.product_id, (sc.wape, sc.mape))
             dates = [as_of + timedelta(days=i + 1) for i in range(H)]
             for i, d in enumerate(dates):
                 fc_rows.append(
@@ -201,33 +198,46 @@ def _multiply(b: Bands, f: np.ndarray, from_prior: np.ndarray) -> Bands:
     return Bands(p50 - lo * widen, p50, p50 + hi * widen).clip()
 
 
-def _rescore_holdout(s_raw, s_adj, hold, hist_f, scored, priors, H):
-    """WAPE/MAPE of (base model on adjusted train) x factor against RAW holdout actuals."""
+def _rescore_all(
+    series: list[Series], adj_series: list[Series], scored: dict, factors: dict
+) -> dict[uuid.UUID, tuple[float | None, float | None]]:
+    """WAPE/MAPE of (base model on adjusted train) x factor vs RAW holdout, batched by model."""
+    from app.forecast.models import CrostonModel, StatsModel, chronos_predict_batch
     from app.forecast.router import _split, mape
 
-    split = _split(s_adj)
-    if not split:
-        return scored[s_adj].wape, scored[s_adj].mape
-    train_adj, _ = split
-    actual = np.nan_to_num(s_raw.y[-hold:])
-    f_hold = hist_f[-hold:]
-    name = scored[s_adj].model
-    if name == "chronos":
-        from app.forecast.models import chronos_predict_batch
-
-        pred = chronos_predict_batch([train_adj], hold)[0].p50
-    elif name == "croston":
-        from app.forecast.models import CrostonModel
-
-        pred = CrostonModel.predict(train_adj, hold).p50
-    elif name == "autoets":
-        from app.forecast.models import StatsModel
-
-        pred = StatsModel.predict(train_adj, hold).p50
-    else:
-        return scored[s_adj].wape, scored[s_adj].mape
-    pred = pred * f_hold
-    return wape(actual, pred), mape(actual, pred)
+    jobs: dict[str, list[tuple[int, np.ndarray, int]]] = {
+        "chronos": [],
+        "croston": [],
+        "autoets": [],
+    }
+    for i, (s_raw, s_adj) in enumerate(zip(series, adj_series, strict=True)):
+        sc = scored[s_adj]
+        if s_raw.product_id not in factors or not sc.holdout_days or sc.model not in jobs:
+            continue
+        split = _split(s_adj)
+        if split:
+            jobs[sc.model].append((i, split[0], sc.holdout_days))
+    runners = {
+        "chronos": chronos_predict_batch,
+        "croston": CrostonModel.predict_batch,
+        "autoets": StatsModel.predict_batch,
+    }
+    out: dict[uuid.UUID, tuple[float | None, float | None]] = {}
+    for model, items in jobs.items():
+        by_h: dict[int, list[int]] = {}
+        for k, (_, _, h) in enumerate(items):
+            by_h.setdefault(h, []).append(k)
+        for h, ks in by_h.items():
+            preds = runners[model]([items[k][1] for k in ks], h)
+            for k, b in zip(ks, preds, strict=True):
+                i = items[k][0]
+                s_raw = series[i]
+                f = factors[s_raw.product_id]
+                hist_f = f.factor[: len(s_raw.y)]
+                actual = np.nan_to_num(s_raw.y[-h:])
+                pred = b.p50 * hist_f[-h:]
+                out[s_raw.product_id] = (wape(actual, pred), mape(actual, pred))
+    return out
 
 
 # --------------------------------------------------------------------------- misc

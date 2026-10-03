@@ -31,10 +31,11 @@ def mdb(engine):
 
 @pytest.fixture(scope="module")
 def xmas_run(mdb):
+    import app.forecast.covariates as cov_mod
     import app.forecast.router as router_mod
 
-    orig = router_mod.chronos_available
-    router_mod.chronos_available = lambda: False
+    orig, orig_cov = router_mod.chronos_available, cov_mod.chronos_available
+    router_mod.chronos_available = cov_mod.chronos_available = lambda: False
     try:
         seed(mdb, days=730, today=XMAS_AS_OF)
         run = ForecastRun(org_id=DEMO_ORG_ID, horizon_days=30)
@@ -42,7 +43,7 @@ def xmas_run(mdb):
         mdb.flush()
         yield run_forecast(mdb, run, as_of=XMAS_AS_OF)
     finally:
-        router_mod.chronos_available = orig
+        router_mod.chronos_available, cov_mod.chronos_available = orig, orig_cov
 
 
 @pytest.fixture

@@ -49,6 +49,7 @@ from app.models.enums import PromotionScope, PromotionType
 
 POST_PROMO_DAYS = 7
 MIN_PROMO_SAMPLES = 3
+MIN_LEARN_WINDOW = 7  # shorter windows (single-day national holidays) keep their prior
 SHRINK_DAYS = 5  # uplift shrinkage: w = observed_days / (observed_days + SHRINK_DAYS)
 PRIOR_BAND_WIDEN = 1.5  # widen p10/p90 by this when a factor comes from a prior, not data
 
@@ -322,6 +323,8 @@ def learn_holiday_uplifts(
         hist_start = s.dates[0].date()
         for ev in events:
             if ev.end >= cutoff or shares.get(ev.region_id, 0.0) <= 0:
+                continue
+            if (ev.end - ev.start).days + 1 < MIN_LEARN_WINDOW:
                 continue
             i0, i1 = (ev.start - hist_start).days, (ev.end - hist_start).days
             if i0 < min_history or i1 >= len(s.y):
