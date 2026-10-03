@@ -1,4 +1,8 @@
-"""DB-backed: full run on the seed org, persistence, idempotent retry, API, scoping."""
+"""DB-backed: full run on the seed org, persistence, idempotent retry, API, scoping.
+
+All tests use the module-scoped `mdb`/`mclient` (see test_covariates_db.py for why mixing with
+function-scoped `db` is forbidden in a module that holds a shared transaction).
+"""
 
 from datetime import date, timedelta
 
@@ -138,11 +142,3 @@ def test_forecast_is_org_scoped(mclient, mdb, seeded_run) -> None:
     acc = client.get("/forecast-accuracy", headers=other_headers).json()
     assert acc["skus"] == 0 and acc["run_id"] is None
     assert client.get("/forecast-runs", headers=other_headers).json() == []
-
-
-def test_trigger_endpoint_runs_inline_in_eager_mode(client, db, headers, org, monkeypatch) -> None:
-    monkeypatch.setattr("app.forecast.router.chronos_available", lambda: False)
-    r = client.post("/forecast-runs", params={"horizon": 14}, headers=headers)
-    assert r.status_code == 202, r.text
-    run = r.json()
-    assert run["status"] == "success" and run["skus_total"] == 0 and run["horizon_days"] == 14

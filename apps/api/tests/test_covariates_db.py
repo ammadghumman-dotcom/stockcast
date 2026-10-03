@@ -1,4 +1,9 @@
-"""DB-backed: WAPE improves with covariates on a Christmas holdout; calendar + simulate APIs."""
+"""DB-backed, one shared 2-year seed + forecast run per module.
+
+Every test here MUST use the module-scoped `mdb`/`mclient` fixtures, never the function-scoped
+`db`/`client`/`org`: two open transactions on TimescaleDB hypertables deadlock on chunk
+catalog locks (seen in CI). Function-scoped API tests live in test_calendar_api.py.
+"""
 
 from datetime import date, timedelta
 
@@ -104,86 +109,6 @@ def test_forecast_points_carry_factor_and_event(mclient, mdb, xmas_run) -> None:
     assert r.json()["run_id"] == str(run.id)
 
 
-def test_calendar_endpoints(client, db, headers, other_headers) -> None:
-    r = client.post(
-        "/regions",
-        json={"code": "UK", "name": "United Kingdom", "currency": "GBP"},
-        headers=headers,
-    )
-    assert r.status_code == 201, r.text
-    region = r.json()
-    events = client.get(
-        "/holiday-events", params={"region_id": region["id"]}, headers=headers
-    ).json()
-    names = {e["name"] for e in events}
-    assert {"Christmas", "Black Friday", "Mother's Day"} <= names
-    assert all(e["source"] == "builtin" for e in events)
-    assert client.get("/holiday-events", headers=other_headers).json() == []
-
-    # custom event + validation
-    r = client.post(
-        "/holiday-events",
-        json={
-            "region_id": region["id"],
-            "name": "Brand Day",
-            "start_date": "2026-03-01",
-            "end_date": "2026-03-07",
-        },
-        headers=headers,
-    )
-    assert r.status_code == 201 and r.json()["source"] == "custom"
-    r = client.post(
-        "/holiday-events",
-        json={
-            "region_id": region["id"],
-            "name": "Bad",
-            "start_date": "2026-03-09",
-            "end_date": "2026-03-07",
-        },
-        headers=headers,
-    )
-    assert r.status_code == 422
-    # cannot attach to another org's region
-    r = client.post(
-        "/holiday-events",
-        json={
-            "region_id": region["id"],
-            "name": "X",
-            "start_date": "2026-03-01",
-            "end_date": "2026-03-02",
-        },
-        headers=other_headers,
-    )
-    assert r.status_code == 422
-
-    # promotions CRUD + scope validation
-    r = client.post(
-        "/promotions",
-        json={
-            "name": "Spring",
-            "type": "discount",
-            "start_date": "2026-04-01",
-            "end_date": "2026-04-05",
-            "discount_pct": "15",
-        },
-        headers=headers,
-    )
-    assert r.status_code == 201, r.text
-    r = client.post(
-        "/promotions",
-        json={
-            "name": "Bad",
-            "type": "discount",
-            "scope": "category",
-            "start_date": "2026-04-01",
-            "end_date": "2026-04-05",
-        },
-        headers=headers,
-    )
-    assert r.status_code == 422
-    assert client.get("/promotions", headers=other_headers).json() == []
-
-
 def test_uplift_edit_turns_learned_into_manual(mclient, xmas_run) -> None:
     client = mclient
     rows = client.get("/category-uplifts", params={"learned": "true"}, headers=H).json()
@@ -225,12 +150,3 @@ def test_simulate_endpoint_returns_delta_and_raw_material_impact(mclient, mdb, x
     body.update({"scope": "all", "product_ids": None})
     sim = client.post("/forecasts/simulate", json=body, headers=H).json()
     assert len(sim["products"]) == 20 and "RM-WAX-SOY" not in {x["sku"] for x in sim["products"]}
-
-
-def test_simulate_without_run_is_empty(client, headers) -> None:
-    r = client.post(
-        "/forecasts/simulate",
-        json={"name": "x", "type": "email", "start_date": "2026-01-01", "end_date": "2026-01-02"},
-        headers=headers,
-    )
-    assert r.status_code == 200 and r.json()["run_id"] is None and r.json()["products"] == []
