@@ -1,6 +1,7 @@
 import uuid
+from datetime import datetime
 
-from sqlalchemy import Boolean, Enum, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -67,5 +68,7 @@ class Channel(OrgScoped, TimestampMixin, Base):
     external_shop_id: Mapped[str | None] = mapped_column(String(200))
     credentials_encrypted: Mapped[str | None] = mapped_column(Text)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    webhooks_registered: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     region: Mapped[Region | None] = relationship()

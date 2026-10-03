@@ -7,6 +7,7 @@ from sqlalchemy import (
     DateTime,
     Enum,
     ForeignKey,
+    Index,
     Integer,
     Numeric,
     PrimaryKeyConstraint,
@@ -51,7 +52,10 @@ class SalesDaily(OrgScoped, Base):
     """
 
     __tablename__ = "sales_daily"
-    __table_args__ = (PrimaryKeyConstraint("date", "product_id", "channel_id"),)
+    __table_args__ = (
+        PrimaryKeyConstraint("date", "product_id", "channel_id"),
+        Index("ix_sales_daily_org_product_date", "org_id", "product_id", "date"),
+    )
 
     date: Mapped[date] = mapped_column(Date, nullable=False)
     product_id: Mapped[uuid.UUID] = mapped_column(
