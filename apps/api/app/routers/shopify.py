@@ -12,6 +12,7 @@ from decimal import Decimal
 
 from fastapi import APIRouter, Header, HTTPException, Query, Request, status
 from fastapi.responses import RedirectResponse
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
@@ -27,17 +28,25 @@ from app.ingest.shopify.connector import ShopifyConnector, webhook_order_to_reco
 from app.ingest.tasks import enqueue_sync
 from app.models import Channel, ChannelType, ProcessedWebhook
 
+
+class InstallUrl(BaseModel):
+    url: str
+
+
 router = APIRouter(tags=["shopify"])
 
 
-@router.get("/shopify/install")
-def install(db: DB, org_id: OrgId, shop: str = Query(...)):
+@router.get("/shopify/install", response_model=InstallUrl)
+def install(db: DB, org_id: OrgId, shop: str = Query(...), redirect: bool = False):
+    """Returns {"url"} for the web app to navigate to (auth headers can't ride a redirect);
+    `redirect=true` answers with a 302 instead."""
     assert_can_add_channel(db, org_id)
     if not oauth.valid_shop(shop):
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "shop must be *.myshopify.com")
     if not settings.shopify_api_key:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "SHOPIFY_API_KEY not configured")
-    return RedirectResponse(oauth.install_url(shop, oauth.make_state(str(org_id))), 302)
+    url = oauth.install_url(shop, oauth.make_state(str(org_id)))
+    return RedirectResponse(url, 302) if redirect else {"url": url}
 
 
 @router.get("/shopify/callback")

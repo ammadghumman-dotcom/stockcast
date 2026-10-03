@@ -52,6 +52,15 @@ class OverrideRequest(BaseModel):
     product_id: uuid.UUID
 
 
+class ListingCreate(BaseModel):
+    """Manual listing (custom stores, marketplaces without a connector)."""
+
+    channel_id: uuid.UUID
+    product_id: uuid.UUID
+    external_id: str = Field(min_length=1, max_length=200)
+    external_sku: str | None = Field(default=None, max_length=200)
+
+
 class OverrideResult(BaseModel):
     listing: ListingRead
     moved_sales_rows: int
@@ -93,6 +102,25 @@ def list_listings(
         stmt = stmt.where(ChannelListing.channel_id == channel_id)
     rows = list(db.scalars(stmt.order_by(ChannelListing.external_id).limit(limit)).all())
     return _reads(db, org_id, rows)
+
+
+@router.post("", response_model=ListingRead, status_code=status.HTTP_201_CREATED)
+def create_listing(db: DB, ctx: Ctx, body: ListingCreate):
+    crud.assert_owned(db, Channel, ctx.org_id, body.channel_id)
+    crud.assert_owned(db, Product, ctx.org_id, body.product_id)
+    existing = db.scalar(
+        select(ChannelListing).where(
+            ChannelListing.channel_id == body.channel_id,
+            ChannelListing.external_id == body.external_id,
+        )
+    )
+    if existing is not None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "listing exists; use override to re-point")
+    row = ChannelListing(org_id=ctx.org_id, **body.model_dump())
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return _reads(db, ctx.org_id, [row])[0]
 
 
 @router.post("/match", response_model=list[MatchResult])

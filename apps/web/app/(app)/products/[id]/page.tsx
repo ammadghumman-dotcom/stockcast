@@ -8,6 +8,7 @@ import { useOrgQuery, useRecommendations, useSuppliers } from "@/lib/hooks";
 import { useApi } from "@/lib/org";
 import { fmtDate, fmtNum } from "@/lib/utils";
 import { PageHeader } from "@/components/shell";
+import { ChannelSplit } from "@/components/channel-mix";
 import { ForecastChart, type ChartPoint } from "@/components/charts/forecast-chart";
 import { ActionBadge, HealthBadge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, Tile } from "@/components/ui/card";
@@ -66,8 +67,14 @@ export default function ProductDetail() {
         <TabsContent value="forecast">
           <Card>
             <CardHeader><CardTitle>Sales history and 90-day forecast {forecast.data ? <span className="text-xs font-normal text-muted-foreground">· model {forecast.data.model} · 30d p50 {fmtNum(forecast.data.total_p50_30d)}</span> : null}</CardTitle></CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               {sales.isLoading || forecast.isLoading ? <Skeleton className="h-72" /> : chart.length ? <ForecastChart data={chart} asOf={forecast.data?.as_of} /> : <Empty title="No sales or forecast yet" />}
+              {forecast.data ? (
+                <div>
+                  <h3 className="mb-2 text-sm font-medium">Channel mix <span className="text-xs font-normal text-muted-foreground">· share of the last 90 days, applied to the combined forecast</span></h3>
+                  <ChannelSplit channels={forecast.data.channels ?? []} />
+                </div>
+              ) : null}
             </CardContent>
           </Card>
         </TabsContent>

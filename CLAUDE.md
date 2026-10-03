@@ -32,6 +32,8 @@ apps/api/            FastAPI service
   app/billing/       plans.py (PLANS, effective_plan, assert_can_add_channel/skus -> 402),
                      stripe_service.py (Checkout, Portal, webhook parse + idempotent handle_event)
   app/services/audit.py  audit.record(db, ctx, action=, entity=, before=, after=) -> audit_log
+  app/services/listings.py  SKU mapping: suggest() (rapidfuzz on SKU + name), override() moves the
+                     listing + its channel's sales/stock rows and drops the orphan product
   app/crypto.py      Fernet encrypt/decrypt for channel credentials
   app/models/        SQLAlchemy 2 models (core, catalog, inventory, calendar, enums)
   app/schemas/       Pydantic request/response models
@@ -43,6 +45,14 @@ apps/api/            FastAPI service
     upsert.py        idempotent org-scoped upserts (SET semantics; increment_sales for webhooks)
     csv_connector.py CSV parse with column mapping + row errors; export.py = round-trip CSV
     shopify/         GraphQL client (pagination, throttle retry), connector, oauth + webhook HMAC
+    http.py          TokenBucket + RateLimitedHttp (per-endpoint buckets, 429/5xx retry) for REST APIs
+    amazon/          SP-API: client (LWA refresh, regional hosts, usage-plan buckets, Reports
+                     create/poll/download), connector (listings report + Catalog fill, Orders API
+                     for <14d else all-orders report, FBA inventory summaries)
+    ebay/            Sell APIs: client (user refresh token, marketplace header, offset paging),
+                     connector (Fulfillment getOrders, Inventory getInventoryItems)
+    woocommerce/     REST v3 (consumer key/secret), variations expanded, X-WP-TotalPages paging
+    oauth_state.py   signed {org, channel} state for the Amazon/eBay consent redirects
     tasks.py         Celery: sync_channel (backoff retries), nightly sync_all_channels, enqueue_sync
     registry.py      ChannelType -> connector class
   app/forecast/      forecast engine
@@ -58,6 +68,8 @@ apps/api/            FastAPI service
                      editable category priors, promo lift measurement + ridge model, build_factors
                      (overlapping events -> max per day, never multiplied; promos multiply on top)
     simulate.py      what-if promotion -> unit delta per product + BOM-exploded raw-material impact
+    channels.py      per-channel demand split: share of last 90 days per (product, channel) stored
+                     in forecast_channel_shares per run; load_channel_mix() for the API
     tasks.py         Celery: forecast.run_org, nightly forecast.run_all_orgs (03:30 UTC)
   app/planning/      planning engine
     math.py          project_stock, reorder (s,Q: ROP = L*d + z*sigma*sqrt(L); sigma from the
@@ -74,11 +86,15 @@ apps/api/            FastAPI service
                      /promotions), planning (/planning-settings, /products/{id}/planning,
                      /planning-runs, /recommendations), purchase_orders (/purchase-orders
                      from-recommendations, export.csv|pdf, send, mark-sent, receive),
-                     billing (GET /billing, POST /billing/checkout|portal, POST /webhooks/stripe)
+                     billing (GET /billing, POST /billing/checkout|portal, POST /webhooks/stripe),
+                     connect (GET /amazon|ebay/install -> {url}; /amazon|ebay/callback), listings
+                     (GET/POST /listings, POST /listings/match, POST /listings/{id}/override)
   alembic/           migrations (sales_daily becomes a Timescale hypertable when available)
-  scripts/seed.py    demo org: 20 SKUs, 3 raw materials, 1 BOM, 365 days of sales
+  scripts/seed.py    demo org: 20 SKUs, 3 raw materials, 1 BOM, 365 days of sales split 50/35/15
+                     across Shopify, Amazon and eBay channels
   tests/             pytest against a real Postgres (TEST_DATABASE_URL), tx-rollback per test
-    cassettes/       vcrpy cassettes for Shopify (synthesized by make_cassettes.py; see below)
+    cassettes/       vcrpy cassettes: Shopify (make_cassettes.py), Amazon/eBay/WooCommerce
+                     (make_rest_cassettes.py, replayed with match_on=[method, host, path])
 apps/web/            Next.js 15 app (client components + TanStack Query)
   app/onboarding     create workspace, connect Shopify or upload CSVs (sync progress), run pipeline
   app/(app)/         Shell (sidebar nav, mobile menu): dashboard, products(+[id]: forecast chart
@@ -89,7 +105,9 @@ apps/web/            Next.js 15 app (client components + TanStack Query)
   app/sign-in, sign-up  Clerk pages; middleware.ts protects everything else when Clerk is enabled
   components/ui/     shadcn-style primitives (button, input, table, dialog, tabs, badge, skeleton, empty)
   components/        shell (org/viewer banners), account (Clerk switcher), billing (plans, usage,
-                     checkout/portal), products-table, charts/forecast-chart (Recharts)
+                     checkout/portal), connect-channel (Amazon/eBay OAuth or token, WooCommerce
+                     keys), sku-mapping (match + override), channel-mix (bar + split),
+                     products-table, charts/forecast-chart (Recharts)
   lib/api.ts         typed client factory (openapi-fetch) + unwrap(); clientFor(orgId, getToken)
   lib/auth.ts        clerkEnabled (NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY set?)
   lib/org.tsx        OrgProvider: Clerk mode (Bearer JWT, role from org_role) or header mode
@@ -130,6 +148,8 @@ Covariates: history is DIVIDED by the holiday/promo factor before modelling and 
 
 Ingestion: `POST /imports` (multipart products/sales/inventory/bom CSVs, optional `mapping` JSON and `strict`), `GET /exports/{kind}.csv`. Shopify: `GET /shopify/install?shop=` needs `SHOPIFY_API_KEY/SECRET` and a public `APP_BASE_URL`; the callback stores the token encrypted, registers webhooks and enqueues a 2-year backfill. `POST /channels/{id}/sync` runs on demand.
 
+Connectors (Step 8): `POST /channels` takes `credentials` (encrypted, never returned) for amazon/ebay (`refresh_token`, `marketplace_id`) and woocommerce (`url`, `consumer_key`, `consumer_secret`); Amazon and eBay can instead go through `GET /amazon/install?channel_id=` / `/ebay/install` which return `{url}` for the browser to open (auth headers cannot ride a redirect; `redirect=true` 302s). All install/consent routes are admin-only and plan-limited. Amazon: the marketplace id picks the regional host; `external_id` on listings is the ASIN with the seller SKU in `external_sku`; backfills older than 14 days use one all-orders report instead of per-order calls; rate limits follow the SP-API usage plans via `ingest/http.TokenBucket`. eBay: `external_id` is the seller SKU. SKU mapping: connectors create a product per unknown channel SKU, so the same item on two channels can land twice — `POST /listings/match` ranks catalog products with rapidfuzz and `POST /listings/{id}/override` re-points the listing, merging that channel's sales/stock onto the chosen product and deleting the orphan. Channel mix: each forecast run stores per-channel shares of the last 90 days (`forecast_channel_shares`); `GET /forecasts?product_id` returns `channels[]` (share x p50) and recommendations carry `channel_mix[]`; raw materials have none.
+
 Shopify tests replay vcrpy cassettes in `tests/cassettes/` that were **synthesized** from documented response shapes (no dev store in CI). To re-record for real: delete the yaml, set real credentials, run `pytest --record-mode=once`.
 
 API tests need Postgres: with `make dev` running, `TEST_DATABASE_URL` from `.env.example` works. In header mode call data routes with `X-Org-Id: <org uuid>` (demo org: `00000000-0000-0000-0000-00000000d3a0`), optionally `X-Role: viewer|admin|owner`.
@@ -154,4 +174,4 @@ Requirements: Docker, Node 22 + pnpm 9 (`corepack enable`), Python 3.12 + `uv`.
 
 ## Build plan
 
-Follow the step-by-step plan (Stockcast — Build & Deploy Plan). Each step is a self-contained task that ends in a merged, tested PR. Steps done: **1 — repo and setup**, **2 — core data model and database**, **3 — CSV import + Shopify connector**, **4 — forecast engine**, **4b — holiday seasonality + promotion impact**, **5 — planning engine**, **6 — web dashboard**, **7 — auth, multi-tenancy, billing** (Clerk, slowapi, audit log, Stripe, Resend). Next: **8 — more connectors** (Amazon SP-API, WooCommerce, eBay) on the `BaseConnector` contract with cassette tests and plan-limit checks.
+Follow the step-by-step plan (Stockcast — Build & Deploy Plan). Each step is a self-contained task that ends in a merged, tested PR. Steps done: **1 — repo and setup**, **2 — core data model and database**, **3 — CSV import + Shopify connector**, **4 — forecast engine**, **4b — holiday seasonality + promotion impact**, **5 — planning engine**, **6 — web dashboard**, **7 — auth, multi-tenancy, billing** (Clerk, slowapi, audit log, Stripe, Resend), **8 — connectors** (Amazon SP-API, eBay, WooCommerce, SKU mapping, per-channel forecast split). Next: **9 — production deploy** (Railway api/worker + Vercel web, managed Postgres/Redis, Sentry, uptime, backups, CI deploy on merge).

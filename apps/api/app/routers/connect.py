@@ -20,6 +20,7 @@ from urllib.parse import urlencode
 import httpx
 from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
+from pydantic import BaseModel
 
 from app import crypto
 from app.config import settings
@@ -75,8 +76,16 @@ def _store_and_sync(db, ch: Channel, creds: dict) -> RedirectResponse:
 
 
 # --------------------------------------------------------------------------- Amazon
-@router.get("/amazon/install")
-def amazon_install(db: DB, ctx: Ctx, channel_id: uuid.UUID = Query(...)):
+class UrlResponse(BaseModel):
+    url: str
+
+
+def _go(url: str, redirect: bool):
+    return RedirectResponse(url, 302) if redirect else UrlResponse(url=url)
+
+
+@router.get("/amazon/install", response_model=UrlResponse)
+def amazon_install(db: DB, ctx: Ctx, channel_id: uuid.UUID = Query(...), redirect: bool = False):
     ctx.require("admin")
     ch = _channel(db, ctx, channel_id, ChannelType.amazon)
     if not settings.amazon_app_id or not settings.amazon_lwa_client_id:
@@ -89,7 +98,7 @@ def amazon_install(db: DB, ctx: Ctx, channel_id: uuid.UUID = Query(...)):
         "state": make_state(o=str(ch.org_id), c=str(ch.id)),
         "redirect_uri": f"{settings.app_base_url}/amazon/callback",
     }
-    return RedirectResponse(f"{AMAZON_CONSENT[region]}?{urlencode(params)}", 302)
+    return _go(f"{AMAZON_CONSENT[region]}?{urlencode(params)}", redirect)
 
 
 @router.get("/amazon/callback")
@@ -118,8 +127,8 @@ def amazon_callback(
 
 
 # --------------------------------------------------------------------------- eBay
-@router.get("/ebay/install")
-def ebay_install(db: DB, ctx: Ctx, channel_id: uuid.UUID = Query(...)):
+@router.get("/ebay/install", response_model=UrlResponse)
+def ebay_install(db: DB, ctx: Ctx, channel_id: uuid.UUID = Query(...), redirect: bool = False):
     ctx.require("admin")
     ch = _channel(db, ctx, channel_id, ChannelType.ebay)
     if not settings.ebay_client_id or not settings.ebay_ru_name:
@@ -131,7 +140,7 @@ def ebay_install(db: DB, ctx: Ctx, channel_id: uuid.UUID = Query(...)):
         "scope": " ".join(EBAY_SCOPES),
         "state": make_state(o=str(ch.org_id), c=str(ch.id)),
     }
-    return RedirectResponse(f"{EBAY_CONSENT}?{urlencode(params)}", 302)
+    return _go(f"{EBAY_CONSENT}?{urlencode(params)}", redirect)
 
 
 @router.get("/ebay/callback")

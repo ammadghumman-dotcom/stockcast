@@ -35,7 +35,7 @@ def test_create_channel_with_credentials_is_encrypted_and_hidden(client, db, hea
         "type": "woocommerce",
         "credentials": {
             "url": "https://s.example.com",
-            "consumer_key": "ck",
+            "consumer_key": "ck_live_abc123",
             "consumer_secret": "cs",
         },
     }
@@ -44,8 +44,8 @@ def test_create_channel_with_credentials_is_encrypted_and_hidden(client, db, hea
     assert r.json()["is_connected"] is True and "credentials" not in r.json()
     assert r.json()["external_shop_id"] == "https://s.example.com"
     ch = db.get(Channel, r.json()["id"])
-    assert "ck" not in ch.credentials_encrypted
-    assert json.loads(crypto.decrypt(ch.credentials_encrypted))["consumer_key"] == "ck"
+    assert "ck_live_abc123" not in ch.credentials_encrypted
+    assert json.loads(crypto.decrypt(ch.credentials_encrypted))["consumer_key"] == "ck_live_abc123"
 
 
 def test_missing_credential_keys_rejected(client, headers) -> None:
@@ -83,11 +83,15 @@ def test_amazon_install_redirects_to_seller_central(client, db, headers, monkeyp
         json={"name": "Amz", "type": "amazon", "external_shop_id": "A1F83G8C2ARO7P"},
         headers=headers,
     ).json()
-    r = client.get(
-        f"/amazon/install?channel_id={ch['id']}", headers=headers, follow_redirects=False
+    r = client.get(f"/amazon/install?channel_id={ch['id']}", headers=headers)
+    assert r.status_code == 200, r.text
+    url = urlparse(r.json()["url"])
+    r2 = client.get(
+        f"/amazon/install?channel_id={ch['id']}&redirect=true",
+        headers=headers,
+        follow_redirects=False,
     )
-    assert r.status_code == 302
-    url = urlparse(r.headers["location"])
+    assert r2.status_code == 302
     assert url.netloc == "sellercentral-europe.amazon.com"  # UK marketplace -> EU consent host
     q = parse_qs(url.query)
     assert q["application_id"] == ["amzn1.sp.solution.test"] and "state" in q
@@ -238,6 +242,14 @@ def test_override_sums_into_existing_sales_rows_and_keeps_shared_product(db, org
     row = db.scalar(select(SalesDaily).where(SalesDaily.product_id == b.id))
     assert row.units == 7 and row.revenue == 2
     assert db.get(Product, a.id) is not None
+
+
+def test_create_listing_manually(client, db, org, headers, amazon_channel) -> None:
+    p = _product(db, org.id, "P", "P")
+    body = {"channel_id": str(amazon_channel.id), "product_id": str(p.id), "external_id": "X9"}
+    r = client.post("/listings", json=body, headers=headers)
+    assert r.status_code == 201 and r.json()["product_sku"] == "P"
+    assert client.post("/listings", json=body, headers=headers).status_code == 409
 
 
 def test_listing_override_is_org_scoped(client, db, headers, other_headers, amazon_channel, org):
