@@ -4,7 +4,8 @@ FROM python:3.12-slim AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 UV_COMPILE_BYTECODE=1 \
     HF_HOME=/app/.hf-cache PORT=8000 \
-    UV_CACHE_DIR=/tmp/uv-cache UV_NO_SYNC=1  # runtime `uv run` never writes to the venv
+    UV_CACHE_DIR=/tmp/uv-cache UV_NO_SYNC=1
+# UV_NO_SYNC: runtime `uv run` must never try to write to the venv (non-root user).
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl postgresql-client \
     && rm -rf /var/lib/apt/lists/* \
