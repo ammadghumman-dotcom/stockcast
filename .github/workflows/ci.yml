@@ -38,6 +38,8 @@ jobs:
       - uses: astral-sh/setup-uv@v4
         with:
           enable-cache: true
+          ignore-nothing-to-cache: true
+        continue-on-error: true
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -112,6 +114,8 @@ jobs:
       - uses: astral-sh/setup-uv@v4
         with:
           enable-cache: true
+          ignore-nothing-to-cache: true
+        continue-on-error: true
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
