@@ -9,6 +9,9 @@ jobs:
   api:
     name: API — lint & test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     defaults:
       run:
         working-directory: apps/api
@@ -51,8 +54,15 @@ jobs:
       - name: Tests (prints seed-org backtest WAPE)
         run: |
           set -o pipefail
-          uv run pytest -q -s 2>&1 | tee pytest.log
+          uv run pytest -q -s -rfE --tb=short 2>&1 | tee pytest.log
           { echo "### Forecast backtest"; grep -E "\[backtest\]" pytest.log || echo "(no backtest line)"; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Post failure digest on the PR
+        if: failure() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          { echo "**API tests failed** (run ${{ github.run_id }}). Digest:"; echo; echo '```'; grep -nE "^(FAILED|ERROR) " pytest.log | head -40; echo; tail -n 120 pytest.log; echo '```'; } > digest.md
+          gh pr comment ${{ github.event.pull_request.number }} --body-file digest.md
       - name: Seed runs
         run: uv run alembic upgrade head && uv run python -m scripts.seed
 
