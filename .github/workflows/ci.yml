@@ -5,6 +5,10 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   api:
     name: API — lint & test
@@ -54,14 +58,15 @@ jobs:
       - name: Tests (prints seed-org backtest WAPE)
         run: |
           set -o pipefail
-          uv run pytest -q -s -rfE --tb=short 2>&1 | tee pytest.log
-          { echo "### Forecast backtest"; grep -E "\[backtest" pytest.log || echo "(no backtest line)"; } >> "$GITHUB_STEP_SUMMARY"
-      - name: Post failure digest on the PR
-        if: failure() && github.event_name == 'pull_request'
+          uv run pytest -q -s -rfE --tb=short --durations=15 2>&1 | tee pytest.log
+          { echo "### Forecast backtest"; grep -E "\[backtest" pytest.log || echo "(no backtest line)"; echo; echo "### Slowest tests"; echo '```'; sed -n '/slowest 15 durations/,/^=\{10\}/p' pytest.log | head -20; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Post test digest on the PR
+        if: always() && github.event_name == 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          { echo "**API tests failed** (run ${{ github.run_id }}). Digest:"; echo; echo '```'; grep -nE "^(FAILED|ERROR) " pytest.log | head -40; echo; tail -n 120 pytest.log; echo '```'; } > digest.md
+          status="${{ job.status }}"
+          { echo "**API tests: ${status}** (run ${{ github.run_id }})"; echo; echo '```'; grep -E "\[backtest|passed|failed" pytest.log | tail -5; echo; sed -n '/slowest 15 durations/,/^=\{10\}/p' pytest.log | head -20; if [ "$status" != "success" ]; then echo; grep -nE "^(FAILED|ERROR) " pytest.log | head -40; echo; tail -n 120 pytest.log; fi; echo '```'; } > digest.md
           gh pr comment ${{ github.event.pull_request.number }} --body-file digest.md
       - name: Seed runs
         run: uv run alembic upgrade head && uv run python -m scripts.seed

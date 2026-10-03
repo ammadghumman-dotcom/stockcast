@@ -99,9 +99,7 @@ def chronos_predict_batch(
 
 # --------------------------------------------------------------------------- StatsForecast
 def _sf_predict_many(series: list[np.ndarray], horizon: int, make_model) -> list[Bands]:
-    """Fit one StatsForecast model per series in a single parallel call (n_jobs=-1)."""
-    import os
-
+    """Fit one StatsForecast model per series in a single call (vectorised over unique_id)."""
     import pandas as pd
     from statsforecast import StatsForecast
 
@@ -122,8 +120,10 @@ def _sf_predict_many(series: list[np.ndarray], horizon: int, make_model) -> list
     df = pd.concat(frames, ignore_index=True)
     model = make_model()
     name = getattr(model, "alias", type(model).__name__)
-    n_jobs = -1 if len(series) >= 8 and (os.cpu_count() or 1) > 1 else 1
-    sf = StatsForecast(models=[model], freq="D", n_jobs=n_jobs, fallback_model=_naive())
+    # Single process on purpose: StatsForecast parallelism forks the interpreter, and a forked
+    # torch/OpenMP parent (Chronos loaded) oversubscribes or deadlocks. Scale across SKUs by
+    # sharding orgs across Celery workers instead; numba keeps single-process fast (~50 ms/SKU).
+    sf = StatsForecast(models=[model], freq="D", n_jobs=1, fallback_model=_naive())
     fc = sf.forecast(df=df, h=horizon, level=[80])
     fc = fc.reset_index() if "unique_id" not in fc.columns else fc
     out: list[Bands] = []
