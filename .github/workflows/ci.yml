@@ -94,12 +94,19 @@ jobs:
     name: E2E — Playwright against docker compose
     runs-on: ubuntu-latest
     needs: [api, web]
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
+      - run: cp .env.example .env   # compose files reference it (env_file)
       - uses: docker/setup-buildx-action@v3
       - name: Build production images (layer cache in GHA)
+        id: bake
+        continue-on-error: true   # cache misconfiguration must not block CI; fallback below
         uses: docker/bake-action@v5
         with:
+          source: .
           files: docker-compose.yml,docker-compose.ci.yml
           targets: api,web
           load: true
@@ -108,9 +115,11 @@ jobs:
             api.cache-to=type=gha,scope=api,mode=max
             web.cache-from=type=gha,scope=web
             web.cache-to=type=gha,scope=web,mode=max
+      - name: Build production images (plain compose fallback)
+        if: steps.bake.outcome != 'success'
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml build api web
       - name: Start the stack (migrate + seed happen in the api entrypoint)
         run: |
-          cp .env.example .env
           docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --no-build --wait --wait-timeout 300 postgres redis api web
           curl -fsS localhost:8000/health/ready && curl -fsS -o /dev/null localhost:3000/onboarding
       - uses: pnpm/action-setup@v4
@@ -127,6 +136,13 @@ jobs:
       - name: Logs on failure
         if: failure()
         run: docker compose -f docker-compose.yml -f docker-compose.ci.yml logs --no-color api web > /tmp/compose.log 2>&1 || true
+      - name: Post e2e digest on the PR
+        if: failure() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          { echo "**E2E failed** (run ${{ github.run_id }}, bake: ${{ steps.bake.outcome }})"; echo; echo '```'; docker compose -f docker-compose.yml -f docker-compose.ci.yml ps 2>&1 | head -20; echo; tail -n 80 /tmp/compose.log 2>/dev/null | cut -c1-300; echo '```'; } > e2e-digest.md
+          gh pr comment ${{ github.event.pull_request.number }} --body-file e2e-digest.md || true
       - name: Upload report on failure
         if: failure()
         uses: actions/upload-artifact@v4
