@@ -6,8 +6,10 @@ from sqlalchemy import func, select
 
 from app.deps import DB, OrgId
 from app.forecast.engine import latest_successful_run
+from app.forecast.simulate import DraftPromotion, simulate
 from app.forecast.tasks import enqueue_forecast
 from app.models import Forecast, ForecastAccuracy, ForecastRun, Product
+from app.schemas.calendar import SimulateRequest, SimulateResponse
 from app.schemas.forecast import (
     AccuracyRow,
     AccuracySummary,
@@ -105,4 +107,25 @@ def accuracy(
         median_sku_wape=Decimal(f"{median:.4f}") if median is not None else None,
         by_model=by_model,
         worst=[AccuracyRow.model_validate(r) for r in worst_rows],
+    )
+
+
+@router.post("/forecasts/simulate", response_model=SimulateResponse)
+def simulate_promotion(db: DB, org_id: OrgId, body: SimulateRequest):
+    """What-if: apply a draft promotion to the latest forecast; returns unit delta per product
+    (incl. the post-promo dip) and the raw-material impact via BOM explosion."""
+    from app.models import Channel, ProductCategory
+
+    if body.channel_id:
+        crud.assert_owned(db, Channel, org_id, body.channel_id)
+    if body.category_id:
+        crud.assert_owned(db, ProductCategory, org_id, body.category_id)
+    res = simulate(db, org_id, DraftPromotion(**body.model_dump()))
+    return SimulateResponse(
+        run_id=res.run_id,
+        lift=res.lift,
+        post_dip=res.post_dip,
+        total_delta_units=res.total_delta_units,
+        products=[p.__dict__ for p in res.products],
+        materials=[m.__dict__ for m in res.materials],
     )

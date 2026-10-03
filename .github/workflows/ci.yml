@@ -55,7 +55,7 @@ jobs:
         run: |
           set -o pipefail
           uv run pytest -q -s -rfE --tb=short 2>&1 | tee pytest.log
-          { echo "### Forecast backtest"; grep -E "\[backtest\]" pytest.log || echo "(no backtest line)"; } >> "$GITHUB_STEP_SUMMARY"
+          { echo "### Forecast backtest"; grep -E "\[backtest" pytest.log || echo "(no backtest line)"; } >> "$GITHUB_STEP_SUMMARY"
       - name: Post failure digest on the PR
         if: failure() && github.event_name == 'pull_request'
         env:

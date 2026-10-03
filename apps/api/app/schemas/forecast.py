@@ -20,6 +20,7 @@ class ForecastRunRead(Timestamped):
     skus_croston: int
     skus_fallback: int
     wape: Decimal | None
+    wape_base: Decimal | None
     error: str | None
 
 
@@ -28,6 +29,8 @@ class ForecastPoint(OrmModel):
     p10: Decimal
     p50: Decimal
     p90: Decimal
+    factor: Decimal
+    event: str | None
 
 
 class ProductForecast(BaseModel):

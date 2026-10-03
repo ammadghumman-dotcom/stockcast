@@ -1,5 +1,5 @@
 from app.models.base import Base, OrgScoped, TimestampMixin
-from app.models.calendar import CategoryHolidayUplift, HolidayEvent, Promotion
+from app.models.calendar import CategoryHolidayUplift, HolidayEvent, PromoLiftModel, Promotion
 from app.models.catalog import (
     BomLine,
     ChannelListing,
@@ -42,6 +42,7 @@ __all__ = [
     "ProductCategory",
     "ProductType",
     "ProcessedWebhook",
+    "PromoLiftModel",
     "Promotion",
     "PromotionScope",
     "PromotionType",

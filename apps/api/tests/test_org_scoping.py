@@ -8,6 +8,10 @@ RESOURCES = [
     ("/suppliers", {"name": "Acme Supply", "lead_time_days": 10, "moq": 5}),
     ("/locations", {"name": "Main WH"}),
     ("/channels", {"name": "Uploads", "type": "csv"}),
+    (
+        "/promotions",
+        {"name": "Promo", "type": "email", "start_date": "2026-01-01", "end_date": "2026-01-03"},
+    ),
 ]
 
 

@@ -1,6 +1,6 @@
 [project]
 name = "stockcast-api"
-version = "0.4.0"
+version = "0.5.0"
 description = "Stockcast API — AI demand forecasting and raw-material planning for ecommerce brands"
 requires-python = ">=3.12"
 dependencies = [
@@ -18,6 +18,7 @@ dependencies = [
     "numpy>=1.26",
     "pandas>=2.2",
     "statsforecast>=1.7",
+    "holidays>=0.60",
 ]
 
 [dependency-groups]

@@ -20,14 +20,15 @@ from app.models import (
     Channel,
     ChannelListing,
     ChannelType,
-    HolidayEvent,
-    HolidaySource,
     InventoryLevel,
     Location,
     Organization,
     Product,
     ProductCategory,
     ProductType,
+    Promotion,
+    PromotionScope,
+    PromotionType,
     Region,
     SalesDaily,
     Supplier,
@@ -257,19 +258,28 @@ def seed(db: Session, *, days: int = 365, today: date | None = None, seed_value:
                 )
             )
 
-    # Holiday events for the US region (builtin)
-    for name, start, end in _holidays(today.year):
-        db.add(
-            HolidayEvent(
-                org_id=oid,
-                region_id=regions["US"].id,
-                name=name,
-                start_date=start,
-                end_date=end,
-                recurring=True,
-                source=HolidaySource.builtin,
-            )
-        )
+    # Built-in holiday calendar for every region (covers the whole sales history + next year)
+    from app.forecast.holidays_seed import seed_region_holidays
+
+    first_year = (today - timedelta(days=days)).year
+    for region in regions.values():
+        seed_region_holidays(db, oid, region, list(range(first_year, today.year + 2)))
+
+    # One past promotion (20% off candles for 10 days, ~100 days ago) so promo lift is learnable
+    promo_start = today - timedelta(days=100)
+    promo = Promotion(
+        org_id=oid,
+        name="Candle Sale 20% off",
+        channel_id=shopify.id,
+        type=PromotionType.discount,
+        start_date=promo_start,
+        end_date=promo_start + timedelta(days=9),
+        discount_pct=Decimal("20"),
+        spend_amount=Decimal("0"),
+        scope=PromotionScope.category,
+        category_id=cats["Candles"].id,
+    )
+    db.add(promo)
 
     # 365 days of synthetic sales with weekly seasonality, trend, holidays, and noise
     cat_of = {sku: cat for sku, _, cat, _, _ in FINISHED_SKUS}
@@ -282,6 +292,11 @@ def seed(db: Session, *, days: int = 365, today: date | None = None, seed_value:
         for sku, rate in base_rate.items():
             p = products[sku]
             uplift = _uplift_for(day, cat_of[sku])
+            if cat_of[sku] == "Candles":
+                if promo.start_date <= day <= promo.end_date:
+                    uplift *= 1.6
+                elif promo.end_date < day <= promo.end_date + timedelta(days=7):
+                    uplift *= 0.85
             mu = rate * weekday_factor * trend * uplift
             for channel, share in ((shopify, 0.6), (amazon, 0.4)):
                 lam = mu * share
