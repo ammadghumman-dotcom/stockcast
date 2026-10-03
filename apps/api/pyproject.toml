@@ -1,6 +1,6 @@
 [project]
 name = "stockcast-api"
-version = "0.1.0"
+version = "0.2.0"
 description = "Stockcast API — AI demand forecasting and raw-material planning for ecommerce brands"
 requires-python = ">=3.12"
 dependencies = [
@@ -8,6 +8,10 @@ dependencies = [
     "uvicorn[standard]>=0.30",
     "pydantic>=2.8",
     "pydantic-settings>=2.4",
+    "sqlalchemy>=2.0.36",
+    "psycopg[binary]>=3.2",
+    "alembic>=1.14",
+    "cryptography>=43.0",
 ]
 
 [dependency-groups]

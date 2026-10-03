@@ -5,8 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from app.config import settings
+from app.routers import bom_lines, locations, products, suppliers
 
-app = FastAPI(title=settings.app_name, version="0.1.0")
+app = FastAPI(title=settings.app_name, version="0.2.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -14,6 +15,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(products.router)
+app.include_router(suppliers.router)
+app.include_router(bom_lines.router)
+app.include_router(locations.router)
 
 
 class Health(BaseModel):
