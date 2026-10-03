@@ -1,4 +1,4 @@
-.PHONY: dev down logs install test lint fmt test-api test-web lint-api lint-web migrate migration seed
+.PHONY: dev down logs install test lint fmt test-api test-web lint-api lint-web migrate migration seed worker cassettes
 
 ## Run everything in Docker (api :8000, web :3000, postgres :5432, redis :6379)
 dev:
@@ -30,6 +30,12 @@ migration:  ## make migration m="add foo"
 
 seed:
 	cd apps/api && uv run python -m scripts.seed
+
+worker:  ## run Celery worker + beat locally (needs redis)
+	cd apps/api && uv run celery -A app.worker worker -B -l info
+
+cassettes:  ## regenerate synthesized Shopify VCR cassettes
+	cd apps/api && uv run python -m tests.cassettes.make_cassettes
 
 test-web:
 	pnpm -r --if-present test

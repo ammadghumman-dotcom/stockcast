@@ -42,6 +42,21 @@ services:
       redis:
         condition: service_healthy
 
+  worker:
+    build: ./apps/api
+    command: uv run --no-dev celery -A app.worker worker -B -l info --concurrency=2
+    env_file: .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://stockcast:stockcast@postgres:5432/stockcast}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
+    volumes:
+      - ./apps/api:/app
+    depends_on:
+      api:
+        condition: service_started
+      redis:
+        condition: service_healthy
+
   web:
     build:
       context: .

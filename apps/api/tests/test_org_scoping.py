@@ -7,6 +7,7 @@ RESOURCES = [
     ("/products", {"sku": "SKU-1", "name": "Thing", "type": "finished", "unit_cost": "1.5"}),
     ("/suppliers", {"name": "Acme Supply", "lead_time_days": 10, "moq": 5}),
     ("/locations", {"name": "Main WH"}),
+    ("/channels", {"name": "Uploads", "type": "csv"}),
 ]
 
 

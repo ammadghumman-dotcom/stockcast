@@ -1,0 +1,55 @@
+version: 1
+interactions:
+- request:
+    method: POST
+    uri: https://demo-candle.myshopify.com/admin/api/2025-07/graphql.json
+    body: <graphql>
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"data": {"orders": {"edges": [{"node": {"id": "gid://shopify/Order/5001",
+        "createdAt": "2026-09-01T10:00:00Z", "cancelledAt": null, "test": false, "lineItems":
+        {"edges": [{"node": {"quantity": 2, "variant": {"id": "gid://shopify/ProductVariant/101",
+        "sku": "CND-VAN-200"}, "discountedTotalSet": {"shopMoney": {"amount": "28.00"}}}}]}}},
+        {"node": {"id": "gid://shopify/Order/5002", "createdAt": "2026-09-01T15:30:00Z",
+        "cancelledAt": null, "test": false, "lineItems": {"edges": [{"node": {"quantity":
+        1, "variant": {"id": "gid://shopify/ProductVariant/101", "sku": "CND-VAN-200"},
+        "discountedTotalSet": {"shopMoney": {"amount": "12.60"}}}}, {"node": {"quantity":
+        3, "variant": {"id": "gid://shopify/ProductVariant/201", "sku": ""}, "discountedTotalSet":
+        {"shopMoney": {"amount": "54.00"}}}}]}}}, {"node": {"id": "gid://shopify/Order/5003",
+        "createdAt": "2026-09-02T09:00:00Z", "cancelledAt": null, "test": false, "lineItems":
+        {"edges": [{"node": {"quantity": 1, "variant": {"id": "gid://shopify/ProductVariant/102",
+        "sku": "CND-VAN-400"}, "discountedTotalSet": {"shopMoney": {"amount": "24.00"}}}}]}}},
+        {"node": {"id": "gid://shopify/Order/5004", "createdAt": "2026-09-02T11:00:00Z",
+        "cancelledAt": "2026-09-02T12:00:00Z", "test": false, "lineItems": {"edges":
+        [{"node": {"quantity": 5, "variant": {"id": "gid://shopify/ProductVariant/101",
+        "sku": "CND-VAN-200"}, "discountedTotalSet": {"shopMoney": {"amount": "70.00"}}}}]}}}],
+        "pageInfo": {"hasNextPage": true, "endCursor": "o1"}}}}'
+- request:
+    method: POST
+    uri: https://demo-candle.myshopify.com/admin/api/2025-07/graphql.json
+    body: <graphql>
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"data": {"orders": {"edges": [{"node": {"id": "gid://shopify/Order/5005",
+        "createdAt": "2026-09-03T08:00:00Z", "cancelledAt": null, "test": false, "lineItems":
+        {"edges": [{"node": {"quantity": 2, "variant": {"id": "gid://shopify/ProductVariant/301",
+        "sku": "GFT-DISC"}, "discountedTotalSet": {"shopMoney": {"amount": "44.00"}}}}]}}},
+        {"node": {"id": "gid://shopify/Order/5006", "createdAt": "2026-09-03T09:00:00Z",
+        "cancelledAt": null, "test": true, "lineItems": {"edges": [{"node": {"quantity":
+        1, "variant": {"id": "gid://shopify/ProductVariant/101", "sku": "CND-VAN-200"},
+        "discountedTotalSet": {"shopMoney": {"amount": "14.00"}}}}]}}}], "pageInfo":
+        {"hasNextPage": false, "endCursor": null}}}}'

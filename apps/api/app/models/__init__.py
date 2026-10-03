@@ -18,6 +18,7 @@ from app.models.enums import (
     PromotionType,
 )
 from app.models.inventory import InventoryLevel, PurchaseOrder, PurchaseOrderLine, SalesDaily
+from app.models.sync import ProcessedWebhook, SyncRun
 
 __all__ = [
     "Base",
@@ -36,6 +37,7 @@ __all__ = [
     "Product",
     "ProductCategory",
     "ProductType",
+    "ProcessedWebhook",
     "Promotion",
     "PromotionScope",
     "PromotionType",
@@ -44,6 +46,7 @@ __all__ = [
     "Region",
     "SalesDaily",
     "Supplier",
+    "SyncRun",
     "SupplierProduct",
     "TimestampMixin",
     "User",

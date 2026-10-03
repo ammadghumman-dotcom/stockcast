@@ -1,0 +1,35 @@
+version: 1
+interactions:
+- request:
+    method: POST
+    uri: https://demo-candle.myshopify.com/admin/api/2025-07/graphql.json
+    body: <graphql>
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"errors": [{"message": "Throttled", "extensions": {"code": "THROTTLED"}}]}'
+- request:
+    method: POST
+    uri: https://demo-candle.myshopify.com/admin/api/2025-07/graphql.json
+    body: <graphql>
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"data": {"products": {"edges": [{"node": {"id": "gid://shopify/Product/3",
+        "title": "Discovery Set", "productType": "Gift Sets", "status": "ACTIVE",
+        "variants": {"edges": [{"node": {"id": "gid://shopify/ProductVariant/301",
+        "sku": "GFT-DISC", "title": "Default Title", "price": "22.00", "inventoryItem":
+        {"id": "gid://shopify/InventoryItem/1301", "unitCost": {"amount": "6.80"}}}}]}}}],
+        "pageInfo": {"hasNextPage": false, "endCursor": null}}}}'

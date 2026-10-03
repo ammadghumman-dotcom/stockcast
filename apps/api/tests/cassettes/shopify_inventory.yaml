@@ -1,0 +1,36 @@
+version: 1
+interactions:
+- request:
+    method: POST
+    uri: https://demo-candle.myshopify.com/admin/api/2025-07/graphql.json
+    body: <graphql>
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      string: '{"data": {"inventoryItems": {"edges": [{"node": {"id": "gid://shopify/InventoryItem/1101",
+        "sku": "CND-VAN-200", "variant": {"id": "gid://shopify/ProductVariant/101"},
+        "inventoryLevels": {"edges": [{"node": {"location": {"id": "gid://shopify/Location/1",
+        "name": "Main Warehouse"}, "quantities": [{"name": "available", "quantity":
+        120}, {"name": "incoming", "quantity": 0}]}}, {"node": {"location": {"id":
+        "gid://shopify/Location/2", "name": "FBA US"}, "quantities": [{"name": "available",
+        "quantity": 40}, {"name": "incoming", "quantity": 100}]}}]}}}, {"node": {"id":
+        "gid://shopify/InventoryItem/1102", "sku": "CND-VAN-400", "variant": {"id":
+        "gid://shopify/ProductVariant/102"}, "inventoryLevels": {"edges": [{"node":
+        {"location": {"id": "gid://shopify/Location/1", "name": "Main Warehouse"},
+        "quantities": [{"name": "available", "quantity": 35}, {"name": "incoming",
+        "quantity": 0}]}}]}}}, {"node": {"id": "gid://shopify/InventoryItem/1201",
+        "sku": "", "variant": {"id": "gid://shopify/ProductVariant/201"}, "inventoryLevels":
+        {"edges": [{"node": {"location": {"id": "gid://shopify/Location/1", "name":
+        "Main Warehouse"}, "quantities": [{"name": "available", "quantity": 300},
+        {"name": "incoming", "quantity": 0}]}}]}}}, {"node": {"id": "gid://shopify/InventoryItem/1301",
+        "sku": "GFT-DISC", "variant": {"id": "gid://shopify/ProductVariant/301"},
+        "inventoryLevels": {"edges": [{"node": {"location": {"id": "gid://shopify/Location/1",
+        "name": "Main Warehouse"}, "quantities": [{"name": "available", "quantity":
+        18}, {"name": "incoming", "quantity": 50}]}}]}}}], "pageInfo": {"hasNextPage":
+        false, "endCursor": null}}}}'
