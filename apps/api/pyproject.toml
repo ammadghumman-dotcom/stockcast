@@ -26,6 +26,14 @@ dependencies = [
     "limits[redis]>=3.13",
     "stripe>=11.0",
     "rapidfuzz>=3.14.6",
+    "sentry-sdk[celery,fastapi,httpx,sqlalchemy]>=2.71.0",
+    "python-json-logger>=4.2.0",
+    "opentelemetry-sdk>=1.45.0",
+    "opentelemetry-exporter-otlp-proto-http>=1.45.0",
+    "opentelemetry-instrumentation-fastapi>=0.66b0",
+    "opentelemetry-instrumentation-sqlalchemy>=0.66b0",
+    "opentelemetry-instrumentation-celery>=0.66b0",
+    "opentelemetry-instrumentation-httpx>=0.66b0",
 ]
 
 [dependency-groups]
