@@ -2,9 +2,10 @@
 #   docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build --wait
 services:
   api:
+    image: stockcast-api:ci
     build: { context: ./apps/api, target: prod }
     command: sh -c "uv run --no-dev alembic upgrade head && uv run --no-dev python -m scripts.seed && uv run --no-dev uvicorn app.main:app --host 0.0.0.0 --port 8000"
-    volumes: []
+    volumes: !reset []
     environment:
       ENV: ci
       DATABASE_URL: postgresql+psycopg://stockcast:stockcast@postgres:5432/stockcast
@@ -19,15 +20,18 @@ services:
       retries: 40
       start_period: 20s
   worker:
+    image: stockcast-api:ci
     profiles: ["never"]   # eager mode in CI: no separate worker
+    volumes: !reset []
   web:
+    image: stockcast-web:ci
     build:
       context: .
       dockerfile: apps/web/Dockerfile
       target: prod
       args: { NEXT_PUBLIC_API_URL: http://localhost:8000 }
     command: node apps/web/server.js
-    volumes: []
+    volumes: !reset []
     environment:
       API_URL: http://api:8000
       NEXT_PUBLIC_API_URL: http://localhost:8000

@@ -127,7 +127,10 @@ jobs:
           docker compose -f docker-compose.yml -f docker-compose.ci.yml build --progress=plain api web 2>&1 | tee /tmp/build.log
       - name: Start the stack (migrate + seed happen in the api entrypoint)
         run: |
-          docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --no-build --wait --wait-timeout 300 postgres redis api web
+          set -o pipefail
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml config --quiet
+          docker image ls | grep stockcast || true
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --no-build --wait --wait-timeout 300 postgres redis api web 2>&1 | tee /tmp/up.log
           curl -fsS localhost:8000/health/ready && curl -fsS -o /dev/null localhost:3000/onboarding
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
@@ -142,13 +145,13 @@ jobs:
         run: pnpm --filter @stockcast/web exec playwright test
       - name: Logs on failure
         if: failure()
-        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml logs --no-color api web > /tmp/compose.log 2>&1 || true
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml logs --no-color api web 2>&1 | tail -n 300 > /tmp/compose.log || true
       - name: Post e2e digest on the PR
         if: failure() && github.event_name == 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          { echo "**E2E failed** (run ${{ github.run_id }}, bake: ${{ steps.bake.outcome }})"; echo; echo '```'; grep -nE "ERROR|error:|Error|failed" /tmp/build.log 2>/dev/null | tail -n 25 | cut -c1-300; echo "--- build tail ---"; tail -n 60 /tmp/build.log 2>/dev/null | cut -c1-300; echo "--- compose ps ---"; docker compose -f docker-compose.yml -f docker-compose.ci.yml ps 2>&1 | head -20; echo "--- compose logs ---"; tail -n 80 /tmp/compose.log 2>/dev/null | cut -c1-300; echo '```'; } > e2e-digest.md
+          { echo "**E2E failed** (run ${{ github.run_id }}, bake: ${{ steps.bake.outcome }})"; echo; echo '```'; grep -nE "ERROR|error:|Error|failed" /tmp/build.log 2>/dev/null | tail -n 25 | cut -c1-300; echo "--- build tail ---"; tail -n 60 /tmp/build.log 2>/dev/null | cut -c1-300; echo "--- compose up ---"; tail -n 40 /tmp/up.log 2>/dev/null | cut -c1-300; echo "--- compose ps ---"; docker compose -f docker-compose.yml -f docker-compose.ci.yml ps 2>&1 | head -20; echo "--- compose logs ---"; tail -n 80 /tmp/compose.log 2>/dev/null | cut -c1-300; echo '```'; } > e2e-digest.md
           gh pr comment ${{ github.event.pull_request.number }} --body-file e2e-digest.md || true
       - name: Upload report on failure
         if: failure()
