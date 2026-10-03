@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     clerk_secret_key: str = ""  # used to fetch org/user names on first sight (optional)
 
     # Rate limiting (slowapi); memory:// in tests
+    rate_limit_enabled: bool = True
     rate_limit_storage: str = "redis://localhost:6379/2"
     rate_limit_default: str = "600/minute"
     rate_limit_heavy: str = "30/minute"

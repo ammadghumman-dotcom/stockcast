@@ -2,6 +2,7 @@ import uuid
 
 from fastapi import APIRouter, Query, status
 
+from app.billing.plans import assert_can_add_skus
 from app.deps import DB, OrgId
 from app.models import Product, ProductCategory
 from app.schemas.catalog import ProductCreate, ProductRead, ProductUpdate
@@ -26,6 +27,7 @@ def get_product(db: DB, org_id: OrgId, product_id: uuid.UUID) -> Product:
 def create_product(db: DB, org_id: OrgId, body: ProductCreate) -> Product:
     if body.category_id:
         crud.assert_owned(db, ProductCategory, org_id, body.category_id)
+    assert_can_add_skus(db, org_id, 1)
     return crud.create_scoped(db, Product, org_id, body)
 
 

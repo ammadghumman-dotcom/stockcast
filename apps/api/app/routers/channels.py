@@ -2,6 +2,7 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, Query, status
 
+from app.billing.plans import assert_can_add_channel
 from app.deps import DB, OrgId
 from app.ingest.tasks import enqueue_sync
 from app.models import Channel, ChannelType, Region, SyncRun
@@ -36,6 +37,7 @@ def create_channel(db: DB, org_id: OrgId, body: ChannelCreate):
             status.HTTP_422_UNPROCESSABLE_CONTENT,
             "Shopify channels are created by the install flow: GET /shopify/install?shop=...",
         )
+    assert_can_add_channel(db, org_id)
     return _read(crud.create_scoped(db, Channel, org_id, body))
 
 

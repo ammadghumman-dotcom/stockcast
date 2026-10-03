@@ -1,7 +1,7 @@
 import uuid
 from decimal import Decimal
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, Request, status
 from sqlalchemy import func, select
 
 from app.deps import DB, OrgId
@@ -9,6 +9,7 @@ from app.forecast.engine import latest_successful_run
 from app.forecast.simulate import DraftPromotion, simulate
 from app.forecast.tasks import enqueue_forecast
 from app.models import Forecast, ForecastAccuracy, ForecastRun, Product
+from app.ratelimit import heavy
 from app.schemas.calendar import SimulateRequest, SimulateResponse
 from app.schemas.forecast import (
     AccuracyRow,
@@ -23,7 +24,10 @@ router = APIRouter(tags=["forecasts"])
 
 
 @router.post("/forecast-runs", response_model=ForecastRunRead, status_code=202)
-def trigger_forecast(db: DB, org_id: OrgId, horizon: int = Query(90, ge=7, le=365)):
+@heavy
+def trigger_forecast(
+    request: Request, db: DB, org_id: OrgId, horizon: int = Query(90, ge=7, le=365)
+):
     return enqueue_forecast(db, org_id, trigger="manual", horizon=horizon)
 
 
@@ -111,7 +115,8 @@ def accuracy(
 
 
 @router.post("/forecasts/simulate", response_model=SimulateResponse)
-def simulate_promotion(db: DB, org_id: OrgId, body: SimulateRequest):
+@heavy
+def simulate_promotion(request: Request, db: DB, org_id: OrgId, body: SimulateRequest):
     """What-if: apply a draft promotion to the latest forecast; returns unit delta per product
     (incl. the post-promo dip) and the raw-material impact via BOM explosion."""
     from app.models import Channel, ProductCategory

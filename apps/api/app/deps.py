@@ -91,10 +91,13 @@ def _clerk_fetch(path: str) -> dict | None:
         return None
 
 
-def provision_org(db: Session, clerk_org_id: str, name: str | None = None) -> Organization:
+def provision_org(
+    db: Session, clerk_org_id: str, name: str | None = None
+) -> tuple[Organization, bool]:
+    """Return (org, created). Creates org + default region/settings on first sight."""
     org = db.scalar(select(Organization).where(Organization.clerk_org_id == clerk_org_id))
     if org:
-        return org
+        return org, False
     info = _clerk_fetch(f"/organizations/{clerk_org_id}")
     name = name or (info or {}).get("name") or f"Workspace {clerk_org_id[-6:]}"
     slug_base = (info or {}).get("slug") or clerk_org_id[-12:].lower()
@@ -120,7 +123,7 @@ def provision_org(db: Session, clerk_org_id: str, name: str | None = None) -> Or
 
     seed_region_holidays(db, org.id, region)
     db.commit()
-    return org
+    return org, True
 
 
 def provision_user(db: Session, org: Organization, claims: dict, role: str) -> User:
@@ -167,8 +170,12 @@ def get_auth(
         if not clerk_org:
             raise HTTPException(status.HTTP_403_FORBIDDEN, "select an organization first")
         role = CLERK_ROLE_MAP.get(claims.get("org_role", ""), "viewer")
-        org = provision_org(db, clerk_org)
+        org, created = provision_org(db, clerk_org)
         user = provision_user(db, org, claims, role)
+        if created:
+            from app import emails
+
+            emails.send_welcome(db, org, user.email)
         ctx = AuthContext(org.id, user.id, user.role, user.email, "clerk")
     else:
         if settings.auth_mode != "header":

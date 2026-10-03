@@ -3,9 +3,14 @@ from datetime import UTC, datetime
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import settings
+from app.ratelimit import limiter
 from app.routers import (
+    billing,
     bom_lines,
     calendar,
     catalog_extras,
@@ -21,7 +26,10 @@ from app.routers import (
     suppliers,
 )
 
-app = FastAPI(title=settings.app_name, version="0.6.0")
+app = FastAPI(title=settings.app_name, version="0.7.0")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -43,6 +51,7 @@ app.include_router(forecasts.router)
 app.include_router(calendar.router)
 app.include_router(planning.router)
 app.include_router(purchase_orders.router)
+app.include_router(billing.router)
 
 
 class Health(BaseModel):

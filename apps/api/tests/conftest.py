@@ -22,6 +22,12 @@ TEST_DB_URL = os.environ.get(
 )
 os.environ["DATABASE_URL"] = TEST_DB_URL  # must be set before app.config is imported
 os.environ.setdefault("CELERY_TASK_ALWAYS_EAGER", "true")
+os.environ.setdefault("RATE_LIMIT_STORAGE", "memory://")
+os.environ.setdefault("AUTH_MODE", "header")
+os.environ.setdefault("STRIPE_WEBHOOK_SECRET", "whsec_test")
+os.environ.setdefault("STRIPE_PRICE_STARTER", "price_starter")
+os.environ.setdefault("STRIPE_PRICE_GROWTH", "price_growth")
+os.environ.setdefault("STRIPE_PRICE_SCALE", "price_scale")
 os.environ.setdefault("SHOPIFY_API_KEY", "test-key")
 os.environ.setdefault("SHOPIFY_API_SECRET", "test-secret")
 os.environ.setdefault("SHOPIFY_API_VERSION", "2025-07")
