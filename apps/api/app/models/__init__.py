@@ -19,6 +19,7 @@ from app.models.enums import (
 )
 from app.models.forecast import Forecast, ForecastAccuracy, ForecastRun
 from app.models.inventory import InventoryLevel, PurchaseOrder, PurchaseOrderLine, SalesDaily
+from app.models.planning import PlanningRun, PlanningSettings, Recommendation
 from app.models.sync import ProcessedWebhook, SyncRun
 
 __all__ = [
@@ -38,6 +39,8 @@ __all__ = [
     "OrgScoped",
     "Organization",
     "POStatus",
+    "PlanningRun",
+    "PlanningSettings",
     "Product",
     "ProductCategory",
     "ProductType",
@@ -48,6 +51,7 @@ __all__ = [
     "PromotionType",
     "PurchaseOrder",
     "PurchaseOrderLine",
+    "Recommendation",
     "Region",
     "SalesDaily",
     "Supplier",

@@ -41,6 +41,13 @@ class Product(OrgScoped, TimestampMixin, Base):
         UUID(as_uuid=True), ForeignKey("product_categories.id", ondelete="SET NULL")
     )
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    # planning overrides (None = org default from planning_settings)
+    service_level: Mapped[Decimal | None] = mapped_column(Numeric(4, 3))
+    target_cover_days: Mapped[int | None] = mapped_column(Integer)
+    lead_time_days: Mapped[int | None] = mapped_column(Integer)  # production or purchase lead
+    preferred_supplier_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("suppliers.id", ondelete="SET NULL", use_alter=True)
+    )
 
     category: Mapped[ProductCategory | None] = relationship()
     bom_lines: Mapped[list["BomLine"]] = relationship(

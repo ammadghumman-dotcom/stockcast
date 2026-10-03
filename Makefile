@@ -1,4 +1,4 @@
-.PHONY: dev down logs install test lint fmt test-api test-web lint-api lint-web migrate migration seed worker cassettes forecast install-chronos
+.PHONY: dev down logs install test lint fmt test-api test-web lint-api lint-web migrate migration seed worker cassettes forecast plan install-chronos
 
 ## Run everything in Docker (api :8000, web :3000, postgres :5432, redis :6379)
 dev:
@@ -36,6 +36,9 @@ worker:  ## run Celery worker + beat locally (needs redis)
 
 forecast:  ## run a forecast for the demo org (needs seed)
 	cd apps/api && uv run python -m scripts.forecast_demo
+
+plan:  ## run planning for the demo org (needs forecast) and print recommendations
+	cd apps/api && uv run python -m scripts.plan_demo
 
 install-chronos:  ## optional: CPU torch + chronos for the zero-shot model
 	cd apps/api && uv pip install -r requirements-chronos.txt --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple

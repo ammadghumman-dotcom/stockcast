@@ -87,6 +87,9 @@ class PurchaseOrder(OrgScoped, TimestampMixin, Base):
     )
     expected_date: Mapped[date | None] = mapped_column(Date)
     notes: Mapped[str | None] = mapped_column(Text)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    received_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    currency: Mapped[str] = mapped_column(String(3), default="USD", nullable=False)
 
     lines: Mapped[list["PurchaseOrderLine"]] = relationship(
         back_populates="purchase_order", cascade="all, delete-orphan"
