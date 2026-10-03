@@ -17,6 +17,9 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
+      - name: Free runner disk
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+      - run: cp .env.example .env
       - uses: docker/setup-buildx-action@v3
       - uses: docker/bake-action@v5
         with:
@@ -27,7 +30,6 @@ jobs:
             api.cache-from=type=gha,scope=api
       - name: Start API stack
         run: |
-          cp .env.example .env
           docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --no-build --wait --wait-timeout 300 postgres redis api
       - name: Seed load orgs
         run: |

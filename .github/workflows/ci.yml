@@ -99,6 +99,11 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@v4
+      - name: Free runner disk (the api image carries torch; the default runner is ~14 GB free)
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          sudo docker image prune -af >/dev/null 2>&1 || true
+          df -h / | tail -1
       - run: cp .env.example .env   # compose files reference it (env_file)
       - uses: docker/setup-buildx-action@v3
       - name: Build production images (layer cache in GHA)
@@ -112,9 +117,9 @@ jobs:
           load: true
           set: |
             api.cache-from=type=gha,scope=api
-            api.cache-to=type=gha,scope=api,mode=max
+            api.cache-to=type=gha,scope=api,mode=min
             web.cache-from=type=gha,scope=web
-            web.cache-to=type=gha,scope=web,mode=max
+            web.cache-to=type=gha,scope=web,mode=min
       - name: Build production images (plain compose fallback)
         if: steps.bake.outcome != 'success'
         run: |

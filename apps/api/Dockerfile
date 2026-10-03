@@ -7,17 +7,20 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 UV_SYSTEM_PYTHON=1 UV_COMPILE_B
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl postgresql-client \
     && rm -rf /var/lib/apt/lists/* \
-    && pip install --no-cache-dir uv
+    && pip install --no-cache-dir uv \
+    && useradd -r -u 1000 app
 
 WORKDIR /app
 COPY pyproject.toml uv.lock* requirements-chronos.txt ./
 RUN uv sync --frozen --no-dev --no-install-project || uv sync --no-dev --no-install-project
-# Chronos-Bolt (CPU-only torch, ~250 MB). Model weights download on first use to HF_HOME.
-RUN uv pip install -r requirements-chronos.txt \
-      --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple
+# Chronos-Bolt (CPU-only torch, ~250 MB) into the project venv. Weights download to HF_HOME.
+RUN uv pip install --python .venv/bin/python -r requirements-chronos.txt \
+      --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple \
+    && find /app/.venv -name "*.pyc" -delete
 
-COPY . .
-RUN chmod +x scripts/*.sh && useradd -r -u 1000 app && mkdir -p /app/.hf-cache && chown -R app /app
+# No recursive chown (it would duplicate the venv layer); only the cache dir needs writes.
+COPY --chown=app:app . .
+RUN chmod +x scripts/*.sh && mkdir -p /app/.hf-cache && chown app:app /app/.hf-cache
 USER app
 
 EXPOSE 8000
