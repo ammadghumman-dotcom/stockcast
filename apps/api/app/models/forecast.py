@@ -37,6 +37,7 @@ class ForecastRun(OrgScoped, TimestampMixin, Base):
     skus_croston: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     skus_fallback: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     wape: Mapped[Decimal | None] = mapped_column(Numeric(8, 4))  # org-level backtest WAPE
+    wape_base: Mapped[Decimal | None] = mapped_column(Numeric(8, 4))  # same, without covariates
     error: Mapped[str | None] = mapped_column(Text)
 
 
@@ -60,6 +61,10 @@ class Forecast(OrgScoped, Base):
     p50: Mapped[Decimal] = mapped_column(Numeric(14, 4), nullable=False)
     p90: Mapped[Decimal] = mapped_column(Numeric(14, 4), nullable=False)
     model: Mapped[str] = mapped_column(String(30), nullable=False)
+    # covariate multiplier applied to the base forecast on this date (1.0 = none)
+    factor: Mapped[Decimal] = mapped_column(Numeric(8, 4), default=1, nullable=False)
+    # dominant event driving the factor, for explanations ("Black Friday US")
+    event: Mapped[str | None] = mapped_column(String(120))
 
 
 class ForecastAccuracy(OrgScoped, Base):

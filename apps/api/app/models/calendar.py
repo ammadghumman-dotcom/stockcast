@@ -14,6 +14,9 @@ class HolidayEvent(OrgScoped, TimestampMixin, Base):
     """A demand-shifting event in a region (Christmas, Eid, Black Friday ...), with lead-in."""
 
     __tablename__ = "holiday_events"
+    __table_args__ = (
+        UniqueConstraint("region_id", "name", "start_date", name="uq_holiday_events_occurrence"),
+    )
 
     id: Mapped[uuid.UUID] = uuid_pk()
     region_id: Mapped[uuid.UUID] = mapped_column(
@@ -26,22 +29,32 @@ class HolidayEvent(OrgScoped, TimestampMixin, Base):
     source: Mapped[HolidaySource] = mapped_column(
         Enum(HolidaySource, name="holiday_source"), default=HolidaySource.custom, nullable=False
     )
+    kind: Mapped[str] = mapped_column(String(20), default="retail", nullable=False)
 
 
 class CategoryHolidayUplift(OrgScoped, TimestampMixin, Base):
-    """Demand multiplier for a category during a holiday. `learned` = fitted from history."""
+    """Demand multiplier for a category during a recurring event (by name, per region).
+
+    `learned` = fitted from history (sample_size occurrences); otherwise an editable prior.
+    """
 
     __tablename__ = "category_holiday_uplift"
     __table_args__ = (
-        UniqueConstraint("category_id", "holiday_event_id", name="uq_cat_holiday_uplift_pair"),
+        UniqueConstraint(
+            "category_id", "region_id", "event_name", name="uq_cat_holiday_uplift_key"
+        ),
     )
 
     id: Mapped[uuid.UUID] = uuid_pk()
     category_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("product_categories.id", ondelete="CASCADE"), nullable=False
     )
-    holiday_event_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("holiday_events.id", ondelete="CASCADE"), nullable=False
+    region_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("regions.id", ondelete="CASCADE"), nullable=False
+    )
+    event_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    holiday_event_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("holiday_events.id", ondelete="SET NULL")
     )
     uplift_pct: Mapped[Decimal] = mapped_column(Numeric(8, 2), nullable=False)  # +150.00 = 2.5x
     learned: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
@@ -71,3 +84,24 @@ class Promotion(OrgScoped, TimestampMixin, Base):
     )
     # SKU list when scope == skus (JSON array of product ids)
     product_ids: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+    # measured after the promotion ends (learned from history)
+    observed_lift: Mapped[Decimal | None] = mapped_column(Numeric(8, 4))
+    observed_post_dip: Mapped[Decimal | None] = mapped_column(Numeric(8, 4))
+    baseline_units: Mapped[Decimal | None] = mapped_column(Numeric(14, 4))
+
+
+class PromoLiftModel(OrgScoped, TimestampMixin, Base):
+    """Ridge coefficients for log(lift) ~ discount_pct + log1p(spend) + type + channel + category.
+
+    One row per org (refit each forecast run that has >= 3 observed promotions); the engine
+    falls back to GLOBAL_COEF when an org has none.
+    """
+
+    __tablename__ = "promo_lift_models"
+    __table_args__ = (UniqueConstraint("org_id", name="uq_promo_lift_models_org"),)
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    coef: Mapped[dict] = mapped_column(JSON, nullable=False)
+    n_samples: Mapped[int] = mapped_column(nullable=False)
+    post_dip: Mapped[Decimal] = mapped_column(Numeric(8, 4), nullable=False)
+    r2: Mapped[Decimal | None] = mapped_column(Numeric(8, 4))

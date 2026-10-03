@@ -40,11 +40,20 @@ apps/api/            FastAPI service
     models.py        ChronosModel (batched, CPU), StatsModel (AutoETS), CrostonModel, FallbackModel
     router.py        per-SKU routing (>=60d & non-intermittent -> chronos vs autoets backtest;
                      >50% zeros -> croston; <60d -> fallback w/ category prior), 28-day holdout
-    engine.py        run_forecast: load -> forecast_batch -> persist forecasts + forecast_accuracy
+    engine.py        run_forecast: load -> covariates -> forecast_batch on de-seasonalised history ->
+                     re-apply factors -> persist forecasts (factor, event) + forecast_accuracy; wape_base
+    calendar.py      built-in events per region (retail windows + `holidays` pkg: Eid, Diwali, national)
+    holidays_seed.py idempotent seeding of holiday_events for a region
+    covariates.py    uplift learning (actual / counterfactual, leak-free before holdout, shrinkage),
+                     editable category priors, promo lift measurement + ridge model, build_factors
+                     (overlapping events -> max per day, never multiplied; promos multiply on top)
+    simulate.py      what-if promotion -> unit delta per product + BOM-exploded raw-material impact
     tasks.py         Celery: forecast.run_org, nightly forecast.run_all_orgs (03:30 UTC)
   app/worker.py      Celery app + beat schedule (sync 02:00, forecast 03:30 UTC)
   app/routers/       + channels (CRUD, /sync, /sync-runs), imports (/imports, /exports), shopify,
-                     forecasts (/forecast-runs, /forecasts?product_id, /forecast-accuracy)
+                     forecasts (/forecast-runs, /forecasts?product_id, /forecast-accuracy,
+                     POST /forecasts/simulate), calendar (/regions, /holiday-events, /category-uplifts,
+                     /promotions)
   alembic/           migrations (sales_daily becomes a Timescale hypertable when available)
   scripts/seed.py    demo org: 20 SKUs, 3 raw materials, 1 BOM, 365 days of sales
   tests/             pytest against a real Postgres (TEST_DATABASE_URL), tx-rollback per test
@@ -78,6 +87,8 @@ make install-chronos  # optional locally; Docker + CI always install it
 
 Forecasting: Chronos-Bolt is **optional at import time** (`requirements-chronos.txt`, CPU torch from the PyTorch index — not in `pyproject` because `uv lock` cannot reach that index everywhere). `chronos_available()` gates it; without it the chronos route uses AutoETS only and `tests/test_chronos_live.py` skips. Docker and CI install it. Backtest = last 28 observed days; the seed-org WAPE is printed as `[backtest] ...` in the test log and the CI job summary.
 
+Covariates: history is DIVIDED by the holiday/promo factor before modelling and the base forecast MULTIPLIED back, so `forecasts.factor` + `forecasts.event` explain every uplift ("Christmas", "promo: Spring Sale"). Uplifts are learned per (category, region, event name) only from data before the backtest holdout; `tests/test_covariates_db.py` asserts adjusted WAPE beats `wape_base` by >= 15 % on a Christmas holdout and prints `[backtest-covariates] ...`. Priors live in `CATEGORY_PRIORS` (keyword match on category name) and are editable via `PATCH /category-uplifts/{id}` (editing a learned row makes it manual). Bands widen 1.5x where a factor rests on a prior.
+
 Ingestion: `POST /imports` (multipart products/sales/inventory/bom CSVs, optional `mapping` JSON and `strict`), `GET /exports/{kind}.csv`. Shopify: `GET /shopify/install?shop=` needs `SHOPIFY_API_KEY/SECRET` and a public `APP_BASE_URL`; the callback stores the token encrypted, registers webhooks and enqueues a 2-year backfill. `POST /channels/{id}/sync` runs on demand.
 
 Shopify tests replay vcrpy cassettes in `tests/cassettes/` that were **synthesized** from documented response shapes (no dev store in CI). To re-record for real: delete the yaml, set real credentials, run `pytest --record-mode=once`.
@@ -100,4 +111,4 @@ Requirements: Docker, Node 22 + pnpm 9 (`corepack enable`), Python 3.12 + `uv`.
 
 ## Build plan
 
-Follow the step-by-step plan (Stockcast — Build & Deploy Plan). Each step is a self-contained task that ends in a merged, tested PR. Steps done: **1 — repo and setup**, **2 — core data model and database**, **3 — CSV import + Shopify connector**, **4 — forecast engine**. Next: **4b — regional holiday seasonality and promotion impact**.
+Follow the step-by-step plan (Stockcast — Build & Deploy Plan). Each step is a self-contained task that ends in a merged, tested PR. Steps done: **1 — repo and setup**, **2 — core data model and database**, **3 — CSV import + Shopify connector**, **4 — forecast engine**, **4b — holiday seasonality + promotion impact**. Next: **5 — planning engine (reorder, PO, BOM explosion)**. Step 5 should read `forecasts.factor`/`event` to phrase recommendation reasons (e.g. 'reorder 1,200 by Oct 15 for Black Friday US, +140%').

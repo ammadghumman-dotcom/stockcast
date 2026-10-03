@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from app.config import settings
 from app.routers import (
     bom_lines,
+    calendar,
     channels,
     forecasts,
     imports,
@@ -16,7 +17,7 @@ from app.routers import (
     suppliers,
 )
 
-app = FastAPI(title=settings.app_name, version="0.4.0")
+app = FastAPI(title=settings.app_name, version="0.5.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -33,6 +34,7 @@ app.include_router(channels.router)
 app.include_router(imports.router)
 app.include_router(shopify.router)
 app.include_router(forecasts.router)
+app.include_router(calendar.router)
 
 
 class Health(BaseModel):
