@@ -18,9 +18,18 @@ Stockcast is an AI demand-forecasting and raw-material planning SaaS for ecommer
 
 ```
 apps/api/            FastAPI service
-  app/main.py        app factory + routes (only /health for now)
+  app/main.py        app factory; includes routers
   app/config.py      pydantic-settings; all config via env vars
-  tests/             pytest
+  app/db.py          engine + get_db session dependency
+  app/deps.py        OrgId dependency (X-Org-Id header until Clerk in Step 7)
+  app/crypto.py      Fernet encrypt/decrypt for channel credentials
+  app/models/        SQLAlchemy 2 models (core, catalog, inventory, calendar, enums)
+  app/schemas/       Pydantic request/response models
+  app/routers/       products, suppliers, bom_lines, locations (list/get/create/patch)
+  app/services/      business logic; crud.py = generic org-scoped CRUD
+  alembic/           migrations (sales_daily becomes a Timescale hypertable when available)
+  scripts/seed.py    demo org: 20 SKUs, 3 raw materials, 1 BOM, 365 days of sales
+  tests/             pytest against a real Postgres (TEST_DATABASE_URL), tx-rollback per test
 apps/web/            Next.js app
   app/               routes (app router)
   components/ui/     shadcn-style primitives
@@ -40,7 +49,12 @@ make install    # local toolchains: uv sync + pnpm install
 make test       # pytest + vitest
 make lint       # ruff + eslint + tsc
 make fmt        # auto-format python
+make migrate    # alembic upgrade head
+make migration m="add foo"   # autogenerate a migration
+make seed       # load the demo org (idempotent)
 ```
+
+API tests need Postgres: with `make dev` running, `TEST_DATABASE_URL` from `.env.example` works. Call data routes with header `X-Org-Id: <org uuid>` (demo org: `00000000-0000-0000-0000-00000000d3a0`).
 
 Requirements: Docker, Node 22 + pnpm 9 (`corepack enable`), Python 3.12 + `uv`.
 
@@ -49,7 +63,8 @@ Requirements: Docker, Node 22 + pnpm 9 (`corepack enable`), Python 3.12 + `uv`.
 - **Never push to `main`.** Branch, open a PR, CI must be green.
 - **Tests before done.** Every route, task and planning function gets a pytest; every UI component with logic gets a vitest. Keep `make test` green.
 - **No secrets in the repo.** Everything via env vars; document new ones in `.env.example`.
-- **Every query is org-scoped.** From Step 2 on, all DB access filters by `org_id`; add a test proving isolation when touching data access.
+- **Every query is org-scoped.** Routes take `org_id: OrgId` and go through `app/services/crud.py` (or filter `org_id` explicitly). Cross-org references (category, product in a BOM) are checked with `crud.assert_owned`. Add a case to `tests/test_org_scoping.py` for every new resource.
+- **Schema changes = migration.** Edit models, run `make migration m="..."`, review the file (enums need explicit `DROP TYPE` in downgrade), and keep `upgrade head → downgrade base → upgrade head` clean. CI runs that.
 - **Python:** ruff (line length 100), type hints everywhere, Pydantic models for all request/response bodies, no business logic in route handlers (put it in `app/services/`).
 - **TypeScript:** strict mode, no `any`, server components by default, client components only when they need state or browser APIs.
 - **Idempotent jobs.** Celery tasks must be safe to retry.
@@ -57,4 +72,4 @@ Requirements: Docker, Node 22 + pnpm 9 (`corepack enable`), Python 3.12 + `uv`.
 
 ## Build plan
 
-Follow the step-by-step plan (Stockcast — Build & Deploy Plan). Each step is a self-contained task that ends in a merged, tested PR. Current step: **1 — repo and setup (done)**. Next: **2 — core data model and database**.
+Follow the step-by-step plan (Stockcast — Build & Deploy Plan). Each step is a self-contained task that ends in a merged, tested PR. Steps done: **1 — repo and setup**, **2 — core data model and database**. Next: **3 — CSV import + Shopify connector**.
