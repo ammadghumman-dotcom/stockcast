@@ -14,10 +14,24 @@ config.set_main_option("sqlalchemy.url", settings.database_url)
 target_metadata = Base.metadata
 
 
+def include_object(obj, name, type_, reflected, compare_to):
+    """Ignore objects TimescaleDB manages itself so `alembic check` is clean on hypertables.
+
+    create_hypertable() adds an index on the time column (<table>_<col>_idx) that is not in
+    our models; Timescale's own schemas are never ours to migrate.
+    """
+    if type_ == "index" and reflected and name and name.endswith("_date_idx"):
+        return False
+    if type_ == "table" and reflected and getattr(obj, "schema", None) not in (None, "public"):
+        return False
+    return True
+
+
 def run_migrations_offline() -> None:
     context.configure(
         url=settings.database_url,
         target_metadata=target_metadata,
+        include_object=include_object,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
@@ -32,7 +46,11 @@ def run_migrations_online() -> None:
         poolclass=pool.NullPool,
     )
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            include_object=include_object,
+        )
         with context.begin_transaction():
             context.run_migrations()
 

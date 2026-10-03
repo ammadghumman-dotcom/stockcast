@@ -17,6 +17,7 @@ from app.models.enums import (
     PromotionScope,
     PromotionType,
 )
+from app.models.forecast import Forecast, ForecastAccuracy, ForecastRun
 from app.models.inventory import InventoryLevel, PurchaseOrder, PurchaseOrderLine, SalesDaily
 from app.models.sync import ProcessedWebhook, SyncRun
 
@@ -27,6 +28,9 @@ __all__ = [
     "Channel",
     "ChannelListing",
     "ChannelType",
+    "Forecast",
+    "ForecastAccuracy",
+    "ForecastRun",
     "HolidayEvent",
     "HolidaySource",
     "InventoryLevel",

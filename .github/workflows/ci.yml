@@ -9,6 +9,9 @@ jobs:
   api:
     name: API — lint & test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     defaults:
       run:
         working-directory: apps/api
@@ -35,13 +38,33 @@ jobs:
         with:
           python-version: "3.12"
       - run: uv sync
+      - name: Install Chronos (CPU torch)
+        run: uv pip install -r requirements-chronos.txt --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple
+      - name: Cache Chronos model weights
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-chronos-bolt-small-v1
       - run: uv run ruff check .
       - run: uv run ruff format --check .
-      - run: uv run pytest -q
-      - name: Migrations up/down/up
-        run: uv run alembic upgrade head && uv run alembic downgrade base && uv run alembic upgrade head
+      - name: Migrations up/down/up + models match schema
+        run: |
+          uv run alembic upgrade head && uv run alembic downgrade base && uv run alembic upgrade head
+          uv run alembic check
+      - name: Tests (prints seed-org backtest WAPE)
+        run: |
+          set -o pipefail
+          uv run pytest -q -s -rfE --tb=short 2>&1 | tee pytest.log
+          { echo "### Forecast backtest"; grep -E "\[backtest\]" pytest.log || echo "(no backtest line)"; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Post failure digest on the PR
+        if: failure() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          { echo "**API tests failed** (run ${{ github.run_id }}). Digest:"; echo; echo '```'; grep -nE "^(FAILED|ERROR) " pytest.log | head -40; echo; tail -n 120 pytest.log; echo '```'; } > digest.md
+          gh pr comment ${{ github.event.pull_request.number }} --body-file digest.md
       - name: Seed runs
-        run: uv run python -m scripts.seed
+        run: uv run alembic upgrade head && uv run python -m scripts.seed
 
   web:
     name: Web — lint, typecheck, test, build

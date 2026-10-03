@@ -35,8 +35,16 @@ apps/api/            FastAPI service
     shopify/         GraphQL client (pagination, throttle retry), connector, oauth + webhook HMAC
     tasks.py         Celery: sync_channel (backoff retries), nightly sync_all_channels, enqueue_sync
     registry.py      ChannelType -> connector class
-  app/worker.py      Celery app + beat schedule (nightly 02:00 UTC)
-  app/routers/       + channels (CRUD, /sync, /sync-runs), imports (/imports, /exports), shopify
+  app/forecast/      forecast engine
+    features.py      org-level daily demand per SKU, gap fill, stockout masking (NaN = masked)
+    models.py        ChronosModel (batched, CPU), StatsModel (AutoETS), CrostonModel, FallbackModel
+    router.py        per-SKU routing (>=60d & non-intermittent -> chronos vs autoets backtest;
+                     >50% zeros -> croston; <60d -> fallback w/ category prior), 28-day holdout
+    engine.py        run_forecast: load -> forecast_batch -> persist forecasts + forecast_accuracy
+    tasks.py         Celery: forecast.run_org, nightly forecast.run_all_orgs (03:30 UTC)
+  app/worker.py      Celery app + beat schedule (sync 02:00, forecast 03:30 UTC)
+  app/routers/       + channels (CRUD, /sync, /sync-runs), imports (/imports, /exports), shopify,
+                     forecasts (/forecast-runs, /forecasts?product_id, /forecast-accuracy)
   alembic/           migrations (sales_daily becomes a Timescale hypertable when available)
   scripts/seed.py    demo org: 20 SKUs, 3 raw materials, 1 BOM, 365 days of sales
   tests/             pytest against a real Postgres (TEST_DATABASE_URL), tx-rollback per test
@@ -64,7 +72,11 @@ make migrate    # alembic upgrade head
 make migration m="add foo"   # autogenerate a migration
 make seed       # load the demo org (idempotent)
 make worker     # Celery worker + beat (compose runs this as the `worker` service)
+make forecast   # forecast the demo org and print the backtest summary
+make install-chronos  # optional locally; Docker + CI always install it
 ```
+
+Forecasting: Chronos-Bolt is **optional at import time** (`requirements-chronos.txt`, CPU torch from the PyTorch index — not in `pyproject` because `uv lock` cannot reach that index everywhere). `chronos_available()` gates it; without it the chronos route uses AutoETS only and `tests/test_chronos_live.py` skips. Docker and CI install it. Backtest = last 28 observed days; the seed-org WAPE is printed as `[backtest] ...` in the test log and the CI job summary.
 
 Ingestion: `POST /imports` (multipart products/sales/inventory/bom CSVs, optional `mapping` JSON and `strict`), `GET /exports/{kind}.csv`. Shopify: `GET /shopify/install?shop=` needs `SHOPIFY_API_KEY/SECRET` and a public `APP_BASE_URL`; the callback stores the token encrypted, registers webhooks and enqueues a 2-year backfill. `POST /channels/{id}/sync` runs on demand.
 
@@ -88,4 +100,4 @@ Requirements: Docker, Node 22 + pnpm 9 (`corepack enable`), Python 3.12 + `uv`.
 
 ## Build plan
 
-Follow the step-by-step plan (Stockcast — Build & Deploy Plan). Each step is a self-contained task that ends in a merged, tested PR. Steps done: **1 — repo and setup**, **2 — core data model and database**, **3 — CSV import + Shopify connector**. Next: **4 — forecast engine (Chronos + statistical fallback)**.
+Follow the step-by-step plan (Stockcast — Build & Deploy Plan). Each step is a self-contained task that ends in a merged, tested PR. Steps done: **1 — repo and setup**, **2 — core data model and database**, **3 — CSV import + Shopify connector**, **4 — forecast engine**. Next: **4b — regional holiday seasonality and promotion impact**.
