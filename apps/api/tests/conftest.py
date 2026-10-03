@@ -15,6 +15,8 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from alembic import command
 
+PLANNING_AS_OF = __import__("datetime").date(2026, 10, 1)
+
 TEST_DB_URL = os.environ.get(
     "TEST_DATABASE_URL", "postgresql+psycopg://postgres@localhost:5432/stockcast_test"
 )
@@ -124,3 +126,118 @@ def shopify_channel(db: Session, org: Organization):
     db.add(ch)
     db.flush()
     return ch
+
+
+# --------------------------------------------------------------------------- planning world
+@pytest.fixture
+def candle_world(db, org):
+    """1 candle = 200 g wax + 1 jar + 1 wick; hand calc in tests/test_planning_engine.py."""
+    from datetime import UTC, datetime, timedelta
+    from decimal import Decimal
+
+    from app.models import (
+        BomLine,
+        Forecast,
+        ForecastRun,
+        InventoryLevel,
+        Location,
+        Product,
+        ProductType,
+        Supplier,
+        SupplierProduct,
+    )
+
+    oid = org.id
+    loc = Location(org_id=oid, name="Main", is_default=True)
+    db.add(loc)
+    db.flush()
+    p = {}
+    for sku, name, typ, unit, cost in [
+        ("CND", "Vanilla Candle", ProductType.finished, "unit", "4.20"),
+        ("WAX", "Soy Wax", ProductType.raw_material, "g", "0.0045"),
+        ("JAR", "Glass Jar", ProductType.raw_material, "unit", "0.65"),
+        ("WICK", "Cotton Wick", ProductType.raw_material, "unit", "0.08"),
+    ]:
+        p[sku] = Product(
+            org_id=oid, sku=sku, name=name, type=typ, unit=unit, unit_cost=Decimal(cost)
+        )
+        db.add(p[sku])
+    db.flush()
+    for comp, qty in (("WAX", 200), ("JAR", 1), ("WICK", 1)):
+        db.add(
+            BomLine(
+                org_id=oid,
+                parent_product_id=p["CND"].id,
+                component_product_id=p[comp].id,
+                qty_per_unit=Decimal(qty),
+            )
+        )
+    wax_co = Supplier(
+        org_id=oid,
+        name="Pacific Wax",
+        email="orders@pacificwax.test",
+        lead_time_days=21,
+        moq=25_000,
+    )
+    glass = Supplier(
+        org_id=oid, name="ClearGlass", email="po@clearglass.test", lead_time_days=30, moq=500
+    )
+    db.add_all([wax_co, glass])
+    db.flush()
+    db.add_all(
+        [
+            SupplierProduct(
+                org_id=oid,
+                supplier_id=wax_co.id,
+                product_id=p["WAX"].id,
+                price=Decimal("0.004"),
+                pack_size=25_000,
+            ),
+            SupplierProduct(
+                org_id=oid,
+                supplier_id=glass.id,
+                product_id=p["JAR"].id,
+                price=Decimal("0.60"),
+                pack_size=100,
+            ),
+            SupplierProduct(
+                org_id=oid,
+                supplier_id=glass.id,
+                product_id=p["WICK"].id,
+                price=Decimal("0.07"),
+                pack_size=1000,
+            ),
+        ]
+    )
+    for sku, qty in (("CND", 50), ("WAX", 1000), ("JAR", 30), ("WICK", 500)):
+        db.add(
+            InventoryLevel(
+                org_id=oid, product_id=p[sku].id, location_id=loc.id, on_hand=Decimal(qty)
+            )
+        )
+    frun = ForecastRun(
+        org_id=oid, status="success", horizon_days=90, as_of=PLANNING_AS_OF, started_at=None
+    )
+    db.add(frun)
+    db.flush()
+    frun.finished_at = datetime.now(UTC)
+    db.bulk_insert_mappings(
+        Forecast,
+        [
+            {
+                "run_id": frun.id,
+                "org_id": oid,
+                "product_id": p["CND"].id,
+                "date": PLANNING_AS_OF + timedelta(days=i + 1),
+                "p10": Decimal(8),
+                "p50": Decimal(10),
+                "p90": Decimal(10),
+                "model": "autoets",
+                "factor": Decimal(1),
+                "event": "Black Friday" if 50 <= i < 58 else None,
+            }
+            for i in range(90)
+        ],
+    )
+    db.flush()
+    return {"products": p, "suppliers": {"wax": wax_co, "glass": glass}, "loc": loc}

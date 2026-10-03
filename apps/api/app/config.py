@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     shopify_scopes: str = "read_products,read_orders,read_inventory,read_locations"
     shopify_backfill_days: int = 730
 
+    # Email (Resend) for sending POs to suppliers
+    resend_api_key: str = ""
+    email_from: str = "Stockcast <orders@stockcast.app>"
+
     # Celery
     celery_broker_url: str = "redis://localhost:6379/1"
     celery_task_always_eager: bool = False

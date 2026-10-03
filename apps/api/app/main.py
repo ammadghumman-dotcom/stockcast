@@ -12,12 +12,14 @@ from app.routers import (
     forecasts,
     imports,
     locations,
+    planning,
     products,
+    purchase_orders,
     shopify,
     suppliers,
 )
 
-app = FastAPI(title=settings.app_name, version="0.5.0")
+app = FastAPI(title=settings.app_name, version="0.6.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -35,6 +37,8 @@ app.include_router(imports.router)
 app.include_router(shopify.router)
 app.include_router(forecasts.router)
 app.include_router(calendar.router)
+app.include_router(planning.router)
+app.include_router(purchase_orders.router)
 
 
 class Health(BaseModel):

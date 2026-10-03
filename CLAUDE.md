@@ -49,11 +49,21 @@ apps/api/            FastAPI service
                      (overlapping events -> max per day, never multiplied; promos multiply on top)
     simulate.py      what-if promotion -> unit delta per product + BOM-exploded raw-material impact
     tasks.py         Celery: forecast.run_org, nightly forecast.run_all_orgs (03:30 UTC)
-  app/worker.py      Celery app + beat schedule (sync 02:00, forecast 03:30 UTC)
+  app/planning/      planning engine
+    math.py          project_stock, reorder (s,Q: ROP = L*d + z*sigma*sqrt(L); sigma from the
+                     forecast band; lost-sales model; MOQ + pack rounding), health_status
+    bom.py           multi-level BOM explosion of finished-goods demand into component demand
+    engine.py        run_planning: latest forecast + stock + open POs + suppliers -> recommendations
+                     (action reorder|produce|none, health, reason citing forecasts.event/factor)
+    po.py            draft POs grouped by supplier, CSV/PDF export (fpdf2), send via Resend, receive
+    tasks.py         Celery: planning.run_org, nightly planning.run_all_orgs (04:30 UTC)
+  app/worker.py      Celery app + beat schedule (sync 02:00, forecast 03:30, planning 04:30 UTC)
   app/routers/       + channels (CRUD, /sync, /sync-runs), imports (/imports, /exports), shopify,
                      forecasts (/forecast-runs, /forecasts?product_id, /forecast-accuracy,
                      POST /forecasts/simulate), calendar (/regions, /holiday-events, /category-uplifts,
-                     /promotions)
+                     /promotions), planning (/planning-settings, /products/{id}/planning,
+                     /planning-runs, /recommendations), purchase_orders (/purchase-orders
+                     from-recommendations, export.csv|pdf, send, mark-sent, receive)
   alembic/           migrations (sales_daily becomes a Timescale hypertable when available)
   scripts/seed.py    demo org: 20 SKUs, 3 raw materials, 1 BOM, 365 days of sales
   tests/             pytest against a real Postgres (TEST_DATABASE_URL), tx-rollback per test
@@ -82,10 +92,13 @@ make migration m="add foo"   # autogenerate a migration
 make seed       # load the demo org (idempotent)
 make worker     # Celery worker + beat (compose runs this as the `worker` service)
 make forecast   # forecast the demo org and print the backtest summary
+make plan       # plan the demo org and print recommendations
 make install-chronos  # optional locally; Docker + CI always install it
 ```
 
 Forecasting: Chronos-Bolt is **optional at import time** (`requirements-chronos.txt`, CPU torch from the PyTorch index — not in `pyproject` because `uv lock` cannot reach that index everywhere). `chronos_available()` gates it; without it the chronos route uses AutoETS only and `tests/test_chronos_live.py` skips. Docker and CI install it. Backtest = last 28 observed days; the seed-org WAPE is printed as `[backtest] ...` in the test log and the CI job summary.
+
+Planning: raw materials get DERIVED demand = sum(parent forecast p50 x qty_per_unit) through the BOM (multi-level), so they are planned with the same (s,Q) logic as finished goods; products with a BOM are `produce`, others `reorder` from the preferred or cheapest supplier (supplier_products.lead_time_days > supplier.lead_time_days > org default). Bundles' sales are decomposed into component demand in `forecast/features.py` before forecasting. `tests/test_planning_engine.py` holds the candle worked example with the hand calculation in its docstring — keep it in sync with any formula change. Stockout date = first day with unmet demand (stock < 0), not the day stock reaches 0.
 
 Covariates: history is DIVIDED by the holiday/promo factor before modelling and the base forecast MULTIPLIED back, so `forecasts.factor` + `forecasts.event` explain every uplift ("Christmas", "promo: Spring Sale"). Uplifts are learned per (category, region, event name) only from data before the backtest holdout; `tests/test_covariates_db.py` asserts adjusted WAPE beats `wape_base` by >= 15 % on a Christmas holdout and prints `[backtest-covariates] ...`. Priors live in `CATEGORY_PRIORS` (keyword match on category name) and are editable via `PATCH /category-uplifts/{id}` (editing a learned row makes it manual). Bands widen 1.5x where a factor rests on a prior.
 
@@ -111,4 +124,4 @@ Requirements: Docker, Node 22 + pnpm 9 (`corepack enable`), Python 3.12 + `uv`.
 
 ## Build plan
 
-Follow the step-by-step plan (Stockcast — Build & Deploy Plan). Each step is a self-contained task that ends in a merged, tested PR. Steps done: **1 — repo and setup**, **2 — core data model and database**, **3 — CSV import + Shopify connector**, **4 — forecast engine**, **4b — holiday seasonality + promotion impact**. Next: **5 — planning engine (reorder, PO, BOM explosion)**. Step 5 should read `forecasts.factor`/`event` to phrase recommendation reasons (e.g. 'reorder 1,200 by Oct 15 for Black Friday US, +140%').
+Follow the step-by-step plan (Stockcast — Build & Deploy Plan). Each step is a self-contained task that ends in a merged, tested PR. Steps done: **1 — repo and setup**, **2 — core data model and database**, **3 — CSV import + Shopify connector**, **4 — forecast engine**, **4b — holiday seasonality + promotion impact**, **5 — planning engine**. Next: **6 — web dashboard**. Step 6 should generate the typed client from `/openapi.json` into `packages/shared` and build pages on the existing endpoints (recommendations, forecasts, purchase orders, calendar).

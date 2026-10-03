@@ -8,7 +8,7 @@ from app.config import settings
 celery = Celery(
     "stockcast",
     broker=settings.celery_broker_url,
-    include=["app.ingest.tasks", "app.forecast.tasks"],
+    include=["app.ingest.tasks", "app.forecast.tasks", "app.planning.tasks"],
 )
 celery.conf.update(
     task_always_eager=settings.celery_task_always_eager,
@@ -24,6 +24,10 @@ celery.conf.update(
         "nightly-forecast-all-orgs": {
             "task": "forecast.run_all_orgs",
             "schedule": crontab(hour=3, minute=30),  # after syncs have landed
+        },
+        "nightly-planning-all-orgs": {
+            "task": "planning.run_all_orgs",
+            "schedule": crontab(hour=4, minute=30),  # after forecasts
         },
     },
 )

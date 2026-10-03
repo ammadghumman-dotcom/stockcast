@@ -21,7 +21,7 @@ import pandas as pd
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models import InventoryLevel, Product, ProductType, SalesDaily
+from app.models import BomLine, InventoryLevel, Product, ProductType, SalesDaily
 
 
 @dataclass(eq=False)  # identity-hashable: used as dict keys in the router
@@ -96,11 +96,32 @@ def load_series(
     }
 
     idx = pd.date_range(start, as_of, freq="D")
-    out: list[Series] = []
-    for pid, (sku, cat) in products.items():
+    raw_y: dict[uuid.UUID, np.ndarray] = {}
+    for pid in products:
         s = sales[sales["product_id"] == pid].set_index("date")["units"]
         s.index = pd.to_datetime(s.index)
-        y = s.reindex(idx, fill_value=0.0).to_numpy(dtype=float)
+        raw_y[pid] = s.reindex(idx, fill_value=0.0).to_numpy(dtype=float)
+
+    # Bundles: their sales are demand for their components, not for the bundle itself.
+    # Decompose before forecasting; the bundle SKU is then planned as derived demand.
+    bundle_ids = [pid for pid, (_, _) in products.items() if _is_bundle(db, pid)]
+    if bundle_ids:
+        lines = db.execute(
+            select(
+                BomLine.parent_product_id, BomLine.component_product_id, BomLine.qty_per_unit
+            ).where(BomLine.org_id == org_id, BomLine.parent_product_id.in_(bundle_ids))
+        ).all()
+        for parent, comp, per in lines:
+            if comp in raw_y:
+                raw_y[comp] = raw_y[comp] + raw_y[parent] * float(per)
+            elif comp in products:
+                raw_y[comp] = raw_y[parent] * float(per)
+        for b in bundle_ids:
+            raw_y.pop(b, None)
+
+    out: list[Series] = []
+    for pid, y in raw_y.items():
+        sku, cat = products[pid]
         first = _first_sale_index(y)
         if first is None:
             continue  # never sold: nothing to learn, planning treats it as new
@@ -111,6 +132,16 @@ def load_series(
         y_masked[mask] = np.nan
         out.append(Series(pid, sku, cat, dates, y_masked, mask))
     return out
+
+
+_BUNDLE_CACHE_KEY = "_stockcast_bundle_types"
+
+
+def _is_bundle(db: Session, pid: uuid.UUID) -> bool:
+    cache = db.info.setdefault(_BUNDLE_CACHE_KEY, {})
+    if pid not in cache:
+        cache[pid] = db.scalar(select(Product.type).where(Product.id == pid)) == ProductType.bundle
+    return cache[pid]
 
 
 def stockout_days(y: np.ndarray, *, on_hand_now: float, min_run: int = 2) -> np.ndarray:
