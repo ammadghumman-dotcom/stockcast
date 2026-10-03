@@ -48,9 +48,10 @@ def _require_keys() -> None:
 def _customer(db: Session, org: Organization, email: str | None) -> str:
     if org.stripe_customer_id:
         return org.stripe_customer_id
-    cust = stripe.Customer.create(
-        name=org.name, email=email or org.billing_email, metadata={"org_id": str(org.id)}
-    )
+    params: dict = {"name": org.name, "metadata": {"org_id": str(org.id)}}
+    if email or org.billing_email:
+        params["email"] = email or org.billing_email
+    cust = stripe.Customer.create(**params)
     org.stripe_customer_id = cust.id
     org.billing_email = org.billing_email or email
     db.commit()
@@ -75,6 +76,8 @@ def create_checkout(db: Session, org: Organization, plan_key: str, email: str | 
         metadata={"org_id": str(org.id), "plan": plan_key},
         subscription_data={"metadata": {"org_id": str(org.id), "plan": plan_key}},
     )
+    if not session.url:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Stripe returned no checkout url")
     return session.url
 
 
@@ -84,6 +87,8 @@ def create_portal(db: Session, org: Organization, email: str | None) -> str:
         customer=_customer(db, org, email),
         return_url=f"{settings.web_base_url}/settings",
     )
+    if not session.url:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Stripe returned no portal url")
     return session.url
 
 

@@ -119,16 +119,16 @@ def forecast_batch(
         for i, (_, _, _, h) in enumerate(items):
             by_h.setdefault(h, []).append(i)
         for h, idxs in by_h.items():
-            bands = runners[model]([items[i][2] for i in idxs], h)
-            for i, b in zip(idxs, bands, strict=True):
+            batch = runners[model]([items[i][2] for i in idxs], h)
+            for i, b in zip(idxs, batch, strict=True):
                 s, kind, _, _ = items[i]
                 preds[(id(s), kind, model)] = b
 
     results: dict[Series, Scored] = {}
     for s, r in routes.items():
         split = splits[s]
-        actual = _fill(split[1]) if split else None
-        hold = len(actual) if actual is not None else 0
+        actual = _fill(split[1]) if split else np.zeros(0)
+        hold = len(actual)
         if r == Route.fallback:
             prior = (category_prior or {}).get(s.category_id)
             results[s] = Scored(
@@ -150,12 +150,14 @@ def forecast_batch(
         prod_c = preds.get((id(s), "prod", "chronos"))
         pick_chronos = prod_c is not None and (w_s is None or w_c is None or w_c <= w_s)
         name = "chronos" if pick_chronos else StatsModel.name
-        bands = prod_c if pick_chronos else preds[(id(s), "prod", "autoets")]
+        chosen = (
+            prod_c if pick_chronos and prod_c is not None else preds[(id(s), "prod", "autoets")]
+        )
         chosen_bt = bt_c if pick_chronos else bt_s
         m = mape(actual, chosen_bt.p50) if chosen_bt is not None else None
         results[s] = Scored(
             name,
-            bands,
+            chosen,
             m,
             w_c if pick_chronos else w_s,
             wape_chronos=w_c,

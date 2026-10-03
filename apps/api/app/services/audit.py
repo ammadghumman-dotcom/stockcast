@@ -22,9 +22,9 @@ def snapshot(obj: Any, fields: tuple[str, ...]) -> dict[str, Any]:
             v = str(v)
         elif isinstance(v, Decimal):
             v = float(v)
-        elif hasattr(v, "isoformat"):
+        elif v is not None and hasattr(v, "isoformat"):
             v = v.isoformat()
-        elif hasattr(v, "value"):  # enums
+        elif v is not None and hasattr(v, "value"):  # enums
             v = v.value
         out[f] = v
     return out

@@ -69,7 +69,8 @@ def draft_from_recommendations(
     )
     by_supplier: dict[uuid.UUID, list[Recommendation]] = defaultdict(list)
     for r in recs:
-        by_supplier[r.supplier_id].append(r)
+        if r.supplier_id is not None:
+            by_supplier[r.supplier_id].append(r)
 
     pos = []
     for sid, group in by_supplier.items():
@@ -298,7 +299,7 @@ def receive_po(
         qty = (
             received.get(ln.id, ln.qty - ln.received_qty) if received else ln.qty - ln.received_qty
         )
-        qty = min(max(Decimal(qty), 0), ln.qty - ln.received_qty)
+        qty = min(max(Decimal(qty), Decimal(0)), Decimal(ln.qty - ln.received_qty))
         if qty <= 0:
             all_done = all_done and ln.received_qty >= ln.qty
             continue
@@ -311,7 +312,7 @@ def receive_po(
             inv = InventoryLevel(org_id=po.org_id, product_id=ln.product_id, location_id=loc_id)
             db.add(inv)
         inv.on_hand = (inv.on_hand or 0) + qty
-        inv.inbound = max((inv.inbound or 0) - qty, 0)
+        inv.inbound = max(Decimal(inv.inbound or 0) - qty, Decimal(0))
         inv.as_of = datetime.now(UTC)
         ln.received_qty += qty
         all_done = all_done and ln.received_qty >= ln.qty

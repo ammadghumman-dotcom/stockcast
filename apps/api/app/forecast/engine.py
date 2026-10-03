@@ -105,8 +105,9 @@ def run_forecast(
                 if w_adj is not None:
                     err += w_adj * vol
                     act += vol
-                if scored_base[sb].wape is not None:
-                    err_base += scored_base[sb].wape * vol
+                w_base = scored_base[sb].wape
+                if w_base is not None:
+                    err_base += w_base * vol
             _count(run, sc.model)
 
         for i in range(0, len(fc_rows), 5000):

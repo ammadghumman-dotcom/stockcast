@@ -31,7 +31,7 @@ def get_scoped[M: Base](db: Session, model: type[M], org_id: uuid.UUID, obj_id: 
         select(model).where(
             model.id == obj_id,  # type: ignore[attr-defined]
             model.org_id == org_id,  # type: ignore[attr-defined]
-        )
+        )  # type: ignore[arg-type]
     )
     if obj is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"{model.__name__} not found")
