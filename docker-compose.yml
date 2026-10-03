@@ -27,7 +27,9 @@ services:
       retries: 10
 
   api:
-    build: ./apps/api
+    build:
+      context: ./apps/api
+      target: dev
     env_file: .env
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://stockcast:stockcast@postgres:5432/stockcast}
@@ -43,7 +45,9 @@ services:
         condition: service_healthy
 
   worker:
-    build: ./apps/api
+    build:
+      context: ./apps/api
+      target: dev
     command: uv run --no-dev celery -A app.worker worker -B -l info --concurrency=2
     env_file: .env
     environment:

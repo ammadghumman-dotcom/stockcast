@@ -1,0 +1,75 @@
+name: Deploy one environment
+description: Railway (api, worker, beat, backup) + Vercel (web) + smoke test for one environment.
+inputs:
+  environment: { required: true }
+  release: { required: true }
+  railway_token: { required: true }
+  vercel_token: { required: true }
+  vercel_org_id: { required: true }
+  vercel_project_id: { required: true }
+  vercel_prod: { required: true }
+  vercel_alias: { required: false, default: "" }
+  api_url: { required: true }
+  web_url: { required: true }
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+    - name: Install CLIs
+      shell: bash
+      run: npm i -g @railway/cli@latest vercel@latest
+
+    # ---- API: migrations run inside Railway as the api service's preDeployCommand
+    # (infra/railway/api.json) against the environment's private database, before the new
+    # container takes traffic. Workers follow once the api is healthy so they never run new
+    # code against an old schema.
+    - name: Deploy api (runs alembic upgrade head as pre-deploy)
+      shell: bash
+      env:
+        RAILWAY_TOKEN: ${{ inputs.railway_token }}
+      run: |
+        railway variables --environment "${{ inputs.environment }}" --service api --set "RELEASE=${{ inputs.release }}" --skip-deploys
+        railway variables --environment "${{ inputs.environment }}" --service worker --set "RELEASE=${{ inputs.release }}" --skip-deploys
+        railway variables --environment "${{ inputs.environment }}" --service beat --set "RELEASE=${{ inputs.release }}" --skip-deploys
+        railway up --ci --environment "${{ inputs.environment }}" --service api
+    - name: Deploy worker, beat, backup
+      shell: bash
+      env:
+        RAILWAY_TOKEN: ${{ inputs.railway_token }}
+      run: |
+        railway up --ci --environment "${{ inputs.environment }}" --service worker
+        railway up --ci --environment "${{ inputs.environment }}" --service beat
+        railway up --ci --environment "${{ inputs.environment }}" --service backup || echo "backup service not configured yet"
+
+    # ---- Web: build on the runner with the environment's variables, deploy prebuilt
+    - name: Deploy web
+      shell: bash
+      env:
+        VERCEL_TOKEN: ${{ inputs.vercel_token }}
+        VERCEL_ORG_ID: ${{ inputs.vercel_org_id }}
+        VERCEL_PROJECT_ID: ${{ inputs.vercel_project_id }}
+      run: |
+        cd apps/web
+        if [ "${{ inputs.vercel_prod }}" = "true" ]; then ENVARG=production; PRODARG=--prod; else ENVARG=preview; PRODARG=""; fi
+        vercel pull --yes --environment=$ENVARG --token "$VERCEL_TOKEN"
+        vercel build $PRODARG --token "$VERCEL_TOKEN"
+        URL=$(vercel deploy --prebuilt $PRODARG --token "$VERCEL_TOKEN")
+        echo "deployed $URL"
+        if [ -n "${{ inputs.vercel_alias }}" ]; then vercel alias set "$URL" "${{ inputs.vercel_alias }}" --token "$VERCEL_TOKEN"; fi
+
+    # ---- Smoke: the new release answers, its dependencies are up, the web app renders
+    - name: Smoke test
+      shell: bash
+      run: |
+        set -e
+        for i in $(seq 1 30); do
+          body=$(curl -fsS "${{ inputs.api_url }}/health/ready" || true)
+          if echo "$body" | grep -q '"release":"${{ inputs.release }}"'; then echo "api ready: $body"; break; fi
+          [ "$i" = 30 ] && { echo "api never reported release ${{ inputs.release }}: $body"; exit 1; }
+          sleep 10
+        done
+        curl -fsS "${{ inputs.api_url }}/openapi.json" | grep -q '"/recommendations"'
+        curl -fsS -o /dev/null -w "web %{http_code}\n" "${{ inputs.web_url }}/onboarding" | grep -E "web (200|30[0-9])"
+        echo "smoke ok for ${{ inputs.environment }}"

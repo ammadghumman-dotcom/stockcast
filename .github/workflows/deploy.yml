@@ -1,0 +1,91 @@
+# main -> staging (migrate, deploy api/worker/beat on Railway + web on Vercel, smoke test)
+#      -> production (same, behind the GitHub "production" environment approval gate).
+#
+# Runs after the CI workflow succeeds on main, so a merged PR reaches production with no manual
+# step beyond approving the production job. Secrets live in GitHub environments (see
+# docs/RUNBOOK.md#one-time-setup) — nothing here is environment specific except names.
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    branches: [main]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      skip_production:
+        description: Deploy staging only
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  staging:
+    name: Deploy staging
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: ${{ vars.WEB_URL }}
+    outputs:
+      sha: ${{ steps.meta.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - id: meta
+        run: echo "sha=$(git rev-parse --short=12 HEAD)" >> "$GITHUB_OUTPUT"
+      - uses: ./.github/actions/deploy-env
+        with:
+          environment: staging
+          release: ${{ steps.meta.outputs.sha }}
+          railway_token: ${{ secrets.RAILWAY_TOKEN }}
+          vercel_token: ${{ secrets.VERCEL_TOKEN }}
+          vercel_org_id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel_project_id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel_prod: "false"
+          vercel_alias: ${{ vars.WEB_HOST }}
+          api_url: ${{ vars.API_URL }}
+          web_url: ${{ vars.WEB_URL }}
+
+  production:
+    name: Deploy production (approval required)
+    needs: staging
+    if: ${{ !inputs.skip_production }}
+    runs-on: ubuntu-latest
+    environment:
+      name: production          # GitHub environment with "Required reviewers" = the approval gate
+      url: ${{ vars.WEB_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: ./.github/actions/deploy-env
+        with:
+          environment: production
+          release: ${{ needs.staging.outputs.sha }}
+          railway_token: ${{ secrets.RAILWAY_TOKEN }}
+          vercel_token: ${{ secrets.VERCEL_TOKEN }}
+          vercel_org_id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel_project_id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel_prod: "true"
+          vercel_alias: ""
+          api_url: ${{ vars.API_URL }}
+          web_url: ${{ vars.WEB_URL }}
+      - name: Create Sentry release (skipped when SENTRY_AUTH_TOKEN is unset)
+        continue-on-error: true
+        uses: getsentry/action-release@v1
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+        with:
+          environment: production
+          version: ${{ needs.staging.outputs.sha }}

@@ -22,6 +22,12 @@ QUANTILES = (0.1, 0.5, 0.9)
 CHRONOS_MODEL_ID = "amazon/chronos-bolt-small"
 
 
+# AutoETS search space for daily unit sales: additive error (counts with zeros can't take a
+# multiplicative error anyway), trend auto (N / A / damped), seasonality auto (N / A).
+# "ZZZ" would also try multiplicative trend/season: ~2x the fits for no measurable gain.
+ETS_SEARCH = "AZZ"
+
+
 @dataclass
 class Bands:
     p10: np.ndarray
@@ -184,7 +190,9 @@ class StatsModel:
             for i, b in zip(
                 long,
                 _sf_predict_many(
-                    [series[i] for i in long], horizon, lambda: AutoETS(season_length=7)
+                    [series[i] for i in long],
+                    horizon,
+                    lambda: AutoETS(season_length=7, model=ETS_SEARCH),
                 ),
                 strict=True,
             ):
