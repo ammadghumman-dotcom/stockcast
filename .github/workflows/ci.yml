@@ -86,3 +86,62 @@ jobs:
       - run: pnpm -r typecheck
       - run: pnpm -r --if-present test
       - run: pnpm --filter @stockcast/web build
+
+  e2e:
+    name: E2E — Playwright (onboarding → dashboard → PO)
+    runs-on: ubuntu-latest
+    needs: [api, web]
+    services:
+      postgres:
+        image: timescale/timescaledb:latest-pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: stockcast
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/stockcast
+      CELERY_TASK_ALWAYS_EAGER: "true"
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      API_URL: http://localhost:8000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        run: |
+          (cd apps/api && uv sync)
+          pnpm install --frozen-lockfile
+          pnpm --filter @stockcast/web exec playwright install --with-deps chromium
+      - name: Migrate + seed, start API and web
+        run: |
+          (cd apps/api && uv run alembic upgrade head && uv run python -m scripts.seed)
+          (cd apps/api && nohup uv run uvicorn app.main:app --port 8000 > /tmp/api.log 2>&1 &)
+          pnpm --filter @stockcast/web build
+          (cd apps/web && nohup pnpm start -p 3000 > /tmp/web.log 2>&1 &)
+          for i in $(seq 1 30); do curl -sf localhost:8000/health >/dev/null && curl -sf localhost:3000/onboarding >/dev/null && break; sleep 2; done
+          curl -sf localhost:8000/health && curl -sf -o /dev/null localhost:3000/onboarding
+      - name: Playwright
+        run: pnpm --filter @stockcast/web exec playwright test
+      - name: Upload report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            apps/web/playwright-report
+            apps/web/test-results
+            /tmp/api.log
+            /tmp/web.log

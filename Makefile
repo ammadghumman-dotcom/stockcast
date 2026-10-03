@@ -1,4 +1,4 @@
-.PHONY: dev down logs install test lint fmt test-api test-web lint-api lint-web migrate migration seed worker cassettes forecast plan install-chronos
+.PHONY: dev down logs install test lint fmt test-api test-web lint-api lint-web migrate migration seed worker cassettes forecast plan install-chronos openapi e2e
 
 ## Run everything in Docker (api :8000, web :3000, postgres :5432, redis :6379)
 dev:
@@ -42,6 +42,13 @@ plan:  ## run planning for the demo org (needs forecast) and print recommendatio
 
 install-chronos:  ## optional: CPU torch + chronos for the zero-shot model
 	cd apps/api && uv pip install -r requirements-chronos.txt --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple
+
+e2e:  ## Playwright: needs API on :8000 (CELERY_TASK_ALWAYS_EAGER=true) and web on :3000
+	cd apps/web && pnpm exec playwright test
+
+openapi:  ## export the OpenAPI spec and regenerate the typed TS client in packages/shared
+	cd apps/api && uv run python -m scripts.export_openapi
+	pnpm --filter @stockcast/shared gen
 
 cassettes:  ## regenerate synthesized Shopify VCR cassettes
 	cd apps/api && uv run python -m tests.cassettes.make_cassettes

@@ -141,3 +141,50 @@ def test_bom_line_crud_and_constraints(client: TestClient, headers: dict) -> Non
         headers=headers,
     )
     assert r.status_code == 422
+
+
+# ---- orgs / users / categories / product extras (Step 6 UI support) ----
+def test_org_create_seeds_region_holidays_and_settings(client: TestClient) -> None:
+    r = client.post("/orgs", json={"name": "Acme Candles", "region_code": "uk", "currency": "gbp"})
+    assert r.status_code == 201, r.text
+    org = r.json()
+    assert org["slug"] == "acme-candles"
+    h = {"X-Org-Id": org["id"]}
+    assert client.get("/orgs/me", headers=h).json()["name"] == "Acme Candles"
+    regions = client.get("/regions", headers=h).json()
+    assert len(regions) == 1 and regions[0]["code"] == "UK" and regions[0]["currency"] == "GBP"
+    assert len(client.get("/holiday-events", headers=h).json()) > 10
+    assert client.get("/planning-settings", headers=h).json()["target_cover_days"] == 30
+    # slug collision gets a suffix
+    assert client.post("/orgs", json={"name": "Acme Candles"}).json()["slug"] == "acme-candles-2"
+
+
+def test_users_crud(client: TestClient, headers: dict, other_headers: dict) -> None:
+    r = client.post(
+        "/users", json={"email": "a@b.co", "name": "Ann", "role": "admin"}, headers=headers
+    )
+    assert r.status_code == 201, r.text
+    uid = r.json()["id"]
+    assert (
+        client.patch(f"/users/{uid}", json={"role": "viewer"}, headers=headers).json()["role"]
+        == "viewer"
+    )
+    assert client.get("/users", headers=other_headers).json() == []
+    assert (
+        client.post("/users", json={"email": "bad", "name": "x"}, headers=headers).status_code
+        == 422
+    )
+    assert client.delete(f"/users/{uid}", headers=headers).status_code == 204
+    assert client.get("/users", headers=headers).json() == []
+
+
+def test_categories_and_product_extras(
+    client: TestClient, headers: dict, other_headers: dict
+) -> None:
+    c = client.post("/product-categories", json={"name": "Candles"}, headers=headers)
+    assert c.status_code == 201
+    assert client.get("/product-categories", headers=other_headers).json() == []
+    p = _product(client, headers, "CND-X")
+    assert client.get(f"/products/{p['id']}/sales", headers=headers).json() == []
+    assert client.get(f"/products/{p['id']}/inventory", headers=headers).json() == []
+    assert client.get(f"/products/{p['id']}/sales", headers=other_headers).status_code == 404

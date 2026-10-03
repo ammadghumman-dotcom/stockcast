@@ -1,4 +1,9 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
+
+import { ORG_COOKIE } from "@/lib/api";
+import { Providers } from "@/lib/query";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -6,10 +11,14 @@ export const metadata: Metadata = {
   description: "AI demand forecasting and raw-material planning for ecommerce brands",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const jar = await cookies();
+  const initialOrgId = jar.get(ORG_COOKIE)?.value ?? null;
   return (
     <html lang="en">
-      <body className="min-h-screen antialiased">{children}</body>
+      <body className="min-h-screen antialiased">
+        <Providers initialOrgId={initialOrgId}>{children}</Providers>
+      </body>
     </html>
   );
 }

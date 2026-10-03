@@ -1,0 +1,6 @@
+sku,name,type,unit_cost,unit,category
+CND-VAN-200,Vanilla Candle 200g,finished,4.20,unit,Candles
+CND-LAV-200,Lavender Candle 200g,finished,4.20,unit,Candles
+RM-WAX-SOY,Soy Wax,raw_material,0.0045,g,
+RM-JAR-200,Glass Jar 200g,raw_material,0.65,unit,
+RM-WICK-CT,Cotton Wick,raw_material,0.08,unit,
