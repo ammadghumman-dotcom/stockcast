@@ -87,10 +87,11 @@ def chronos_predict_batch(
         ctx = [
             torch.tensor(_fill(y)[-512:], dtype=torch.float32) for y in series[i : i + batch_size]
         ]
+        # first arg is `inputs` in chronos>=2 and `context` in 1.x: pass it positionally
         q, _ = pipe.predict_quantiles(
-            context=ctx, prediction_length=horizon, quantile_levels=list(QUANTILES)
+            ctx, prediction_length=horizon, quantile_levels=list(QUANTILES)
         )
-        q = q.numpy()  # (batch, horizon, 3)
+        q = q.detach().cpu().numpy()  # (batch, horizon, 3)
         for k in range(q.shape[0]):
             out.append(Bands(q[k, :, 0], q[k, :, 1], q[k, :, 2]).clip())
     return out
