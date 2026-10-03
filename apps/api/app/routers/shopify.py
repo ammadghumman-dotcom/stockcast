@@ -16,6 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app import crypto
+from app.billing.plans import assert_can_add_channel
 from app.config import settings
 from app.deps import DB, OrgId
 from app.ingest import upsert
@@ -30,7 +31,8 @@ router = APIRouter(tags=["shopify"])
 
 
 @router.get("/shopify/install")
-def install(org_id: OrgId, shop: str = Query(...)):
+def install(db: DB, org_id: OrgId, shop: str = Query(...)):
+    assert_can_add_channel(db, org_id)
     if not oauth.valid_shop(shop):
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "shop must be *.myshopify.com")
     if not settings.shopify_api_key:
@@ -57,6 +59,7 @@ def callback(request: Request, db: DB, shop: str, code: str, state: str):
         )
     )
     if channel is None:
+        assert_can_add_channel(db, org_id)
         channel = Channel(
             org_id=org_id,
             name=shop.removesuffix(".myshopify.com"),

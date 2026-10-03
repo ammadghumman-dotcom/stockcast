@@ -1,4 +1,4 @@
-import { makeClient, type ApiClient } from "@stockcast/shared";
+import { makeClient, type ApiClient, type TokenGetter } from "@stockcast/shared";
 
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? process.env.API_URL ?? "http://localhost:8000";
@@ -8,9 +8,9 @@ export const DEFAULT_ORG_ID =
 
 export const ORG_COOKIE = "stockcast_org";
 
-/** Browser-side client bound to the current org (cookie / default). */
-export function clientFor(orgId: string | null): ApiClient {
-  return makeClient({ baseUrl: API_URL, orgId });
+/** Browser-side client: `X-Org-Id` (header mode) and/or a Clerk bearer token. */
+export function clientFor(orgId: string | null, getToken?: TokenGetter): ApiClient {
+  return makeClient({ baseUrl: API_URL, orgId, getToken });
 }
 
 /** Server-side health probe (no org). */

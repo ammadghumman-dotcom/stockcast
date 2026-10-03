@@ -26,7 +26,27 @@ class Settings(BaseSettings):
     shopify_scopes: str = "read_products,read_orders,read_inventory,read_locations"
     shopify_backfill_days: int = 730
 
-    # Email (Resend) for sending POs to suppliers
+    # Auth: "clerk" verifies Clerk session JWTs; "header" trusts X-Org-Id (dev / e2e only)
+    auth_mode: str = "header"
+    clerk_jwks_url: str = ""  # https://<your-frontend-api>.clerk.accounts.dev/.well-known/jwks.json
+    clerk_issuer: str = ""  # https://<your-frontend-api>.clerk.accounts.dev
+    clerk_secret_key: str = ""  # used to fetch org/user names on first sight (optional)
+
+    # Rate limiting (slowapi); memory:// in tests
+    rate_limit_enabled: bool = True
+    rate_limit_storage: str = "redis://localhost:6379/2"
+    rate_limit_default: str = "600/minute"
+    rate_limit_heavy: str = "30/minute"
+
+    # Billing (Stripe)
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_price_starter: str = ""
+    stripe_price_growth: str = ""
+    stripe_price_scale: str = ""
+    trial_days: int = 14
+
+    # Email (Resend) for sending POs to suppliers and transactional mail
     resend_api_key: str = ""
     email_from: str = "Stockcast <orders@stockcast.app>"
 

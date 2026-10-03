@@ -4,7 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
+import { clerkEnabled } from "@/lib/auth";
+import { useOrg } from "@/lib/org";
 import { cn } from "@/lib/utils";
+
+import { AccountControls } from "./account";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard" },
@@ -19,6 +23,7 @@ const NAV = [
 export function Shell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
+  const { orgId, role, mode } = useOrg();
   const nav = (
     <nav className="flex flex-col gap-1">
       {NAV.map((n) => {
@@ -43,6 +48,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           Stockcast
         </Link>
         {nav}
+        {clerkEnabled ? <div className="mt-6 border-t pt-4"><AccountControls /></div> : null}
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center gap-3 border-b px-4 py-3 md:hidden">
@@ -51,7 +57,22 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </button>
           <Link href="/dashboard" className="font-semibold">Stockcast</Link>
         </header>
-        {open ? <div className="border-b p-3 md:hidden">{nav}</div> : null}
+        {open ? (
+          <div className="border-b p-3 md:hidden">
+            {nav}
+            {clerkEnabled ? <div className="mt-3 border-t pt-3"><AccountControls /></div> : null}
+          </div>
+        ) : null}
+        {mode === "clerk" && !orgId ? (
+          <div className="border-b bg-amber-50 px-4 py-2 text-sm text-amber-900" data-testid="no-org-banner">
+            Create or select an organization to see its data.
+          </div>
+        ) : null}
+        {role === "viewer" ? (
+          <div className="border-b bg-muted px-4 py-1.5 text-xs text-muted-foreground" data-testid="viewer-banner">
+            You have view-only access in this organization.
+          </div>
+        ) : null}
         <main className="min-w-0 flex-1 p-4 md:p-6">{children}</main>
       </div>
     </div>

@@ -72,6 +72,21 @@ class ProductResolver:
             self._by_ext[external_id] = product.id
 
 
+def count_new_skus(
+    db: Session,
+    org_id: uuid.UUID,
+    records: Iterable[ProductRecord],
+    channel: Channel | None = None,
+) -> int:
+    """How many products an upsert would CREATE (for plan-limit checks before writing)."""
+    resolver = ProductResolver(db, org_id, channel)
+    new: set[str] = set()
+    for rec in records:
+        if resolver.resolve(rec.sku, rec.external_id) is None:
+            new.add(rec.sku or rec.external_id or "")
+    return len(new)
+
+
 def upsert_products(
     db: Session,
     org_id: uuid.UUID,

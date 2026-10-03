@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 
 import type { PlanningSettings, Supplier } from "@stockcast/shared";
 
 import { unwrap } from "@/lib/api";
 import { useAction, useCategories, useChannels, useOrgQuery, useRegions, useSuppliers } from "@/lib/hooks";
 import { useApi } from "@/lib/org";
+import { BillingTab } from "@/components/billing";
 import { PageHeader } from "@/components/shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,21 +22,33 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function SettingsPage() {
   return (
+    <Suspense>
+      <SettingsTabs />
+    </Suspense>
+  );
+}
+
+function SettingsTabs() {
+  const params = useSearchParams();
+  const initial = params.get("tab") ?? (params.get("billing") ? "billing" : "planning");
+  return (
     <>
       <PageHeader title="Settings" />
-      <Tabs defaultValue="planning">
+      <Tabs defaultValue={initial}>
         <TabsList className="flex-wrap">
           <TabsTrigger value="planning">Planning</TabsTrigger>
           <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
           <TabsTrigger value="channels">Channels & regions</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>
           <TabsTrigger value="team">Team</TabsTrigger>
+          <TabsTrigger value="billing" data-testid="tab-billing">Billing</TabsTrigger>
         </TabsList>
         <TabsContent value="planning"><PlanningTab /></TabsContent>
         <TabsContent value="suppliers"><SuppliersTab /></TabsContent>
         <TabsContent value="channels"><ChannelsTab /></TabsContent>
         <TabsContent value="categories"><CategoriesTab /></TabsContent>
         <TabsContent value="team"><TeamTab /></TabsContent>
+        <TabsContent value="billing"><BillingTab /></TabsContent>
       </Tabs>
     </>
   );

@@ -1,6 +1,6 @@
 [project]
 name = "stockcast-api"
-version = "0.6.0"
+version = "0.7.0"
 description = "Stockcast API — AI demand forecasting and raw-material planning for ecommerce brands"
 requires-python = ">=3.12"
 dependencies = [
@@ -21,6 +21,10 @@ dependencies = [
     "holidays>=0.60",
     "fpdf2>=2.8.9",
     "email-validator>=2.2",
+    "pyjwt[crypto]>=2.9",
+    "slowapi>=0.1.9",
+    "limits[redis]>=3.13",
+    "stripe>=11.0",
 ]
 
 [dependency-groups]

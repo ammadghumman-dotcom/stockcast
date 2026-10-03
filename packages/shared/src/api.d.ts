@@ -903,6 +903,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/billing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Billing */
+        get: operations["read_billing_billing_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/billing/checkout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Checkout */
+        post: operations["checkout_billing_checkout_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/billing/portal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Portal */
+        post: operations["portal_billing_portal_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/webhooks/stripe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stripe Webhook */
+        post: operations["stripe_webhook_webhooks_stripe_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -966,6 +1034,31 @@ export interface components {
             };
             /** Worst */
             worst: components["schemas"]["AccuracyRow"][];
+        };
+        /** BillingRead */
+        BillingRead: {
+            /** Plan */
+            plan: string;
+            /** Plan Status */
+            plan_status: string;
+            /** Effective Plan */
+            effective_plan: string;
+            /** Trial Ends At */
+            trial_ends_at: string | null;
+            /** Billing Email */
+            billing_email: string | null;
+            /** Has Subscription */
+            has_subscription: boolean;
+            /** Limits */
+            limits: {
+                [key: string]: number | null;
+            };
+            /** Usage */
+            usage: {
+                [key: string]: number;
+            };
+            /** Plans */
+            plans: components["schemas"]["PlanInfo"][];
         };
         /** Body_import_csv_imports_post */
         Body_import_csv_imports_post: {
@@ -1138,6 +1231,11 @@ export interface components {
             region_id?: string | null;
             /** Is Active */
             is_active?: boolean | null;
+        };
+        /** CheckoutRequest */
+        CheckoutRequest: {
+            /** Plan */
+            plan: string;
         };
         /** DraftPORequest */
         DraftPORequest: {
@@ -1469,6 +1567,8 @@ export interface components {
              * @default USD
              */
             currency: string;
+            /** Email */
+            email?: string | null;
         };
         /** OrgRead */
         OrgRead: {
@@ -1491,6 +1591,12 @@ export interface components {
             name: string;
             /** Slug */
             slug: string;
+            /** Plan */
+            plan: string;
+            /** Plan Status */
+            plan_status: string;
+            /** Trial Ends At */
+            trial_ends_at?: string | null;
         };
         /** POLineRead */
         POLineRead: {
@@ -1520,6 +1626,19 @@ export interface components {
          * @enum {string}
          */
         POStatus: "draft" | "sent" | "received";
+        /** PlanInfo */
+        PlanInfo: {
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Price Usd */
+            price_usd: number;
+            /** Channels */
+            channels: number | null;
+            /** Skus */
+            skus: number | null;
+        };
         /** PlanningRunRead */
         PlanningRunRead: {
             /**
@@ -2252,6 +2371,11 @@ export interface components {
             /** Uplift Pct */
             uplift_pct: number | string;
         };
+        /** UrlResponse */
+        UrlResponse: {
+            /** Url */
+            url: string;
+        };
         /** UserCreate */
         UserCreate: {
             /**
@@ -2316,6 +2440,16 @@ export interface components {
             /** Context */
             ctx?: Record<string, never>;
         };
+        /** WebhookAck */
+        WebhookAck: {
+            /**
+             * Received
+             * @default true
+             */
+            received: boolean;
+            /** Result */
+            result: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -2362,6 +2496,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -2393,6 +2528,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -2424,6 +2560,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -2459,6 +2596,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -2490,6 +2628,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -2530,6 +2669,7 @@ export interface operations {
                 offset?: number;
             };
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -2561,6 +2701,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -2596,6 +2737,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -2629,6 +2771,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -2666,6 +2809,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -2697,6 +2841,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -2732,6 +2877,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -2771,6 +2917,7 @@ export interface operations {
                 days?: number;
             };
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -2804,6 +2951,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -2840,6 +2988,7 @@ export interface operations {
                 offset?: number;
             };
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -2871,6 +3020,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -2906,6 +3056,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -2939,6 +3090,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -2980,6 +3132,7 @@ export interface operations {
                 offset?: number;
             };
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -3011,6 +3164,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -3046,6 +3200,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -3079,6 +3234,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -3119,6 +3275,7 @@ export interface operations {
                 offset?: number;
             };
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -3150,6 +3307,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -3185,6 +3343,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -3218,6 +3377,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -3258,6 +3418,7 @@ export interface operations {
                 offset?: number;
             };
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -3289,6 +3450,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -3324,6 +3486,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -3357,6 +3520,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -3396,6 +3560,7 @@ export interface operations {
                 full?: boolean;
             };
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -3431,6 +3596,7 @@ export interface operations {
                 limit?: number;
             };
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -3464,6 +3630,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -3501,6 +3668,7 @@ export interface operations {
                 channel_id?: string | null;
             };
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -3536,6 +3704,7 @@ export interface operations {
                 shop: string;
             };
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -3653,6 +3822,7 @@ export interface operations {
                 limit?: number;
             };
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -3686,6 +3856,7 @@ export interface operations {
                 horizon?: number;
             };
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -3721,6 +3892,7 @@ export interface operations {
                 days?: number;
             };
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -3755,6 +3927,7 @@ export interface operations {
                 worst?: number;
             };
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -3786,6 +3959,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -3821,6 +3995,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -3854,6 +4029,7 @@ export interface operations {
                 seed_holidays?: boolean;
             };
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -3891,6 +4067,7 @@ export interface operations {
                 years?: number[] | null;
             };
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -3929,6 +4106,7 @@ export interface operations {
                 limit?: number;
             };
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -3960,6 +4138,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -3995,6 +4174,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -4026,6 +4206,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -4066,6 +4247,7 @@ export interface operations {
                 learned?: boolean | null;
             };
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -4097,6 +4279,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -4136,6 +4319,7 @@ export interface operations {
                 limit?: number;
             };
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -4167,6 +4351,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -4202,6 +4387,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -4235,6 +4421,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -4266,6 +4453,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -4303,6 +4491,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -4334,6 +4523,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -4369,6 +4559,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -4410,6 +4601,7 @@ export interface operations {
                 limit?: number;
             };
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -4441,6 +4633,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -4479,6 +4672,7 @@ export interface operations {
                 limit?: number;
             };
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -4510,6 +4704,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -4543,6 +4738,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -4581,6 +4777,7 @@ export interface operations {
                 limit?: number;
             };
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path?: never;
@@ -4612,6 +4809,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -4645,6 +4843,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -4678,6 +4877,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -4711,6 +4911,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -4744,6 +4945,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -4777,6 +4979,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                authorization?: string | null;
                 "X-Org-Id"?: string | null;
             };
             path: {
@@ -4797,6 +5000,137 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PurchaseOrderRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_billing_billing_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    checkout_billing_checkout_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckoutRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UrlResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    portal_billing_portal_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UrlResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stripe_webhook_webhooks_stripe_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Stripe-Signature"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookAck"];
                 };
             };
             /** @description Validation Error */

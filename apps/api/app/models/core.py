@@ -15,6 +15,14 @@ class Organization(TimestampMixin, Base):
     id: Mapped[uuid.UUID] = uuid_pk()
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     slug: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    # auth + billing
+    clerk_org_id: Mapped[str | None] = mapped_column(String(100), unique=True)
+    plan: Mapped[str] = mapped_column(String(20), default="trial", nullable=False)
+    plan_status: Mapped[str] = mapped_column(String(20), default="trialing", nullable=False)
+    trial_ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    stripe_customer_id: Mapped[str | None] = mapped_column(String(100), unique=True)
+    stripe_subscription_id: Mapped[str | None] = mapped_column(String(100))
+    billing_email: Mapped[str | None] = mapped_column(String(320))
 
 
 class User(OrgScoped, TimestampMixin, Base):

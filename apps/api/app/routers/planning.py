@@ -1,12 +1,13 @@
 import uuid
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from sqlalchemy import select
 
-from app.deps import DB, OrgId
+from app.deps import DB, Ctx, OrgId
 from app.models import PlanningRun, Product, Recommendation, Supplier
 from app.planning.engine import get_settings, latest_planning_run
 from app.planning.tasks import enqueue_planning
+from app.ratelimit import heavy
 from app.schemas.planning import (
     PlanningRunRead,
     PlanningSettingsRead,
@@ -14,7 +15,7 @@ from app.schemas.planning import (
     ProductPlanningUpdate,
     RecommendationRead,
 )
-from app.services import crud
+from app.services import audit, crud
 
 router = APIRouter(tags=["planning"])
 
@@ -27,22 +28,45 @@ def read_settings(db: DB, org_id: OrgId):
 
 
 @router.patch("/planning-settings", response_model=PlanningSettingsRead)
-def update_settings(db: DB, org_id: OrgId, body: PlanningSettingsUpdate):
+def update_settings(db: DB, ctx: Ctx, body: PlanningSettingsUpdate):
+    org_id = ctx.org_id
     s = get_settings(db, org_id)
-    for k, v in body.model_dump(exclude_unset=True).items():
+    changes = body.model_dump(exclude_unset=True)
+    before = audit.snapshot(s, tuple(changes))
+    for k, v in changes.items():
         setattr(s, k, v)
+    audit.record(
+        db,
+        ctx,
+        action="settings.update",
+        entity="planning_settings",
+        entity_id=s.id,
+        before=before,
+        after=audit.snapshot(s, tuple(changes)),
+    )
     db.commit()
     db.refresh(s)
     return s
 
 
 @router.patch("/products/{product_id}/planning", response_model=dict)
-def update_product_planning(
-    db: DB, org_id: OrgId, product_id: uuid.UUID, body: ProductPlanningUpdate
-):
+def update_product_planning(db: DB, ctx: Ctx, product_id: uuid.UUID, body: ProductPlanningUpdate):
+    org_id = ctx.org_id
     if body.preferred_supplier_id:
         crud.assert_owned(db, Supplier, org_id, body.preferred_supplier_id)
+    fields = tuple(body.model_dump(exclude_unset=True))
+    before = audit.snapshot(crud.get_scoped(db, Product, org_id, product_id), fields)
     p = crud.update_scoped(db, Product, org_id, product_id, body)
+    audit.record(
+        db,
+        ctx,
+        action="product.planning_update",
+        entity="product",
+        entity_id=p.id,
+        before=before,
+        after=audit.snapshot(p, fields),
+    )
+    db.commit()
     return {
         "product_id": str(p.id),
         "service_level": p.service_level,
@@ -53,7 +77,8 @@ def update_product_planning(
 
 
 @router.post("/planning-runs", response_model=PlanningRunRead, status_code=202)
-def trigger_planning(db: DB, org_id: OrgId):
+@heavy
+def trigger_planning(request: Request, db: DB, org_id: OrgId):
     return enqueue_planning(db, org_id, trigger="manual")
 
 

@@ -9,6 +9,7 @@ from celery.utils.log import get_task_logger
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.billing.plans import PlanLimitError, assert_can_add_skus
 from app.config import settings
 from app.db import SessionLocal
 from app.ingest import upsert
@@ -33,7 +34,11 @@ def run_sync(db: Session, run: SyncRun, *, full: bool = False) -> SyncRun:
         conn = connector_for(channel)
         since = _since(channel, full)
 
-        r = upsert.upsert_products(db, channel.org_id, conn.fetch_products(), channel)
+        products = list(conn.fetch_products())
+        assert_can_add_skus(
+            db, channel.org_id, upsert.count_new_skus(db, channel.org_id, products, channel)
+        )
+        r = upsert.upsert_products(db, channel.org_id, products, channel)
         run.rows_products = r.inserted + r.updated
         r = upsert.upsert_sales(db, channel.org_id, channel, conn.fetch_sales(since))
         run.rows_sales = r.inserted
@@ -45,7 +50,8 @@ def run_sync(db: Session, run: SyncRun, *, full: bool = False) -> SyncRun:
         db.commit()
     except Exception as exc:
         db.rollback()
-        run.status, run.error, run.finished_at = "failed", str(exc)[:2000], datetime.now(UTC)
+        msg = exc.message if isinstance(exc, PlanLimitError) else str(exc)
+        run.status, run.error, run.finished_at = "failed", msg[:2000], datetime.now(UTC)
         db.commit()
         raise
     return run
@@ -76,8 +82,25 @@ def sync_channel(self, run_id: str, full: bool = False) -> dict:
             return {"status": "missing"}
         if run.status == "success":
             return {"status": "already-done"}  # redelivered message after ack loss
-        run = run_sync(db, run, full=full)
+        try:
+            run = run_sync(db, run, full=full)
+        except ConnectorError:
+            if self.request.retries >= self.max_retries:
+                notify_sync_failed(db, run)
+            raise
+        except Exception:
+            notify_sync_failed(db, run)  # not retried: plan limit, bug, bad data
+            raise
         return {"status": run.status, "sales": run.rows_sales}
+
+
+def notify_sync_failed(db: Session, run: SyncRun) -> None:
+    from app.emails import send_sync_failed
+
+    try:
+        send_sync_failed(db, run)
+    except Exception:  # never let email break the task
+        log.exception("sync_failed email for run %s", run.id)
 
 
 @celery.task(name="ingest.sync_all_channels")

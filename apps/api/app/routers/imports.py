@@ -4,16 +4,18 @@ import json
 import uuid
 from datetime import date
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile, status
 from fastapi.responses import PlainTextResponse
 from sqlalchemy import select
 
+from app.billing.plans import assert_can_add_skus
 from app.deps import DB, OrgId
 from app.ingest import upsert
 from app.ingest.csv_connector import KINDS, CsvConnector, CsvParseError
 from app.ingest.export import export_csv
 from app.ingest.records import IngestResult
 from app.models import Channel, ChannelType
+from app.ratelimit import heavy
 from app.schemas.ingest import ImportResponse
 from app.services import crud
 
@@ -36,7 +38,9 @@ def _csv_channel(db, org_id: uuid.UUID, channel_id: uuid.UUID | None) -> Channel
 
 
 @router.post("/imports", response_model=ImportResponse)
+@heavy
 async def import_csv(
+    request: Request,
     db: DB,
     org_id: OrgId,
     products: UploadFile | None = File(None),
@@ -73,7 +77,9 @@ async def import_csv(
     try:
         # Order matters: products first so sales/inventory/bom can resolve SKUs.
         if "products" in files:
-            results.append(upsert.upsert_products(db, org_id, conn.fetch_products(), None))
+            recs = list(conn.fetch_products())
+            assert_can_add_skus(db, org_id, upsert.count_new_skus(db, org_id, recs))
+            results.append(upsert.upsert_products(db, org_id, recs, None))
         if "bom" in files:
             results.append(upsert.upsert_bom(db, org_id, conn.fetch_bom()))
         if "inventory" in files:
@@ -100,7 +106,8 @@ async def import_csv(
 
 
 @router.get("/exports/{kind}.csv", response_class=PlainTextResponse)
-def export(db: DB, org_id: OrgId, kind: str, channel_id: uuid.UUID | None = None):
+@heavy
+def export(request: Request, db: DB, org_id: OrgId, kind: str, channel_id: uuid.UUID | None = None):
     if kind not in KINDS:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"unknown kind {kind}")
     return PlainTextResponse(

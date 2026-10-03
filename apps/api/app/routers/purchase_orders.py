@@ -5,14 +5,15 @@ from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import PlainTextResponse, Response
 from sqlalchemy import select
 
-from app.deps import DB, OrgId
+from app.deps import DB, Ctx, OrgId
 from app.models import PlanningRun, Product, PurchaseOrder, Supplier
 from app.planning import po as po_svc
 from app.planning.engine import latest_planning_run
 from app.schemas.planning import DraftPORequest, POLineRead, PurchaseOrderRead, ReceiveRequest
-from app.services import crud
+from app.services import audit, crud
 
 router = APIRouter(prefix="/purchase-orders", tags=["purchase-orders"])
+PO_FIELDS = ("number", "status", "sent_at", "received_at")
 
 
 def _read(db, po: PurchaseOrder) -> PurchaseOrderRead:
@@ -43,7 +44,8 @@ def _read(db, po: PurchaseOrder) -> PurchaseOrderRead:
     response_model=list[PurchaseOrderRead],
     status_code=status.HTTP_201_CREATED,
 )
-def from_recommendations(db: DB, org_id: OrgId, body: DraftPORequest):
+def from_recommendations(db: DB, ctx: Ctx, body: DraftPORequest):
+    org_id = ctx.org_id
     run = (
         crud.get_scoped(db, PlanningRun, org_id, body.run_id)
         if body.run_id
@@ -56,6 +58,15 @@ def from_recommendations(db: DB, org_id: OrgId, body: DraftPORequest):
     except po_svc.POError as exc:
         db.rollback()
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
+    for po in pos:
+        audit.record(
+            db,
+            ctx,
+            action="po.create",
+            entity="purchase_order",
+            entity_id=po.id,
+            after={"supplier_id": str(po.supplier_id), "run_id": str(run.id)},
+        )
     db.commit()
     for po in pos:
         db.refresh(po)
@@ -101,42 +112,72 @@ def po_pdf(db: DB, org_id: OrgId, po_id: uuid.UUID):
 
 
 @router.post("/{po_id}/send", response_model=PurchaseOrderRead)
-def send_po(db: DB, org_id: OrgId, po_id: uuid.UUID):
-    po = crud.get_scoped(db, PurchaseOrder, org_id, po_id)
+def send_po(db: DB, ctx: Ctx, po_id: uuid.UUID):
+    po = crud.get_scoped(db, PurchaseOrder, ctx.org_id, po_id)
+    before = audit.snapshot(po, PO_FIELDS)
     try:
         po_svc.send_po(db, po)
     except po_svc.POError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
+    audit.record(
+        db,
+        ctx,
+        action="po.send",
+        entity="purchase_order",
+        entity_id=po.id,
+        before=before,
+        after=audit.snapshot(po, PO_FIELDS),
+    )
     db.commit()
     db.refresh(po)
     return _read(db, po)
 
 
 @router.post("/{po_id}/mark-sent", response_model=PurchaseOrderRead)
-def mark_sent(db: DB, org_id: OrgId, po_id: uuid.UUID):
+def mark_sent(db: DB, ctx: Ctx, po_id: uuid.UUID):
     """Record that the PO was sent outside the app (no email)."""
     from datetime import UTC, datetime
 
     from app.models import POStatus
 
-    po = crud.get_scoped(db, PurchaseOrder, org_id, po_id)
+    po = crud.get_scoped(db, PurchaseOrder, ctx.org_id, po_id)
     if po.status != POStatus.draft:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "only drafts can be marked sent")
+    before = audit.snapshot(po, PO_FIELDS)
     po.status, po.sent_at = POStatus.sent, datetime.now(UTC)
+    audit.record(
+        db,
+        ctx,
+        action="po.mark_sent",
+        entity="purchase_order",
+        entity_id=po.id,
+        before=before,
+        after=audit.snapshot(po, PO_FIELDS),
+    )
     db.commit()
     db.refresh(po)
     return _read(db, po)
 
 
 @router.post("/{po_id}/receive", response_model=PurchaseOrderRead)
-def receive_po(db: DB, org_id: OrgId, po_id: uuid.UUID, body: ReceiveRequest | None = None):
-    po = crud.get_scoped(db, PurchaseOrder, org_id, po_id)
+def receive_po(db: DB, ctx: Ctx, po_id: uuid.UUID, body: ReceiveRequest | None = None):
+    po = crud.get_scoped(db, PurchaseOrder, ctx.org_id, po_id)
+    before = audit.snapshot(po, PO_FIELDS)
     try:
         po_svc.receive_po(
             db, po, {k: Decimal(v) for k, v in body.lines.items()} if body and body.lines else None
         )
     except po_svc.POError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
+    audit.record(
+        db,
+        ctx,
+        action="po.receive",
+        entity="purchase_order",
+        entity_id=po.id,
+        before=before,
+        after=audit.snapshot(po, PO_FIELDS),
+    )
     db.commit()
     db.refresh(po)
     return _read(db, po)
