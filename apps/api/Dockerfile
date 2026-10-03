@@ -2,13 +2,14 @@
 # Build: docker build -t stockcast-api apps/api
 FROM python:3.12-slim AS base
 
-ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 UV_SYSTEM_PYTHON=1 UV_COMPILE_BYTECODE=1 \
-    HF_HOME=/app/.hf-cache PORT=8000
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 UV_COMPILE_BYTECODE=1 \
+    HF_HOME=/app/.hf-cache PORT=8000 \
+    UV_CACHE_DIR=/tmp/uv-cache UV_NO_SYNC=1  # runtime `uv run` never writes to the venv
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl postgresql-client \
     && rm -rf /var/lib/apt/lists/* \
     && pip install --no-cache-dir uv \
-    && useradd -r -u 1000 app
+    && useradd -r -m -u 1000 app
 
 WORKDIR /app
 COPY pyproject.toml uv.lock* requirements-chronos.txt ./
