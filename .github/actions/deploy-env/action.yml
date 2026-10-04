@@ -45,6 +45,7 @@ runs:
 
     # ---- Web: build on the runner with the environment's variables, deploy prebuilt
     - name: Deploy web
+      id: web
       shell: bash
       env:
         VERCEL_TOKEN: ${{ inputs.vercel_token }}
@@ -63,7 +64,19 @@ runs:
         vercel build $PRODARG --token "$VERCEL_TOKEN"
         URL=$(vercel deploy --prebuilt $PRODARG --token "$VERCEL_TOKEN")
         echo "deployed $URL"
-        if [ -n "${{ inputs.vercel_alias }}" ]; then vercel alias set "$URL" "${{ inputs.vercel_alias }}" --token "$VERCEL_TOKEN"; fi
+        echo "deploy_url=$URL" >> "$GITHUB_OUTPUT"
+        # Staging gets a stable alias. A project-scoped token may not be allowed to alias; then
+        # warn and smoke-test the deployment URL itself rather than blocking the pipeline.
+        if [ -n "${{ inputs.vercel_alias }}" ]; then
+          if vercel alias set "$URL" "${{ inputs.vercel_alias }}" --scope "$VERCEL_ORG_ID" --token "$VERCEL_TOKEN"; then
+            echo "smoke_web_url=${{ inputs.web_url }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Could not alias $URL to ${{ inputs.vercel_alias }} (token lacks alias permission); smoke-testing the deployment URL instead"
+            echo "smoke_web_url=$URL" >> "$GITHUB_OUTPUT"
+          fi
+        else
+          echo "smoke_web_url=${{ inputs.web_url }}" >> "$GITHUB_OUTPUT"
+        fi
 
     # ---- Smoke: the new release answers, its dependencies are up, the web app renders
     - name: Smoke test
@@ -77,5 +90,5 @@ runs:
           sleep 10
         done
         curl -fsS "${{ inputs.api_url }}/openapi.json" | grep -q '"/recommendations"'
-        curl -fsS -o /dev/null -w "web %{http_code}\n" "${{ inputs.web_url }}/onboarding" | grep -E "web (200|30[0-9])"
+        curl -fsS -o /dev/null -w "web %{http_code}\n" "${{ steps.web.outputs.smoke_web_url }}/onboarding" | grep -E "web (200|30[0-9])"
         echo "smoke ok for ${{ inputs.environment }}"
