@@ -1,36 +1,54 @@
-# Railway config-as-code
+# Railway setup
 
-One Railway **project** per environment is not needed: use one project `stockcast` with two
-Railway **environments**, `staging` and `production` (Settings → Environments). Each
-environment has the same five services; variables differ per environment.
+One Railway **project** with two Railway **environments**, `staging` and `production`
+(Settings → Environments → New Environment → *Duplicate* production). Each environment has the
+same six services; variables differ per environment.
 
-| Service   | Config file                 | Source                                  |
-| --------- | --------------------------- | --------------------------------------- |
-| `api`     | `infra/railway/api.json`    | this repo, root `/`                     |
-| `worker`  | `infra/railway/worker.json` | this repo, root `/`                     |
-| `beat`    | `infra/railway/beat.json`   | this repo, root `/` (exactly 1 replica) |
-| `backup`  | `infra/railway/backup.json` | this repo, root `/` (cron 03:00 UTC)    |
-| `postgres`| Railway template **TimescaleDB** (`timescale/timescaledb:latest-pg16`) with a volume |
-| `redis`   | Railway template Redis      |                                         |
+> Railway deprecated *Config as Code* on 2026-08-28 (services created after that date cannot opt
+> in), so the `*.json` files in this folder are **reference only** — the settings below are made in
+> the Railway UI per service. The deploy workflow (`railway up --service …`) does not depend on them.
 
-For each code service: Settings → Build → *Config-as-code file path* = the file above, and turn
-**off** "Auto deploy on push" — deploys are driven by `.github/workflows/deploy.yml` (`railway up`)
-so that migrations, smoke tests and the production approval gate run in order.
+| Service       | Source                                   | Settings (Railway UI)                                                                                        |
+| ------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `api`         | this repo, **Root Directory `apps/api`** | Builder **Dockerfile** (path `Dockerfile`), pre-deploy `sh scripts/migrate.sh`, healthcheck `/health/ready`, public domain on port 8000 |
+| `worker`      | this repo, root `apps/api`               | Builder Dockerfile, start `sh scripts/start-worker.sh`                                                        |
+| `beat`        | this repo, root `apps/api`               | Builder Dockerfile, start `sh scripts/start-beat.sh`, exactly 1 replica                                       |
+| `backup`      | this repo, root `apps/api`               | Builder Dockerfile, start `sh scripts/backup.sh`, cron schedule `0 3 * * *`                                   |
+| `timescaledb` | Docker image `timescale/timescaledb:latest-pg16` | volume at `/var/lib/postgresql/data`, `PGDATA=/var/lib/postgresql/data/pgdata`                         |
+| `Redis`       | Railway Database → Redis                 |                                                                                                              |
 
-Variables (reference the managed services with `${{Postgres.DATABASE_URL}}` etc.):
+The root directory must be `apps/api` because the Dockerfile copies `pyproject.toml` from its own
+directory (the same context `docker compose` uses). For every code service **disconnect the branch
+trigger** (Source → Branch → Disconnect) — deploys are driven by `.github/workflows/deploy.yml`
+(`railway up`) so that migrations, smoke tests and the production gate run in order.
+
+Variables. The `api` service holds the canonical set; `worker`, `beat` and `backup` reference it
+(`${{api.VAR}}`) so secrets are entered once per environment:
 
 ```
-ENV=staging|production            DATABASE_URL=${{Postgres.DATABASE_URL}}   # add +psycopg (see below)
+# timescaledb service
+POSTGRES_USER=stockcast  POSTGRES_DB=stockcast  POSTGRES_PASSWORD=${{secret(32)}}
+PGDATA=/var/lib/postgresql/data/pgdata
+DATABASE_URL=postgresql+psycopg://${{POSTGRES_USER}}:${{POSTGRES_PASSWORD}}@${{RAILWAY_PRIVATE_DOMAIN}}:5432/${{POSTGRES_DB}}
+
+# api service
+ENV=staging|production  AUTH_MODE=clerk  LOG_FORMAT=json  FORCE_HTTPS=true  WEB_CONCURRENCY=2
+DATABASE_URL=${{timescaledb.DATABASE_URL}}
 CELERY_BROKER_URL=${{Redis.REDIS_URL}}/1   RATE_LIMIT_STORAGE=${{Redis.REDIS_URL}}/2
-AUTH_MODE=clerk  CLERK_JWKS_URL  CLERK_ISSUER  CLERK_SECRET_KEY
-CREDENTIALS_KEY  FORCE_HTTPS=true  CORS_ORIGINS=https://app.stockcast.app  ALLOWED_HOSTS=api.stockcast.app
-APP_BASE_URL=https://api.stockcast.app  WEB_BASE_URL=https://app.stockcast.app
-STRIPE_*  RESEND_API_KEY  SHOPIFY_*  AMAZON_*  EBAY_*  AMAZON_WEBHOOK_SECRET
+APP_BASE_URL=https://${{RAILWAY_PUBLIC_DOMAIN}}  ALLOWED_HOSTS=${{RAILWAY_PUBLIC_DOMAIN}}
+WEB_BASE_URL=https://<vercel host>  CORS_ORIGINS=https://<vercel host>
+CREDENTIALS_KEY (Fernet)  CLERK_JWKS_URL  CLERK_ISSUER  CLERK_SECRET_KEY
+STRIPE_SECRET_KEY  STRIPE_WEBHOOK_SECRET  STRIPE_PRICE_STARTER|GROWTH|SCALE  RESEND_API_KEY
+SHOPIFY_*  AMAZON_*  EBAY_*  AMAZON_WEBHOOK_SECRET
 SENTRY_DSN  OTEL_EXPORTER_OTLP_ENDPOINT  OTEL_EXPORTER_OTLP_HEADERS  ALERT_WEBHOOK_URL
-LOG_FORMAT=json  RELEASE (set by the deploy workflow)
-BACKUP_S3_BUCKET  BACKUP_S3_ENDPOINT  AWS_ACCESS_KEY_ID  AWS_SECRET_ACCESS_KEY  BACKUP_PREFIX
-CELERY_CONCURRENCY=2 (worker)  WEB_CONCURRENCY=2 (api)
+RELEASE (set by the deploy workflow)
+
+# worker: everything above as ${{api.VAR}} + CELERY_CONCURRENCY=2
+# beat:   everything above as ${{api.VAR}}
+# backup: ENV, DATABASE_URL as ${{api.VAR}} + BACKUP_PREFIX=<env> BACKUP_RETENTION_DAYS=30
+#         BACKUP_S3_BUCKET BACKUP_S3_ENDPOINT AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION
 ```
 
-`DATABASE_URL` must use the `postgresql+psycopg://` scheme: set it to
-`postgresql+psycopg://${{Postgres.PGUSER}}:${{Postgres.PGPASSWORD}}@${{Postgres.RAILWAY_PRIVATE_DOMAIN}}:5432/${{Postgres.PGDATABASE}}`.
+The api refuses to boot (`security.production_guard`) until `STRIPE_WEBHOOK_SECRET`, a non-default
+`CREDENTIALS_KEY`, `FORCE_HTTPS=true` and https `CORS_ORIGINS` are set — expect the healthcheck to
+fail on the first deploy of a fresh environment until the secrets are in.
