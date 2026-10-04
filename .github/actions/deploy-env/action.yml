@@ -54,6 +54,11 @@ runs:
         cd apps/web
         if [ "${{ inputs.vercel_prod }}" = "true" ]; then ENVARG=production; PRODARG=--prod; else ENVARG=preview; PRODARG=""; fi
         vercel pull --yes --environment=$ENVARG --token "$VERCEL_TOKEN"
+        # One Vercel project serves both environments (preview = staging). Point this build at
+        # this environment's api so staging never talks to production (and vice versa).
+        ENVFILE=".vercel/.env.$ENVARG.local"
+        sed -i -E '/^(NEXT_PUBLIC_API_URL|API_URL)=/d' "$ENVFILE"
+        printf 'NEXT_PUBLIC_API_URL="%s"\nAPI_URL="%s"\n' "${{ inputs.api_url }}" "${{ inputs.api_url }}" >> "$ENVFILE"
         vercel build $PRODARG --token "$VERCEL_TOKEN"
         URL=$(vercel deploy --prebuilt $PRODARG --token "$VERCEL_TOKEN")
         echo "deployed $URL"
