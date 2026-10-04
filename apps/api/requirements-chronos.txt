@@ -3,4 +3,4 @@
 # when these are not importable.  Install locally with:
 #   uv pip install -r requirements-chronos.txt --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple
 torch>=2.4,<3
-chronos-forecasting>=1.4
+chronos-forecasting>=2.3.2
