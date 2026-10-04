@@ -11,7 +11,7 @@ ENDPOINT_ARG=""
 case "$SRC" in
   s3://*) FILE="/tmp/$(basename "$SRC")"
           # shellcheck disable=SC2086
-          uv run --no-dev python -m scripts.s3 get "$SRC" "$FILE" $ENDPOINT_ARG ;;
+          python -m scripts.s3 get "$SRC" "$FILE" $ENDPOINT_ARG ;;
   *)      FILE="$SRC" ;;
 esac
 PG_URL="$(printf '%s' "$RESTORE_TARGET_URL" | sed 's#^postgresql+psycopg://#postgresql://#')"
@@ -21,5 +21,5 @@ pg_restore --no-owner --no-privileges --clean --if-exists --dbname "$PG_URL" "$F
 echo "restore: verifying"
 psql "$PG_URL" -Atc "select count(*) from organizations;" | sed 's/^/organizations: /'
 psql "$PG_URL" -Atc "select count(*) from sales_daily;" | sed 's/^/sales_daily rows: /'
-DATABASE_URL="$RESTORE_TARGET_URL" uv run --no-dev alembic current
+DATABASE_URL="$RESTORE_TARGET_URL" alembic current
 echo "restore: done"

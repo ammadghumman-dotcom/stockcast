@@ -107,7 +107,7 @@ credentials only on the `backup` service.
 - **API/worker**: Railway → service → Deployments → *Redeploy* the previous successful deployment
   (both `api` and `worker`, keep them on the same release). Migrations are additive and
   backward-compatible by rule, so the previous code runs against the new schema. If a migration
-  must be reverted: `railway run --service api -e production uv run alembic downgrade -1`.
+  must be reverted: `railway run --service api -e production alembic downgrade -1`.
 - **Web**: Vercel → Deployments → *Promote to Production* the previous deployment (instant).
 - **Record it**: Sentry release stays; add a line to `docs/CHANGELOG.md` (what, why, follow-up).
 
@@ -170,8 +170,8 @@ error rate < 1 %). To run against staging: `make seed-load` on a staging shell, 
 
 ```bash
 railway logs -e production --service worker | grep forecast     # nightly run
-railway run -e production --service api uv run alembic current   # schema version
-railway run -e production --service api uv run python -m scripts.export_openapi  # spec
+railway run -e production --service api alembic current            # schema version
+railway run -e production --service api python -m scripts.export_openapi  # spec
 make ci-stack && make e2e                                       # what CI does, locally
 make bench WORKERS=8                                            # capacity projection
 ```

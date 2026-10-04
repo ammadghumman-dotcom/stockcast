@@ -4,8 +4,9 @@ FROM python:3.12-slim AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 UV_COMPILE_BYTECODE=1 \
     HF_HOME=/app/.hf-cache PORT=8000 \
-    UV_CACHE_DIR=/tmp/uv-cache UV_NO_SYNC=1
-# UV_NO_SYNC: runtime `uv run` must never try to write to the venv (non-root user).
+    PATH=/app/.venv/bin:$PATH
+# Runtime commands call the venv binaries directly (uvicorn, celery, alembic, python): no `uv run`,
+# so the non-root user never needs a uv cache or a writable venv.
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl postgresql-client \
     && rm -rf /var/lib/apt/lists/* \
@@ -22,7 +23,8 @@ RUN uv pip install --python .venv/bin/python -r requirements-chronos.txt \
 
 # No recursive chown (it would duplicate the venv layer); only the cache dir needs writes.
 COPY --chown=app:app . .
-RUN chmod +x scripts/*.sh && mkdir -p /app/.hf-cache && chown app:app /app/.hf-cache
+RUN chmod +x scripts/*.sh && mkdir -p /app/.hf-cache && chown app:app /app/.hf-cache \
+    && rm -rf /root/.cache/uv
 USER app
 
 EXPOSE 8000
@@ -36,4 +38,4 @@ CMD ["sh", "-c", "uv run --no-dev alembic upgrade head && uv run --no-dev uvicor
 
 # ---- prod (Railway): migrations run by the deploy workflow / preDeploy, not here
 FROM base AS prod
-CMD ["sh", "-c", "uv run --no-dev uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --workers ${WEB_CONCURRENCY:-2} --proxy-headers --forwarded-allow-ips='*' --no-access-log"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --workers ${WEB_CONCURRENCY:-2} --proxy-headers --forwarded-allow-ips='*' --no-access-log"]

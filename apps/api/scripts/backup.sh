@@ -24,8 +24,8 @@ echo "backup: ${SIZE} bytes"
 [ "$SIZE" -gt 10000 ] || { echo "backup: dump suspiciously small"; exit 1; }
 
 # shellcheck disable=SC2086
-uv run --no-dev python -m scripts.s3 put "$FILE" "s3://${BACKUP_S3_BUCKET}/${PREFIX}/$(basename "$FILE")" $ENDPOINT_ARG
+python -m scripts.s3 put "$FILE" "s3://${BACKUP_S3_BUCKET}/${PREFIX}/$(basename "$FILE")" $ENDPOINT_ARG
 # shellcheck disable=SC2086
-uv run --no-dev python -m scripts.s3 prune "s3://${BACKUP_S3_BUCKET}/${PREFIX}/" --days "$RETENTION" $ENDPOINT_ARG
+python -m scripts.s3 prune "s3://${BACKUP_S3_BUCKET}/${PREFIX}/" --days "$RETENTION" $ENDPOINT_ARG
 rm -f "$FILE"
 echo "backup: done"
