@@ -78,7 +78,9 @@ runs:
           echo "smoke_web_url=${{ inputs.web_url }}" >> "$GITHUB_OUTPUT"
         fi
 
-    # ---- Smoke: the new release answers, its dependencies are up, the web app renders
+    # ---- Smoke: the new release answers, its dependencies are up, the web app renders.
+    # Accept: text/html makes Clerk treat the request as a page load (redirect to sign-in);
+    # without it Clerk answers protected routes with 404.
     - name: Smoke test
       shell: bash
       run: |
@@ -90,5 +92,5 @@ runs:
           sleep 10
         done
         curl -fsS "${{ inputs.api_url }}/openapi.json" | grep -q '"/recommendations"'
-        curl -fsS -o /dev/null -w "web %{http_code}\n" "${{ steps.web.outputs.smoke_web_url }}/onboarding" | grep -E "web (200|30[0-9])"
+        curl -fsS -H "Accept: text/html" -o /dev/null -w "web %{http_code}\n" "${{ steps.web.outputs.smoke_web_url }}/onboarding" | grep -E "web (200|30[0-9])"
         echo "smoke ok for ${{ inputs.environment }}"
