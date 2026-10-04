@@ -10,7 +10,7 @@ same six services; variables differ per environment.
 
 | Service       | Source                                   | Settings (Railway UI)                                                                                        |
 | ------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `api`         | this repo, **Root Directory `apps/api`** | Builder **Dockerfile** (path `Dockerfile`), pre-deploy `sh scripts/migrate.sh`, healthcheck `/health/ready`, public domain on port 8000 |
+| `api`         | this repo, **Root Directory `apps/api`** | Builder **Dockerfile** (path `Dockerfile`), pre-deploy `sh scripts/migrate.sh`, healthcheck `/health/ready`, public domain on port **8080** (Railway's `PORT`; the app listens on `$PORT`) |
 | `worker`      | this repo, root `apps/api`               | Builder Dockerfile, start `sh scripts/start-worker.sh`                                                        |
 | `beat`        | this repo, root `apps/api`               | Builder Dockerfile, start `sh scripts/start-beat.sh`, exactly 1 replica                                       |
 | `backup`      | this repo, root `apps/api`               | Builder Dockerfile, start `sh scripts/backup.sh`, cron schedule `0 3 * * *`                                   |
