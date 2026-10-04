@@ -54,6 +54,13 @@ class Settings(BaseSettings):
     stripe_price_scale: str = ""
     trial_days: int = 14
 
+    @property
+    def billing_enabled(self) -> bool:
+        """Billing is on only when a payment provider is configured. Without it (e.g. a Stripe
+        account isn't available in the founder's country) the app runs with trials that never lock,
+        and checkout/portal return 503."""
+        return bool(self.stripe_secret_key)
+
     # Email (Resend) for sending POs to suppliers and transactional mail
     resend_api_key: str = ""
     email_from: str = "Stockcast <orders@stockcast.app>"

@@ -81,6 +81,16 @@ def test_trial_ending_selection_and_mail(db, org: Organization, monkeypatch) -> 
     assert [d for _, d in emails.trial_ending_orgs(db, now)] == [1]
 
 
+def test_trial_ending_task_is_skipped_while_billing_is_disabled(monkeypatch) -> None:
+    from app import emails_tasks
+
+    called: list[int] = []
+    monkeypatch.setattr(emails, "trial_ending_orgs", lambda db: called.append(1) or [])
+    assert emails_tasks.trial_ending() == 0 and called == []
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_dummy")
+    assert emails_tasks.trial_ending() == 0 and called == [1]
+
+
 def test_sync_failed_mail(db, org: Organization, monkeypatch) -> None:
     fake = _fake(monkeypatch)
     _admin(db, org)

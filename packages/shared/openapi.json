@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Stockcast API",
-    "version": "0.7.0"
+    "version": "0.9.0"
   },
   "paths": {
     "/orgs": {
@@ -3590,6 +3590,25 @@
         }
       }
     },
+    "/webhooks/amazon": {
+      "post": {
+        "tags": [
+          "amazon"
+        ],
+        "summary": "Amazon Notification",
+        "operationId": "amazon_notification_webhooks_amazon_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/forecast-runs": {
       "post": {
         "tags": [
@@ -6661,6 +6680,7 @@
           "system"
         ],
         "summary": "Health",
+        "description": "Liveness: the process is up. Used by Railway + the uptime check.",
         "operationId": "health_health_get",
         "responses": {
           "200": {
@@ -6669,6 +6689,28 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Ready",
+        "description": "Readiness: database + broker reachable. Deploy smoke tests hit this.",
+        "operationId": "ready_health_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Readiness"
                 }
               }
             }
@@ -6888,6 +6930,10 @@
             "type": "boolean",
             "title": "Has Subscription"
           },
+          "billing_enabled": {
+            "type": "boolean",
+            "title": "Billing Enabled"
+          },
           "limits": {
             "additionalProperties": {
               "anyOf": [
@@ -6925,6 +6971,7 @@
           "trial_ends_at",
           "billing_email",
           "has_subscription",
+          "billing_enabled",
           "limits",
           "usage",
           "plans"
@@ -9878,6 +9925,61 @@
           "lines"
         ],
         "title": "PurchaseOrderRead"
+      },
+      "Readiness": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "service": {
+            "type": "string",
+            "title": "Service"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "env": {
+            "type": "string",
+            "title": "Env"
+          },
+          "time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Time"
+          },
+          "database": {
+            "type": "string",
+            "title": "Database"
+          },
+          "redis": {
+            "type": "string",
+            "title": "Redis"
+          },
+          "release": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "service",
+          "version",
+          "env",
+          "time",
+          "database",
+          "redis"
+        ],
+        "title": "Readiness"
       },
       "ReceiveRequest": {
         "properties": {
