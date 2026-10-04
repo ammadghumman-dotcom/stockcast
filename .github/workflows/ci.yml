@@ -105,7 +105,7 @@ jobs:
           sudo docker image prune -af >/dev/null 2>&1 || true
           df -h / | tail -1
       - run: cp .env.example .env   # compose files reference it (env_file)
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
       - name: Build production images (layer cache in GHA)
         id: bake
         continue-on-error: true   # cache misconfiguration must not block CI; fallback below
