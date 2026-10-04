@@ -91,6 +91,13 @@ def test_production_guard_catches_dev_defaults(monkeypatch) -> None:
     assert any("STRIPE_WEBHOOK_SECRET" in p for p in security.production_guard())
 
 
+def test_trusted_hosts_always_include_railway_healthcheck(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "allowed_hosts", "api.example.com, ")
+    assert security.trusted_hosts() == ["api.example.com", "healthcheck.railway.app"]
+    monkeypatch.setattr(settings, "allowed_hosts", "healthcheck.railway.app,api.example.com")
+    assert security.trusted_hosts().count("healthcheck.railway.app") == 1
+
+
 def test_readiness_reports_dependencies(client: TestClient, monkeypatch) -> None:
     r = client.get("/health/ready")
     body = r.json() if r.status_code == 200 else r.json()["detail"]

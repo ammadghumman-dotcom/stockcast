@@ -67,5 +67,15 @@ def production_guard() -> list[str]:
     return problems
 
 
+# Railway's deploy healthcheck calls /health/ready with this Host header; without it every deploy
+# fails at the healthcheck step once ALLOWED_HOSTS is set.
+PLATFORM_HEALTHCHECK_HOSTS = ("healthcheck.railway.app",)
+
+
+def trusted_hosts() -> list[str]:
+    hosts = [h.strip() for h in settings.allowed_hosts.split(",") if h.strip()]
+    return hosts + [h for h in PLATFORM_HEALTHCHECK_HOSTS if h not in hosts]
+
+
 def cors_origins() -> list[str]:
     return [o.strip() for o in settings.cors_origins.split(",") if o.strip()]

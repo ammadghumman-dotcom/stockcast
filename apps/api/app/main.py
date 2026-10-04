@@ -34,7 +34,13 @@ from app.routers import (
     shopify,
     suppliers,
 )
-from app.security import HttpsMiddleware, RequestIdMiddleware, cors_origins, production_guard
+from app.security import (
+    HttpsMiddleware,
+    RequestIdMiddleware,
+    cors_origins,
+    production_guard,
+    trusted_hosts,
+)
 
 configure_logging()
 configure_sentry("api")
@@ -65,10 +71,7 @@ app.add_middleware(
     max_age=600,
 )
 if settings.allowed_hosts:
-    app.add_middleware(
-        TrustedHostMiddleware,
-        allowed_hosts=[h.strip() for h in settings.allowed_hosts.split(",") if h.strip()],
-    )
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=trusted_hosts())
 app.add_middleware(HttpsMiddleware, enabled=settings.force_https)
 app.add_middleware(RequestIdMiddleware)
 configure_tracing(app=app, engine=engine)
