@@ -40,7 +40,7 @@ jobs:
           enable-cache: true
           ignore-nothing-to-cache: true
         continue-on-error: true
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - run: uv sync
