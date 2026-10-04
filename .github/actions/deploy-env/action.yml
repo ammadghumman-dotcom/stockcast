@@ -50,8 +50,9 @@ runs:
         VERCEL_TOKEN: ${{ inputs.vercel_token }}
         VERCEL_ORG_ID: ${{ inputs.vercel_org_id }}
         VERCEL_PROJECT_ID: ${{ inputs.vercel_project_id }}
+      # Run from the repo root: the Vercel project's Root Directory is apps/web, so running
+      # inside apps/web would make Vercel look for apps/web/apps/web.
       run: |
-        cd apps/web
         if [ "${{ inputs.vercel_prod }}" = "true" ]; then ENVARG=production; PRODARG=--prod; else ENVARG=preview; PRODARG=""; fi
         vercel pull --yes --environment=$ENVARG --token "$VERCEL_TOKEN"
         # One Vercel project serves both environments (preview = staging). Point this build at
