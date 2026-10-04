@@ -47,7 +47,7 @@ jobs:
       - name: Install Chronos (CPU torch)
         run: uv pip install -r requirements-chronos.txt --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple
       - name: Cache Chronos model weights
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/huggingface
           key: hf-chronos-bolt-small-v1
