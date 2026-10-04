@@ -50,7 +50,16 @@ def run_forecast(
         adj_series = [_divide(s, factors) for s in series]
         scored = forecast_batch(adj_series, H, category_prior=priors)
         # backtest without covariates too, so improvement is measurable
-        scored_base = forecast_batch(series, H, category_prior=priors) if factors else scored
+        # baseline (no covariates) WAPE: backtest only, and only for SKUs a factor touches
+        base_wape: dict[uuid.UUID, float | None] = {
+            s.product_id: scored[s].wape for s in adj_series
+        }
+        if factors:
+            touched = [s for s in series if s.product_id in factors]
+            for s, sc_b in forecast_batch(
+                touched, H, category_prior=priors, backtest_only=True
+            ).items():
+                base_wape[s.product_id] = sc_b.wape
 
         db.execute(delete(Forecast).where(Forecast.run_id == run.id))
         db.execute(delete(ForecastAccuracy).where(ForecastAccuracy.run_id == run.id))
@@ -58,7 +67,7 @@ def run_forecast(
         rescored = _rescore_all(series, adj_series, scored, factors) if factors else {}
         fc_rows, acc_rows = [], []
         err = act = err_base = 0.0
-        for s_adj, s_raw, sb in zip(adj_series, series, scored_base, strict=True):
+        for s_adj, s_raw in zip(adj_series, series, strict=True):
             sc = scored[s_adj]
             f = factors.get(s_raw.product_id)
             hist_f, fut_f, fut_prior, fut_ev = (
@@ -105,8 +114,9 @@ def run_forecast(
                 if w_adj is not None:
                     err += w_adj * vol
                     act += vol
-                if scored_base[sb].wape is not None:
-                    err_base += scored_base[sb].wape * vol
+                w_base = base_wape.get(s_raw.product_id)
+                if w_base is not None:
+                    err_base += w_base * vol
             _count(run, sc.model)
 
         for i in range(0, len(fc_rows), 5000):

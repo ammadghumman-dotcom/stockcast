@@ -43,7 +43,7 @@ def _rows(db: Session, org_id: uuid.UUID, kind: str, channel_id: uuid.UUID | Non
                 category=cat,
             )
     elif kind == "sales":
-        q = (
+        qs = (
             select(SalesDaily.date, Product.sku, SalesDaily.units, SalesDaily.revenue)
             .join(Product, Product.id == SalesDaily.product_id)
             .join(Channel, Channel.id == SalesDaily.channel_id)
@@ -51,29 +51,29 @@ def _rows(db: Session, org_id: uuid.UUID, kind: str, channel_id: uuid.UUID | Non
             .order_by(SalesDaily.date, Product.sku)
         )
         if channel_id:
-            q = q.where(SalesDaily.channel_id == channel_id)
-        for d, sku, units, revenue in db.execute(q):
+            qs = qs.where(SalesDaily.channel_id == channel_id)
+        for d, sku, units, revenue in db.execute(qs):
             yield SalesRecord(date=d, sku=sku, units=units, revenue=revenue)
     elif kind == "inventory":
-        q = (
+        qi = (
             select(Product.sku, Location.name, InventoryLevel.on_hand, InventoryLevel.inbound)
             .join(Product, Product.id == InventoryLevel.product_id)
             .join(Location, Location.id == InventoryLevel.location_id)
             .where(InventoryLevel.org_id == org_id)
             .order_by(Product.sku, Location.name)
         )
-        for sku, loc, on_hand, inbound in db.execute(q):
+        for sku, loc, on_hand, inbound in db.execute(qi):
             yield InventoryRecord(sku=sku, location=loc, on_hand=on_hand, inbound=inbound)
     elif kind == "bom":
         parent, comp = aliased(Product), aliased(Product)
-        q = (
+        qb = (
             select(parent.sku, comp.sku, BomLine.qty_per_unit)
             .join(parent, parent.id == BomLine.parent_product_id)
             .join(comp, comp.id == BomLine.component_product_id)
             .where(BomLine.org_id == org_id)
             .order_by(parent.sku, comp.sku)
         )
-        for p, c, qty in db.execute(q):
-            yield BomRecord(parent_sku=p, component_sku=c, qty_per_unit=qty)
+        for parent_sku, comp_sku, qty in db.execute(qb):
+            yield BomRecord(parent_sku=parent_sku, component_sku=comp_sku, qty_per_unit=qty)
     else:
         raise ValueError(kind)

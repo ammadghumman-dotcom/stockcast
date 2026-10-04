@@ -1,0 +1,59 @@
+# Capacity check: seeds N orgs x M SKUs into the compose stack, benchmarks the forecast engine
+# (projects the 50 x 2,000 nightly) and runs the k6 API scenario against the seeded API.
+# Manual, plus weekly on Sunday so capacity drift shows up before customers do.
+name: Load test
+
+on:
+  workflow_dispatch:
+    inputs:
+      orgs: { description: Orgs to seed, default: "5" }
+      skus: { description: SKUs per org, default: "2000" }
+  schedule:
+    - cron: "17 6 * * 0"
+
+jobs:
+  loadtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Free runner disk
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+      - run: cp .env.example .env
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/bake-action@v5
+        with:
+          files: docker-compose.yml,docker-compose.ci.yml
+          targets: api
+          load: true
+          set: |
+            api.cache-from=type=gha,scope=api
+      - name: Start API stack
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --no-build --wait --wait-timeout 300 postgres redis api
+      - name: Seed load orgs
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml exec -T api \
+            python -m scripts.seed_load --orgs "${{ inputs.orgs || 5 }}" --skus "${{ inputs.skus || 2000 }}" --days 365 --out /tmp/orgs.txt
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml exec -T api cat /tmp/orgs.txt > orgs.txt
+      - name: Forecast benchmark (must project inside the 60-minute window)
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml exec -T -e CELERY_CONCURRENCY=8 api \
+            python -m scripts.bench_forecast --workers 8 | tee bench.log
+          grep -q "\-> OK" bench.log
+          { echo "### Forecast benchmark"; echo '```'; grep "\[bench\]" bench.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Plan the load orgs (so k6 has recommendations to read)
+        run: |
+          for org in $(cat orgs.txt); do
+            curl -fsS -X POST -H "X-Org-Id: $org" localhost:8000/planning-runs > /dev/null
+          done
+      - name: k6
+        uses: grafana/setup-k6-action@v1
+      - run: k6 run -e API_URL=http://localhost:8000 -e ORG_IDS="$(paste -sd, orgs.txt)" --summary-export k6.json loadtest/k6/api.js
+      - name: Summary
+        if: always()
+        run: |
+          { echo "### k6"; echo '```'; python3 -c "import json;d=json.load(open('k6.json'))['metrics'];print({k:v.get('p(95)') for k,v in d.items() if k.startswith('http_req_duration')})"; echo '```'; } >> "$GITHUB_STEP_SUMMARY" || true
+      - name: Logs on failure
+        if: failure()
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml logs --no-color api | tail -200

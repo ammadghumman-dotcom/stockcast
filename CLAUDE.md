@@ -12,7 +12,7 @@ Stockcast is an AI demand-forecasting and raw-material planning SaaS for ecommer
 | Forecasting | Amazon Chronos-Bolt (zero-shot) + StatsForecast fallback (Step 4) |
 | Web | Next.js 15 (app router), TypeScript, Tailwind, shadcn/ui, pnpm workspaces |
 | Auth / billing | Clerk + Stripe (Step 7) |
-| Infra | Docker Compose locally; GitHub Actions CI; Railway (api/workers) + Vercel (web) in prod |
+| Infra | Docker Compose locally; GitHub Actions CI + deploy (staging → approval → production); Railway (api, worker, beat, backup cron) + Vercel (web); Sentry, OpenTelemetry → Grafana Cloud (Step 9) |
 
 ## Layout
 
@@ -35,6 +35,12 @@ apps/api/            FastAPI service
   app/services/listings.py  SKU mapping: suggest() (rapidfuzz on SKU + name), override() moves the
                      listing + its channel's sales/stock rows and drops the orphan product
   app/crypto.py      Fernet encrypt/decrypt for channel credentials
+  app/observability.py  JSON logging (+request_id), Sentry init, OTel traces, alert() -> Sentry+webhook
+  app/security.py    RequestIdMiddleware, HttpsMiddleware (308 + HSTS), production_guard() (refuses
+                     to boot in staging/prod with dev defaults), cors_origins()
+  app/ops.py         checks -> alerts: sync failure rate > 5 %/24 h, forecast run > 30 min
+  app/ops_tasks.py   Celery: ops.check_health every 15 min
+  app/routers/amazon_webhooks.py  POST /webhooks/amazon (HMAC/token verified, deduped -> sync)
   app/models/        SQLAlchemy 2 models (core, catalog, inventory, calendar, enums)
   app/schemas/       Pydantic request/response models
   app/routers/       products, suppliers, bom_lines, locations (list/get/create/patch)
@@ -90,6 +96,10 @@ apps/api/            FastAPI service
                      connect (GET /amazon|ebay/install -> {url}; /amazon|ebay/callback), listings
                      (GET/POST /listings, POST /listings/match, POST /listings/{id}/override)
   alembic/           migrations (sales_daily becomes a Timescale hypertable when available)
+  scripts/           seed.py, seed_load.py (N orgs x M SKUs), bench_forecast.py (SKU/s + window
+                     projection), migrate.sh, start-worker.sh, start-beat.sh, backup.sh/restore.sh
+                     (pg_dump -> S3, 30-day prune), s3.py
+  Dockerfile         multi-stage: dev (compose, --reload) / prod (uvicorn workers, non-root)
   scripts/seed.py    demo org: 20 SKUs, 3 raw materials, 1 BOM, 365 days of sales split 50/35/15
                      across Shopify, Amazon and eBay channels
   tests/             pytest against a real Postgres (TEST_DATABASE_URL), tx-rollback per test
@@ -114,9 +124,16 @@ apps/web/            Next.js 15 app (client components + TanStack Query)
                      (X-Org-Id cookie); useOrg().authHeaders() for raw fetches; lib/hooks.ts
   tests/             vitest (utils, badges); e2e/ Playwright (onboarding -> dashboard -> create PO)
 packages/shared/     openapi.json (exported by `make openapi`) -> src/api.d.ts (GENERATED) + makeClient()
-docker-compose.yml   api, web, postgres (timescaledb), redis
-Makefile             make dev / test / lint / fmt
-.github/workflows/   CI
+docker-compose.yml   api, web, postgres (timescaledb), redis; docker-compose.ci.yml = prod images
+infra/railway/       config-as-code per Railway service (api, worker, beat, backup) + README
+apps/web/vercel.json Vercel build + security headers; sentry.*.config.ts gated by NEXT_PUBLIC_SENTRY_DSN
+loadtest/k6/api.js   k6 scenario (50 VUs, p95 thresholds)
+docs/RUNBOOK.md      environments, deploy flow, one-time setup, alerts, rollback, backups/restore
+                     drill, security posture, capacity; docs/CHANGELOG.md = ops log
+Makefile             make dev / test / lint / typecheck / coverage / ci-stack / bench / loadtest
+.github/workflows/   ci.yml (lint, mypy, migrations, pytest cov>=80, web checks, Playwright vs
+                     compose), deploy.yml (CI on main -> staging -> production approval gate),
+                     loadtest.yml (weekly + manual); dependabot.yml
 ```
 
 ## Run
@@ -136,7 +153,17 @@ make plan       # plan the demo org and print recommendations
 make install-chronos  # optional locally; Docker + CI always install it
 make openapi    # export OpenAPI + regenerate packages/shared/src/api.d.ts (run after API changes)
 make e2e        # Playwright against API :8000 (CELERY_TASK_ALWAYS_EAGER=true) + web :3000
+make typecheck  # mypy + tsc            make coverage   # pytest with the 80 % gate
+make ci-stack   # production images via compose (what CI runs e2e against)
+make seed-load ORGS=5 SKUS=2000 && make bench WORKERS=8   # capacity projection (docs/RUNBOOK.md §9)
 ```
+
+Deploying (Step 9): merge to `main` → CI → `Deploy` workflow → staging (Railway `railway up` with
+`scripts/migrate.sh` as the api pre-deploy command, Vercel prebuilt deploy, smoke test on
+`/health/ready` showing the new `release`) → **production job waits for approval** in the GitHub
+`production` environment → same steps with `--prod`. Rollback, alerts, backups and the restore
+drill are in `docs/RUNBOOK.md`. The api refuses to boot in `ENV=staging|production` with dev
+defaults (`security.production_guard`). `GET /health` = liveness, `GET /health/ready` = db + redis.
 
 Web: every page is a client component using `useOrgQuery`/`useAction` from `lib/hooks.ts`; the org comes from the `stockcast_org` cookie (default: demo org) until Clerk (Step 7). After changing any API schema run `make openapi` and commit `packages/shared/openapi.json` + `src/api.d.ts`; the generated types make missing fields a typecheck error. `data-testid` attributes are the e2e contract — keep them when restyling. CI runs the e2e job against a seeded API on a TimescaleDB service.
 
@@ -167,11 +194,13 @@ Requirements: Docker, Node 22 + pnpm 9 (`corepack enable`), Python 3.12 + `uv`.
 - **Schema changes = migration.** Edit models, run `make migration m="..."`, review the file (enums need explicit `DROP TYPE` in downgrade; name every unique/FK constraint explicitly so downgrade can drop it), and keep `upgrade head → downgrade base → upgrade head` clean. CI runs that.
 - **Audit what matters.** PO create/send/mark-sent/receive, planning settings, product planning overrides and billing changes call `services.audit.record` with before/after snapshots.
 - **Mutations use `Ctx`.** A route that writes takes `ctx: Ctx` (role, user) and `ctx.require("admin")` where only admins may act; reads can keep `org_id: OrgId`.
-- **Python:** ruff (line length 100), type hints everywhere, Pydantic models for all request/response bodies, no business logic in route handlers (put it in `app/services/`).
+- **Python:** ruff (line length 100), **mypy clean** (`uv run mypy`, CI), type hints everywhere, Pydantic models for all request/response bodies, no business logic in route handlers (put it in `app/services/`).
+- **Coverage ≥ 80 %** (CI gate; ~91 % today). **No customer PII**: connectors fetch line items only (`tests/test_privacy.py`), Sentry `send_default_pii=False`.
+- **Migrations are additive** so the previous release can run on the new schema (rollback = redeploy previous image).
 - **TypeScript:** strict mode, no `any`, server components by default, client components only when they need state or browser APIs.
 - **Idempotent jobs.** Celery tasks must be safe to retry: every write in a sync is an upsert; webhooks dedupe on `X-Shopify-Webhook-Id` via `processed_webhooks`. New connectors subclass `BaseConnector`, register in `ingest/registry.py`, and get cassette-based tests.
 - **Small PRs.** One step of the build plan per PR; update this file when layout or rules change.
 
 ## Build plan
 
-Follow the step-by-step plan (Stockcast — Build & Deploy Plan). Each step is a self-contained task that ends in a merged, tested PR. Steps done: **1 — repo and setup**, **2 — core data model and database**, **3 — CSV import + Shopify connector**, **4 — forecast engine**, **4b — holiday seasonality + promotion impact**, **5 — planning engine**, **6 — web dashboard**, **7 — auth, multi-tenancy, billing** (Clerk, slowapi, audit log, Stripe, Resend), **8 — connectors** (Amazon SP-API, eBay, WooCommerce, SKU mapping, per-channel forecast split). Next: **9 — production deploy** (Railway api/worker + Vercel web, managed Postgres/Redis, Sentry, uptime, backups, CI deploy on merge).
+Follow the step-by-step plan (Stockcast — Build & Deploy Plan). Each step is a self-contained task that ends in a merged, tested PR. Steps done: **1 — repo and setup**, **2 — core data model and database**, **3 — CSV import + Shopify connector**, **4 — forecast engine**, **4b — holiday seasonality + promotion impact**, **5 — planning engine**, **6 — web dashboard**, **7 — auth, multi-tenancy, billing** (Clerk, slowapi, audit log, Stripe, Resend), **8 — connectors** (Amazon SP-API, eBay, WooCommerce, SKU mapping, per-channel forecast split), **9 — production deploy** (Railway + Vercel config-as-code, staging → production pipeline with approval gate, Sentry/OTel/JSON logs, alerts, backups + restore drill, security hardening, k6 + forecast capacity benchmark, docs/RUNBOOK.md). Next: **10 — launch** (marketing site, docs, onboarding polish, pricing page, first customers).

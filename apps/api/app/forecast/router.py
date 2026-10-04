@@ -79,10 +79,21 @@ def _split(series: Series) -> tuple[np.ndarray, np.ndarray] | None:
     return y[:cut], y[cut:]
 
 
+EMPTY = Bands(np.zeros(0), np.zeros(0), np.zeros(0))
+
+
 def forecast_batch(
-    all_series: list[Series], horizon: int, *, category_prior: dict | None = None
+    all_series: list[Series],
+    horizon: int,
+    *,
+    category_prior: dict | None = None,
+    backtest_only: bool = False,
 ) -> dict[Series, Scored]:
-    """Route, backtest and forecast every series. Model calls are batched across SKUs."""
+    """Route, backtest and forecast every series. Model calls are batched across SKUs.
+
+    `backtest_only` skips the production fit (used to measure the no-covariates baseline WAPE,
+    where only the holdout score is needed) — halves the cost of that pass.
+    """
     routes = {s: route(s) for s in all_series}
     splits = {s: _split(s) for s in all_series}
     use_chronos = chronos_available()
@@ -100,13 +111,15 @@ def forecast_batch(
                 jobs["autoets"].append((s, "bt", split[0], len(split[1])))
                 if use_chronos:
                     jobs["chronos"].append((s, "bt", split[0], len(split[1])))
-            jobs["autoets"].append((s, "prod", s.y, horizon))
-            if use_chronos:
-                jobs["chronos"].append((s, "prod", s.y, horizon))
+            if not backtest_only:
+                jobs["autoets"].append((s, "prod", s.y, horizon))
+                if use_chronos:
+                    jobs["chronos"].append((s, "prod", s.y, horizon))
         elif r == Route.croston:
             if split:
                 jobs["croston"].append((s, "bt", split[0], len(split[1])))
-            jobs["croston"].append((s, "prod", s.y, horizon))
+            if not backtest_only:
+                jobs["croston"].append((s, "prod", s.y, horizon))
 
     preds: dict[tuple[int, str, str], Bands] = {}  # (id(series), kind, model) -> bands
     runners = {
@@ -119,16 +132,16 @@ def forecast_batch(
         for i, (_, _, _, h) in enumerate(items):
             by_h.setdefault(h, []).append(i)
         for h, idxs in by_h.items():
-            bands = runners[model]([items[i][2] for i in idxs], h)
-            for i, b in zip(idxs, bands, strict=True):
+            batch = runners[model]([items[i][2] for i in idxs], h)
+            for i, b in zip(idxs, batch, strict=True):
                 s, kind, _, _ = items[i]
                 preds[(id(s), kind, model)] = b
 
     results: dict[Series, Scored] = {}
     for s, r in routes.items():
         split = splits[s]
-        actual = _fill(split[1]) if split else None
-        hold = len(actual) if actual is not None else 0
+        actual = _fill(split[1]) if split else np.zeros(0)
+        hold = len(actual)
         if r == Route.fallback:
             prior = (category_prior or {}).get(s.category_id)
             results[s] = Scored(
@@ -139,23 +152,31 @@ def forecast_batch(
             bt = preds.get((id(s), "bt", "croston"))
             m = mape(actual, bt.p50) if bt is not None else None
             w = wape(actual, bt.p50) if bt is not None else None
-            results[s] = Scored(
-                "croston", preds[(id(s), "prod", "croston")], m, w, holdout_days=hold
-            )
+            prod_cr = preds.get((id(s), "prod", "croston")) or (bt if bt is not None else EMPTY)
+            results[s] = Scored("croston", prod_cr, m, w, holdout_days=hold)
             continue
         # chronos route: compare against autoets on the holdout, best WAPE wins
         bt_c, bt_s = preds.get((id(s), "bt", "chronos")), preds.get((id(s), "bt", "autoets"))
         w_c = wape(actual, bt_c.p50) if bt_c is not None else None
         w_s = wape(actual, bt_s.p50) if bt_s is not None else None
         prod_c = preds.get((id(s), "prod", "chronos"))
-        pick_chronos = prod_c is not None and (w_s is None or w_c is None or w_c <= w_s)
+        if backtest_only:
+            # score only: pick the model the production pass would pick, no production bands
+            pick_chronos = bt_c is not None and (w_s is None or w_c is None or w_c <= w_s)
+            prod_c = bt_c if pick_chronos else None
+        else:
+            pick_chronos = prod_c is not None and (w_s is None or w_c is None or w_c <= w_s)
         name = "chronos" if pick_chronos else StatsModel.name
-        bands = prod_c if pick_chronos else preds[(id(s), "prod", "autoets")]
+        chosen = (
+            prod_c
+            if pick_chronos and prod_c is not None
+            else preds.get((id(s), "prod", "autoets")) or bt_s or EMPTY
+        )
         chosen_bt = bt_c if pick_chronos else bt_s
         m = mape(actual, chosen_bt.p50) if chosen_bt is not None else None
         results[s] = Scored(
             name,
-            bands,
+            chosen,
             m,
             w_c if pick_chronos else w_s,
             wape_chronos=w_c,

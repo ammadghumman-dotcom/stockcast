@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import uuid
-from collections import defaultdict
 
 import numpy as np
 
@@ -18,20 +17,20 @@ def explode_demand(
     `demand` holds the independent demand of finished goods; components that are themselves
     made from sub-components propagate their derived demand downward.
     """
-    derived: dict[uuid.UUID, np.ndarray] = defaultdict(lambda: None)  # type: ignore[arg-type]
+    derived: dict[uuid.UUID, np.ndarray] = {}
     frontier = dict(demand)
     for _ in range(max_depth):
-        nxt: dict[uuid.UUID, np.ndarray] = defaultdict(lambda: None)  # type: ignore[arg-type]
+        nxt: dict[uuid.UUID, np.ndarray] = {}
         for parent, d in frontier.items():
             for comp, per in bom.get(parent, []):
                 add = d * per
-                derived[comp] = add if derived[comp] is None else derived[comp] + add
+                derived[comp] = add if comp not in derived else derived[comp] + add
                 if comp in bom:
-                    nxt[comp] = add if nxt[comp] is None else nxt[comp] + add
+                    nxt[comp] = add if comp not in nxt else nxt[comp] + add
         if not nxt:
             break
-        frontier = dict(nxt)
-    return {k: v for k, v in derived.items() if v is not None}
+        frontier = nxt
+    return derived
 
 
 def made_in_house(bom: Bom, product_id: uuid.UUID) -> bool:

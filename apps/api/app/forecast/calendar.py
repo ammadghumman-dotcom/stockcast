@@ -94,8 +94,9 @@ def builtin_events(region_code: str, year: int) -> list[Event]:
 
     # ---- national holidays (single days, lead-in 3 days) excluding ones covered above
     if country:
+        cal: dict = {}
         try:
-            cal = holidays.country_holidays(country, years=[year], language="en_US")
+            cal = dict(holidays.country_holidays(country, years=[year], language="en_US"))
         except Exception:
             cal = {}
         covered = ("christmas", "eid", "diwali", "thanksgiving", "new year")

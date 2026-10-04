@@ -96,15 +96,25 @@ def load_series(
     }
 
     idx = pd.date_range(start, as_of, freq="D")
-    raw_y: dict[uuid.UUID, np.ndarray] = {}
-    for pid in products:
-        s = sales[sales["product_id"] == pid].set_index("date")["units"]
-        s.index = pd.to_datetime(s.index)
-        raw_y[pid] = s.reindex(idx, fill_value=0.0).to_numpy(dtype=float)
+    n_days = len(idx)
+    raw_y: dict[uuid.UUID, np.ndarray] = {pid: np.zeros(n_days) for pid in products}
+    if len(sales):
+        # one pass over the rows: O(rows), not O(products x rows) of pandas uuid comparisons
+        offsets = (pd.to_datetime(sales["date"]) - pd.Timestamp(start)).dt.days.to_numpy()
+        units = sales["units"].to_numpy(dtype=float)
+        for pid, off, u in zip(sales["product_id"].to_numpy(), offsets, units, strict=True):
+            if 0 <= off < n_days:
+                raw_y[pid][off] += u
 
     # Bundles: their sales are demand for their components, not for the bundle itself.
     # Decompose before forecasting; the bundle SKU is then planned as derived demand.
-    bundle_ids = [pid for pid, (_, _) in products.items() if _is_bundle(db, pid)]
+    bundle_ids = list(
+        db.scalars(
+            select(Product.id).where(
+                Product.id.in_(list(products)), Product.type == ProductType.bundle
+            )
+        ).all()
+    )
     if bundle_ids:
         lines = db.execute(
             select(
@@ -132,16 +142,6 @@ def load_series(
         y_masked[mask] = np.nan
         out.append(Series(pid, sku, cat, dates, y_masked, mask))
     return out
-
-
-_BUNDLE_CACHE_KEY = "_stockcast_bundle_types"
-
-
-def _is_bundle(db: Session, pid: uuid.UUID) -> bool:
-    cache = db.info.setdefault(_BUNDLE_CACHE_KEY, {})
-    if pid not in cache:
-        cache[pid] = db.scalar(select(Product.type).where(Product.id == pid)) == ProductType.bundle
-    return cache[pid]
 
 
 def stockout_days(y: np.ndarray, *, on_hand_now: float, min_run: int = 2) -> np.ndarray:

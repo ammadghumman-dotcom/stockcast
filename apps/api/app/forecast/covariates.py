@@ -171,7 +171,7 @@ def load_region_shares(
         org_tot[rid] += u
     out = {pid: {r: u / tot[pid] for r, u in d.items() if tot[pid] > 0} for pid, d in per.items()}
     if org_tot:
-        top = max(org_tot, key=org_tot.get)
+        top = max(org_tot, key=lambda k: org_tot[k])
         out.setdefault("__default__", {top: 1.0})  # type: ignore[arg-type]
     return out
 
@@ -366,7 +366,7 @@ def learn_holiday_uplifts(
         ratio = float(np.clip(a / b, 0.3, 8.0))
         # shrink toward 1 when the evidence is thin (few observed window-days)
         w = days / (days + SHRINK_DAYS)
-        out[key] = Uplift(1.0 + (ratio - 1.0) * w, learned=True, sample_size=n)
+        out[key] = Uplift(1.0 + (ratio - 1.0) * w, learned=True, sample_size=int(n))
     return out
 
 
@@ -502,7 +502,7 @@ def fit_promo_model(
             X[r, col[f"channel:{p.channel_id}"]] = 1.0
         if p.category_id and p.category_id in category_names:
             X[r, col[f"category:{category_names[p.category_id].lower()}"]] = 1.0
-        y[r] = math.log(float(p.observed_lift))
+        y[r] = math.log(float(p.observed_lift or 0))
     mu = y.mean()
     yc = y - mu
     # ridge, no penalty on intercept (handled by centering)

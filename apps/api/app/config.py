@@ -62,6 +62,28 @@ class Settings(BaseSettings):
     celery_broker_url: str = "redis://localhost:6379/1"
     celery_task_always_eager: bool = False
 
+    # Observability (Step 9)
+    sentry_dsn: str = ""
+    sentry_traces_sample_rate: float = 0.1
+    release: str = ""  # git sha, set by the deploy workflow
+    log_format: str = "json"  # json | text
+    log_level: str = "INFO"
+    otel_exporter_otlp_endpoint: str = (
+        ""  # e.g. https://otlp-gateway-prod-eu-west-2.grafana.net/otlp
+    )
+    otel_exporter_otlp_headers: str = ""  # "Authorization=Basic <base64 instanceId:token>"
+    otel_service_name: str = "stockcast-api"
+    # Alerts: Sentry message + optional webhook (Slack incoming webhook / Grafana OnCall)
+    alert_webhook_url: str = ""
+    alert_sync_failure_rate: float = 0.05  # over the last 24 h
+    alert_forecast_max_minutes: int = 30
+    # Security
+    force_https: bool = False  # redirect http -> https and send HSTS (set in staging/prod)
+    allowed_hosts: str = ""  # comma list for TrustedHostMiddleware; empty = any
+    amazon_webhook_secret: str = (
+        ""  # shared secret for POST /webhooks/amazon (EventBridge API dest.)
+    )
+
 
 @lru_cache
 def get_settings() -> Settings:

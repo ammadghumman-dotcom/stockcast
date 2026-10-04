@@ -127,8 +127,9 @@ def upsert_products(
             db.flush()
             res.inserted += 1
         else:
-            product = db.get(Product, pid)
-            assert product is not None
+            existing = db.get(Product, pid)
+            assert existing is not None
+            product = existing
             product.name = rec.name
             product.type = rec.type
             product.unit = rec.unit

@@ -16,3 +16,7 @@ Then open:
 Requires Docker. For running tests and lint outside Docker: Node 22 + pnpm 9 (`corepack enable`), Python 3.12 + [`uv`](https://docs.astral.sh/uv/), then `make install && make test`.
 
 See `CLAUDE.md` for the stack, layout and coding rules.
+
+## Operations
+
+Deploys, environments, alerts, backups and the restore drill: [docs/RUNBOOK.md](docs/RUNBOOK.md).

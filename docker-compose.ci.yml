@@ -1,0 +1,47 @@
+# CI override: production images, no bind mounts, header auth, inline Celery.
+#   docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build --wait
+services:
+  api:
+    image: stockcast-api:ci
+    build: { context: ./apps/api, target: prod }
+    command: sh -c "alembic upgrade head && python -m scripts.seed && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    volumes: !reset []
+    environment:
+      ENV: ci
+      DATABASE_URL: postgresql+psycopg://stockcast:stockcast@postgres:5432/stockcast
+      CELERY_TASK_ALWAYS_EAGER: "true"
+      RATE_LIMIT_STORAGE: memory://
+      CORS_ORIGINS: http://localhost:3000
+      LOG_FORMAT: text
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health/ready"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 20s
+  worker:
+    image: stockcast-api:ci
+    profiles: ["never"]   # eager mode in CI: no separate worker
+    volumes: !reset []
+  web:
+    image: stockcast-web:ci
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      target: prod
+      args: { NEXT_PUBLIC_API_URL: http://localhost:8000 }
+    command: node apps/web/server.js
+    volumes: !reset []
+    environment:
+      API_URL: http://api:8000
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      HOSTNAME: 0.0.0.0
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/onboarding"]  # alpine resolves localhost to ::1
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 20s
+    depends_on:
+      api:
+        condition: service_healthy

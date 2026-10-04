@@ -27,6 +27,8 @@ PUBLIC = {
     ("POST", "/webhooks/shopify/orders-create"),  # HMAC-signed
     ("POST", "/webhooks/shopify/inventory-levels-update"),
     ("POST", "/webhooks/stripe"),  # Stripe-Signature
+    ("POST", "/webhooks/amazon"),  # shared-secret HMAC
+    ("GET", "/health/ready"),
 }
 
 
