@@ -8,6 +8,7 @@ from celery.utils.log import get_task_logger
 from sqlalchemy import select
 
 from app import emails
+from app.config import settings
 from app.db import SessionLocal
 from app.models import Organization
 from app.worker import celery
@@ -17,7 +18,10 @@ log = get_task_logger(__name__)
 
 @celery.task(name="emails.trial_ending")
 def trial_ending() -> int:
-    """Daily 09:00 UTC: email orgs whose trial ends in 3 days or tomorrow (deduped per day-left)."""
+    """Daily 09:00 UTC: email orgs whose trial ends in 3 days or tomorrow (deduped per day-left).
+    Skipped while billing is disabled: trials don't end then, so the email would be wrong."""
+    if not settings.billing_enabled:
+        return 0
     n = 0
     with SessionLocal() as db:
         for org, days_left in emails.trial_ending_orgs(db):

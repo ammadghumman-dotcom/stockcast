@@ -49,6 +49,11 @@ RELEASE (set by the deploy workflow)
 #         BACKUP_S3_BUCKET BACKUP_S3_ENDPOINT AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION
 ```
 
-The api refuses to boot (`security.production_guard`) until `STRIPE_WEBHOOK_SECRET`, a non-default
-`CREDENTIALS_KEY`, `FORCE_HTTPS=true` and https `CORS_ORIGINS` are set — expect the healthcheck to
+The api refuses to boot (`security.production_guard`) until a non-default `CREDENTIALS_KEY`,
+`AUTH_MODE=clerk`, `FORCE_HTTPS=true` and https `CORS_ORIGINS` are set — expect the healthcheck to
 fail on the first deploy of a fresh environment until the secrets are in.
+
+Billing is optional. Leave every `STRIPE_*` variable empty to run without a payment provider
+(Stripe doesn't onboard Pakistan-based accounts): trials never lock, the plan page shows
+"Early access" and checkout is hidden. Setting `STRIPE_SECRET_KEY` turns billing on, and then
+`STRIPE_WEBHOOK_SECRET` becomes mandatory.

@@ -10,6 +10,7 @@ import time
 import uuid
 from datetime import UTC, datetime, timedelta
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
@@ -18,6 +19,12 @@ from app.config import settings
 from app.models import AuditLog, Organization, PlanningRun, StripeEvent
 from app.planning.engine import run_planning
 from tests.conftest import PLANNING_AS_OF as AS_OF
+
+
+@pytest.fixture
+def billing_on(monkeypatch):
+    """A payment provider is configured, so expired trials lock."""
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_dummy")
 
 
 def _product(sku: str) -> dict:
@@ -85,7 +92,7 @@ def test_sku_limit_on_create_and_import(
     assert len(client.get("/products", headers=headers).json()) == 3
 
 
-def test_scale_is_unlimited_and_expired_trial_locks(db, org: Organization) -> None:
+def test_scale_is_unlimited_and_expired_trial_locks(db, org: Organization, billing_on) -> None:
     org.plan, org.plan_status = "scale", "active"
     assert plans.limits_for(org) == {"channels": None, "skus": None}
     org.plan, org.plan_status = "trial", "trialing"
@@ -97,7 +104,25 @@ def test_scale_is_unlimited_and_expired_trial_locks(db, org: Organization) -> No
     assert plans.effective_plan(org).key == "growth"
 
 
-def test_locked_org_cannot_add(client: TestClient, db, org: Organization, headers: dict) -> None:
+def test_expired_trial_stays_open_while_billing_is_disabled(
+    client: TestClient, db, org: Organization, headers: dict
+) -> None:
+    """No payment provider configured -> nobody can pay, so nobody is locked out."""
+    assert not settings.billing_enabled
+    org.trial_ends_at = datetime.now(UTC) - timedelta(days=30)
+    db.flush()
+    assert plans.effective_plan(org) is plans.TRIAL
+    assert client.post("/products", json=_product("OPEN"), headers=headers).status_code == 201
+    b = client.get("/billing", headers=headers).json()
+    assert b["billing_enabled"] is False and b["effective_plan"] == "trial"
+    # a paid plan that lapsed still locks: that org had a provider once
+    org.plan, org.plan_status = "growth", "canceled"
+    assert plans.effective_plan(org) is plans.LOCKED
+
+
+def test_locked_org_cannot_add(
+    client: TestClient, db, org: Organization, headers: dict, billing_on
+) -> None:
     org.trial_ends_at = datetime.now(UTC) - timedelta(days=1)
     db.flush()
     r = client.post("/products", json=_product("X"), headers=headers)
@@ -217,7 +242,7 @@ def test_checkout_requires_admin_and_config(client: TestClient, headers: dict) -
     )
     assert r.status_code == 403
     r = client.post("/billing/checkout", json={"plan": "growth"}, headers=headers)
-    assert r.status_code == 503  # no STRIPE_SECRET_KEY in tests
+    assert r.status_code == 503  # billing disabled: no STRIPE_SECRET_KEY in tests
     assert (
         client.post("/billing/checkout", json={"plan": "gold"}, headers=headers).status_code == 422
     )

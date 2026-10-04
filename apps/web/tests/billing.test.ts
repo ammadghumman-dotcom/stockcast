@@ -19,6 +19,8 @@ describe("billing helpers", () => {
     expect(planLabel({ plan: "trial", plan_status: "trialing", effective_plan: "locked", trial_ends_at: null })).toBe("Trial ended");
     expect(planLabel({ plan: "scale", plan_status: "canceled", effective_plan: "locked", trial_ends_at: null })).toBe("Scale · canceled");
     expect(planLabel({ plan: "trial", plan_status: "trialing", effective_plan: "trial", trial_ends_at: null })).toBe("Trial");
+    expect(planLabel({ plan: "trial", plan_status: "trialing", effective_plan: "trial", trial_ends_at: null, billing_enabled: false })).toBe("Early access");
+    expect(planLabel({ plan: "growth", plan_status: "active", effective_plan: "growth", trial_ends_at: null, billing_enabled: false })).toBe("Growth · active");
   });
 });
 

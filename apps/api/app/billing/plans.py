@@ -6,7 +6,9 @@ growth    — $99/mo:  3 channels, 5,000 SKUs
 scale     — $249/mo: unlimited
 
 `effective_plan` collapses an expired trial / unpaid subscription to "locked" (Starter limits,
-so existing data stays readable but nothing new can be added).
+so existing data stays readable but nothing new can be added). While billing is disabled (no
+payment provider configured) an expired trial keeps Trial limits — nobody can pay, so nobody is
+locked out.
 """
 
 from __future__ import annotations
@@ -58,7 +60,7 @@ def effective_plan(org: Organization, now: datetime | None = None) -> Plan:
     if org.plan in PLANS:
         return PLANS[org.plan] if org.plan_status in ACTIVE_STATUSES else LOCKED
     # trial
-    if org.trial_ends_at is None or org.trial_ends_at > now:
+    if org.trial_ends_at is None or org.trial_ends_at > now or not settings.billing_enabled:
         return TRIAL
     return LOCKED
 

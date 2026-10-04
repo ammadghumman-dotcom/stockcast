@@ -62,8 +62,8 @@ def production_guard() -> list[str]:
         problems.append("FORCE_HTTPS must be true")
     if any(o.startswith("http://") and "localhost" not in o for o in cors_origins()):
         problems.append("CORS_ORIGINS must be https")
-    if not settings.stripe_webhook_secret:
-        problems.append("STRIPE_WEBHOOK_SECRET missing")
+    if settings.billing_enabled and not settings.stripe_webhook_secret:
+        problems.append("STRIPE_WEBHOOK_SECRET missing (required when STRIPE_SECRET_KEY is set)")
     return problems
 
 

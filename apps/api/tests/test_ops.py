@@ -84,6 +84,11 @@ def test_production_guard_catches_dev_defaults(monkeypatch) -> None:
     monkeypatch.setattr(settings, "cors_origins", "https://app.stockcast.app")
     monkeypatch.setattr(settings, "stripe_webhook_secret", "whsec_x")
     assert security.production_guard() == []
+    # billing is optional: no Stripe at all is fine, a key without a webhook secret is not
+    monkeypatch.setattr(settings, "stripe_webhook_secret", "")
+    assert security.production_guard() == []
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_live_x")
+    assert any("STRIPE_WEBHOOK_SECRET" in p for p in security.production_guard())
 
 
 def test_readiness_reports_dependencies(client: TestClient, monkeypatch) -> None:

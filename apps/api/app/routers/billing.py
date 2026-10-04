@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.billing import PLANS, effective_plan, limits_for, stripe_service, usage_for
+from app.config import settings
 from app.deps import DB, Ctx
 from app.models import Organization
 from app.services import audit
@@ -31,6 +32,7 @@ class BillingRead(BaseModel):
     trial_ends_at: datetime | None
     billing_email: str | None
     has_subscription: bool
+    billing_enabled: bool  # false -> no payment provider configured; hide checkout in the UI
     limits: dict[str, int | None]
     usage: dict[str, int]
     plans: list[PlanInfo]
@@ -61,6 +63,7 @@ def read_billing(db: DB, ctx: Ctx) -> BillingRead:
         trial_ends_at=org.trial_ends_at,
         billing_email=org.billing_email,
         has_subscription=org.stripe_subscription_id is not None,
+        billing_enabled=settings.billing_enabled,
         limits=limits_for(org),
         usage=usage_for(db, org.id),
         plans=[

@@ -23,7 +23,10 @@ export function daysLeft(iso: string | null | undefined, now = new Date()): numb
   return Math.max(0, Math.ceil((new Date(iso).getTime() - now.getTime()) / 86_400_000));
 }
 
-export function planLabel(b: Pick<Billing, "plan" | "plan_status" | "effective_plan" | "trial_ends_at">): string {
+export function planLabel(
+  b: Pick<Billing, "plan" | "plan_status" | "effective_plan" | "trial_ends_at"> & { billing_enabled?: boolean },
+): string {
+  if (b.billing_enabled === false && b.plan === "trial") return "Early access";
   if (b.effective_plan === "locked") return b.plan === "trial" ? "Trial ended" : `${cap(b.plan)} · ${b.plan_status}`;
   if (b.plan === "trial") {
     const d = daysLeft(b.trial_ends_at);
@@ -66,6 +69,11 @@ export function BillingTab() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          {!b.billing_enabled ? (
+            <p className="text-sm text-muted-foreground" data-testid="billing-disabled">
+              Paid plans open soon. Everything is free during early access, with {b.plan === "trial" ? "Growth" : "your plan's"} limits below.
+            </p>
+          ) : null}
           {locked ? (
             <p className="text-sm text-amber-700">
               Nothing new can be added until you pick a plan. Existing data stays readable.
@@ -85,10 +93,10 @@ export function BillingTab() {
       </Card>
       <div className="grid gap-3 md:grid-cols-3">
         {b.plans.map((p) => (
-          <PlanCard key={p.key} plan={p} current={b.plan === p.key && !locked} canManage={canManage} busy={checkout.isPending} onPick={() => checkout.mutate(p.key)} />
+          <PlanCard key={p.key} plan={p} current={b.plan === p.key && !locked} canManage={canManage && b.billing_enabled} busy={checkout.isPending} onPick={() => checkout.mutate(p.key)} />
         ))}
       </div>
-      <p className="text-xs text-muted-foreground">All plans include nightly forecasts, holiday & promotion uplift, raw-material planning, purchase orders and email alerts. 14-day free trial, cancel any time.</p>
+      <p className="text-xs text-muted-foreground">All plans include nightly forecasts, holiday & promotion uplift, raw-material planning, purchase orders and email alerts.{b.billing_enabled ? " 14-day free trial, cancel any time." : ""}</p>
     </div>
   );
 }

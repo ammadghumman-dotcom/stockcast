@@ -583,6 +583,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/webhooks/amazon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Amazon Notification */
+        post: operations["amazon_notification_webhooks_amazon_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/forecast-runs": {
         parameters: {
             query?: never;
@@ -1102,8 +1119,31 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Health */
+        /**
+         * Health
+         * @description Liveness: the process is up. Used by Railway + the uptime check.
+         */
         get: operations["health_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/health/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ready
+         * @description Readiness: database + broker reachable. Deploy smoke tests hit this.
+         */
+        get: operations["ready_health_ready_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1173,6 +1213,8 @@ export interface components {
             billing_email: string | null;
             /** Has Subscription */
             has_subscription: boolean;
+            /** Billing Enabled */
+            billing_enabled: boolean;
             /** Limits */
             limits: {
                 [key: string]: number | null;
@@ -2305,6 +2347,28 @@ export interface components {
             total: string;
             /** Lines */
             lines: components["schemas"]["POLineRead"][];
+        };
+        /** Readiness */
+        Readiness: {
+            /** Status */
+            status: string;
+            /** Service */
+            service: string;
+            /** Version */
+            version: string;
+            /** Env */
+            env: string;
+            /**
+             * Time
+             * Format: date-time
+             */
+            time: string;
+            /** Database */
+            database: string;
+            /** Redis */
+            redis: string;
+            /** Release */
+            release?: string | null;
         };
         /** ReceiveRequest */
         ReceiveRequest: {
@@ -4386,6 +4450,26 @@ export interface operations {
             };
         };
     };
+    amazon_notification_webhooks_amazon_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     list_runs_forecast_runs_get: {
         parameters: {
             query?: {
@@ -5730,6 +5814,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Health"];
+                };
+            };
+        };
+    };
+    ready_health_ready_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Readiness"];
                 };
             };
         };
