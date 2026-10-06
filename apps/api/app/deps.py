@@ -13,11 +13,12 @@ forget to check.
 
 from __future__ import annotations
 
+import re
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from functools import lru_cache
-from typing import Annotated
+from typing import Annotated, Any
 
 import httpx
 import jwt
@@ -91,16 +92,9 @@ def _clerk_fetch(path: str) -> dict | None:
         return None
 
 
-def provision_org(
-    db: Session, clerk_org_id: str, name: str | None = None
-) -> tuple[Organization, bool]:
-    """Return (org, created). Creates org + default region/settings on first sight."""
-    org = db.scalar(select(Organization).where(Organization.clerk_org_id == clerk_org_id))
-    if org:
-        return org, False
-    info = _clerk_fetch(f"/organizations/{clerk_org_id}")
-    name = name or (info or {}).get("name") or f"Workspace {clerk_org_id[-6:]}"
-    slug_base = (info or {}).get("slug") or clerk_org_id[-12:].lower()
+def create_org(db: Session, *, name: str, slug_base: str, **fields: Any) -> Organization:
+    """New workspace on the trial with its default region, planning settings and holidays."""
+    slug_base = re.sub(r"[^a-z0-9-]+", "-", slug_base.lower()).strip("-") or "workspace"
     slug, n = slug_base, 1
     while db.scalar(select(Organization.id).where(Organization.slug == slug)):
         n += 1
@@ -108,10 +102,10 @@ def provision_org(
     org = Organization(
         name=name,
         slug=slug,
-        clerk_org_id=clerk_org_id,
         plan="trial",
         plan_status="trialing",
         trial_ends_at=datetime.now(UTC) + timedelta(days=settings.trial_days),
+        **fields,
     )
     db.add(org)
     db.flush()
@@ -123,7 +117,20 @@ def provision_org(
 
     seed_region_holidays(db, org.id, region)
     db.commit()
-    return org, True
+    return org
+
+
+def provision_org(
+    db: Session, clerk_org_id: str, name: str | None = None
+) -> tuple[Organization, bool]:
+    """Return (org, created). Creates org + default region/settings on first sight."""
+    org = db.scalar(select(Organization).where(Organization.clerk_org_id == clerk_org_id))
+    if org:
+        return org, False
+    info = _clerk_fetch(f"/organizations/{clerk_org_id}")
+    name = name or (info or {}).get("name") or f"Workspace {clerk_org_id[-6:]}"
+    slug_base = (info or {}).get("slug") or clerk_org_id[-12:].lower()
+    return create_org(db, name=name, slug_base=slug_base, clerk_org_id=clerk_org_id), True
 
 
 def provision_user(db: Session, org: Organization, claims: dict, role: str) -> User:
@@ -156,13 +163,45 @@ def provision_user(db: Session, org: Organization, claims: dict, role: str) -> U
 
 
 # --------------------------------------------------------------------------- dependency
+def _is_shopify_session_token(token: str) -> bool:
+    """App Bridge ID tokens carry `dest` (the shop admin URL); Clerk tokens never do."""
+    try:
+        claims = jwt.decode(token, options={"verify_signature": False})
+    except jwt.PyJWTError:
+        return False
+    return isinstance(claims.get("dest"), str) and ".myshopify.com" in claims["dest"]
+
+
 def get_auth(
     request: Request,
     db: DB,
     authorization: Annotated[str | None, Header()] = None,
     x_org_id: Annotated[str | None, Header(alias="X-Org-Id")] = None,
 ) -> AuthContext:
-    if settings.auth_mode == "clerk" or (authorization and authorization.startswith("Bearer ")):
+    bearer = (
+        authorization.removeprefix("Bearer ").strip()
+        if authorization and authorization.startswith("Bearer ")
+        else None
+    )
+    if bearer and _is_shopify_session_token(bearer):
+        # Embedded in the Shopify admin: the App Bridge ID token names the shop; the staff
+        # member who can open the app owns its workspace.
+        from app.ingest.shopify.oauth import InvalidSessionToken, verify_session_token
+        from app.services.shopify_app import org_for_shop
+
+        try:
+            claims = verify_session_token(bearer)
+        except InvalidSessionToken as exc:
+            raise HTTPException(
+                status.HTTP_401_UNAUTHORIZED,
+                str(exc),
+                headers={"X-Shopify-Retry-Invalid-Session-Request": "1"},
+            ) from exc
+        org, _ = org_for_shop(db, claims["shop"])
+        ctx = AuthContext(org.id, None, "owner", None, "shopify")
+        request.state.auth = ctx
+        return ctx
+    if settings.auth_mode == "clerk" or bearer:
         if not authorization or not authorization.startswith("Bearer "):
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Bearer token required")
         claims = verify_clerk_token(authorization.removeprefix("Bearer ").strip())

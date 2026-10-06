@@ -12,6 +12,7 @@ from app import crypto
 from app.config import settings
 from app.ingest.base import BaseConnector, ConnectorError
 from app.ingest.records import InventoryRecord, ProductRecord, SalesRecord
+from app.ingest.shopify import oauth
 from app.ingest.shopify.client import (
     INVENTORY_QUERY,
     ORDERS_QUERY,
@@ -27,6 +28,7 @@ WEBHOOK_TOPICS = {
     "ORDERS_CREATE": "orders-create",
     "INVENTORY_LEVELS_UPDATE": "inventory-levels-update",
     "APP_UNINSTALLED": "app-uninstalled",
+    "APP_SUBSCRIPTIONS_UPDATE": "app-subscriptions-update",
 }
 
 
@@ -36,12 +38,31 @@ def load_credentials(channel: Channel) -> dict:
     return json.loads(crypto.decrypt(channel.credentials_encrypted))
 
 
+def fresh_credentials(channel: Channel, *, force: bool = False) -> dict:
+    """Credentials with a usable access token, refreshing (and re-encrypting onto the channel —
+    the caller's session commits it) when an expiring token is close to expiry."""
+    creds = load_credentials(channel)
+    if force or oauth.needs_refresh(creds):
+        if not creds.get("refresh_token"):
+            raise ConnectorError("Shopify access expired; open Stockcast from your Shopify admin")
+        creds = oauth.refresh(creds)
+        channel.credentials_encrypted = crypto.encrypt(json.dumps(creds))
+    return creds
+
+
 class ShopifyConnector(BaseConnector):
     def __init__(self, channel: Channel, client: ShopifyGraphQL | None = None) -> None:
         super().__init__(channel)
         if client is None:
-            creds = load_credentials(channel)
-            client = ShopifyGraphQL(creds["shop"], creds["access_token"])
+            creds = fresh_credentials(channel)
+            can_refresh = bool(creds.get("refresh_token"))
+            client = ShopifyGraphQL(
+                creds["shop"],
+                creds["access_token"],
+                refresh=(lambda: fresh_credentials(channel, force=True)["access_token"])
+                if can_refresh
+                else None,
+            )
         self.gql = client
 
     # ---- products ----

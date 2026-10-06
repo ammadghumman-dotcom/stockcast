@@ -3382,6 +3382,230 @@
         }
       }
     },
+    "/shopify/session": {
+      "post": {
+        "tags": [
+          "shopify-embedded"
+        ],
+        "summary": "Session",
+        "operationId": "session_shopify_session_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shopify/billing": {
+      "get": {
+        "tags": [
+          "shopify-embedded"
+        ],
+        "summary": "Billing",
+        "operationId": "billing_shopify_billing_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shopify/billing/subscribe": {
+      "post": {
+        "tags": [
+          "shopify-embedded"
+        ],
+        "summary": "Subscribe",
+        "operationId": "subscribe_shopify_billing_subscribe_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscribeIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscribeOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhooks/shopify/app-subscriptions-update": {
+      "post": {
+        "tags": [
+          "shopify-embedded"
+        ],
+        "summary": "App Subscriptions Update",
+        "operationId": "app_subscriptions_update_webhooks_shopify_app_subscriptions_update_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/amazon/install": {
       "get": {
         "tags": [
@@ -7199,6 +7423,47 @@
         ],
         "title": "AccuracySummary"
       },
+      "BillingOut": {
+        "properties": {
+          "plans": {
+            "items": {
+              "$ref": "#/components/schemas/PlanOut"
+            },
+            "type": "array",
+            "title": "Plans"
+          },
+          "current_plan": {
+            "type": "string",
+            "title": "Current Plan"
+          },
+          "plan_status": {
+            "type": "string",
+            "title": "Plan Status"
+          },
+          "effective_plan": {
+            "type": "string",
+            "title": "Effective Plan"
+          },
+          "is_beta": {
+            "type": "boolean",
+            "title": "Is Beta"
+          },
+          "beta_discount_months": {
+            "type": "integer",
+            "title": "Beta Discount Months"
+          }
+        },
+        "type": "object",
+        "required": [
+          "plans",
+          "current_plan",
+          "plan_status",
+          "effective_plan",
+          "is_beta",
+          "beta_discount_months"
+        ],
+        "title": "BillingOut"
+      },
       "BillingRead": {
         "properties": {
           "plan": {
@@ -9022,6 +9287,58 @@
         ],
         "title": "PlanInfo"
       },
+      "PlanOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "price_usd": {
+            "type": "integer",
+            "title": "Price Usd"
+          },
+          "beta_price_usd": {
+            "type": "integer",
+            "title": "Beta Price Usd"
+          },
+          "channels": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channels"
+          },
+          "skus": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skus"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "name",
+          "price_usd",
+          "beta_price_usd",
+          "channels",
+          "skus"
+        ],
+        "title": "PlanOut"
+      },
       "PlanningRunRead": {
         "properties": {
           "id": {
@@ -10736,6 +11053,66 @@
         ],
         "title": "SampleRemoved"
       },
+      "SessionOut": {
+        "properties": {
+          "org_id": {
+            "type": "string",
+            "title": "Org Id"
+          },
+          "org_name": {
+            "type": "string",
+            "title": "Org Name"
+          },
+          "shop": {
+            "type": "string",
+            "title": "Shop"
+          },
+          "channel_id": {
+            "type": "string",
+            "title": "Channel Id"
+          },
+          "installed": {
+            "type": "boolean",
+            "title": "Installed"
+          },
+          "plan": {
+            "type": "string",
+            "title": "Plan"
+          },
+          "plan_status": {
+            "type": "string",
+            "title": "Plan Status"
+          },
+          "trial_ends_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trial Ends At"
+          },
+          "is_beta": {
+            "type": "boolean",
+            "title": "Is Beta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "org_id",
+          "org_name",
+          "shop",
+          "channel_id",
+          "installed",
+          "plan",
+          "plan_status",
+          "trial_ends_at",
+          "is_beta"
+        ],
+        "title": "SessionOut"
+      },
       "SimulateRequest": {
         "properties": {
           "name": {
@@ -10927,6 +11304,32 @@
           "done"
         ],
         "title": "StepOut"
+      },
+      "SubscribeIn": {
+        "properties": {
+          "plan": {
+            "type": "string",
+            "title": "Plan"
+          }
+        },
+        "type": "object",
+        "required": [
+          "plan"
+        ],
+        "title": "SubscribeIn"
+      },
+      "SubscribeOut": {
+        "properties": {
+          "confirmation_url": {
+            "type": "string",
+            "title": "Confirmation Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "confirmation_url"
+        ],
+        "title": "SubscribeOut"
       },
       "SuggestionRead": {
         "properties": {

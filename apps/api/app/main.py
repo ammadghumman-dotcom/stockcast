@@ -33,6 +33,7 @@ from app.routers import (
     products,
     purchase_orders,
     shopify,
+    shopify_embedded,
     suppliers,
     waitlist,
 )
@@ -88,6 +89,7 @@ app.include_router(channels.router)
 app.include_router(imports.router)
 app.include_router(listings.router)
 app.include_router(shopify.router)
+app.include_router(shopify_embedded.router)
 app.include_router(connect.router)
 app.include_router(amazon_webhooks.router)
 app.include_router(forecasts.router)

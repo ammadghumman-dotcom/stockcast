@@ -22,7 +22,11 @@ class Settings(BaseSettings):
     # Shopify Partner app (https://partners.shopify.com -> Apps -> Create app)
     shopify_api_key: str = ""
     shopify_api_secret: str = ""
-    shopify_api_version: str = "2025-07"
+    shopify_api_version: str = "2026-07"
+    # App handle in the Shopify admin URL (admin.shopify.com/store/<shop>/apps/<handle>)
+    shopify_app_handle: str = "stockcast"
+    # Billing API test charges (dev stores always get test charges regardless)
+    shopify_billing_test: bool = False
     shopify_scopes: str = "read_products,read_orders,read_inventory,read_locations"
     shopify_backfill_days: int = 730
 

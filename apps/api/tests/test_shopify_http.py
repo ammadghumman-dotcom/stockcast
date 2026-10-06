@@ -60,7 +60,11 @@ def _signed_callback_params(org_id: str) -> dict:
 def test_callback_creates_channel_and_stores_encrypted_token(
     client, db, org, headers, monkeypatch
 ) -> None:
-    monkeypatch.setattr(oauth, "exchange_code", lambda shop, code: "shpat_live_token")
+    monkeypatch.setattr(
+        oauth,
+        "exchange_code",
+        lambda shop, code: oauth.credentials_from(shop, {"access_token": "shpat_live_token"}),
+    )
     monkeypatch.setattr(
         "app.routers.shopify.ShopifyConnector.register_webhooks", lambda self: ["gid://w/1"]
     )

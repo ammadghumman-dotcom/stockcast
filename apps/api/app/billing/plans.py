@@ -60,7 +60,9 @@ def effective_plan(org: Organization, now: datetime | None = None) -> Plan:
     if org.plan in PLANS:
         return PLANS[org.plan] if org.plan_status in ACTIVE_STATUSES else LOCKED
     # trial
-    if org.trial_ends_at is None or org.trial_ends_at > now or not settings.billing_enabled:
+    # Shopify-installed workspaces always have billing (Shopify Billing API); others need Stripe
+    billing_on = settings.billing_enabled or org.shopify_shop is not None
+    if org.trial_ends_at is None or org.trial_ends_at > now or not billing_on:
         return TRIAL
     return LOCKED
 

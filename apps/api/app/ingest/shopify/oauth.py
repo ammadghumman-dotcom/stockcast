@@ -9,7 +9,7 @@ import json
 import re
 import secrets
 import time
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 
 import httpx
 
@@ -69,19 +69,110 @@ def verify_callback_hmac(params: dict[str, str]) -> bool:
     return hmac.compare_digest(digest, given)
 
 
-def exchange_code(shop: str, code: str, client: httpx.Client | None = None) -> str:
+# ---- access tokens -------------------------------------------------------------------------
+# New public apps must use *expiring* offline tokens (Shopify, Apr 2026): every token request
+# sends expiring=1 and we keep the refresh token. Credentials stored per channel:
+# {shop, access_token, refresh_token, expires_at, refresh_expires_at} (epoch seconds);
+# legacy rows with only {shop, access_token} keep working until they are re-issued.
+TOKEN_EXCHANGE_GRANT = "urn:ietf:params:oauth:grant-type:token-exchange"
+ID_TOKEN_TYPE = "urn:ietf:params:oauth:token-type:id_token"
+OFFLINE_TOKEN_TYPE = "urn:shopify:params:oauth:token-type:offline-access-token"
+REFRESH_MARGIN = 300  # refresh when less than 5 minutes are left
+
+
+class InvalidSessionToken(ConnectorError):
+    """ID token rejected (expired/invalid): answer 401 so App Bridge retries with a fresh one."""
+
+
+def _token_request(shop: str, data: dict[str, str], client: httpx.Client | None) -> dict:
     c = client or httpx.Client(timeout=20)
     res = c.post(
         f"https://{shop}/admin/oauth/access_token",
-        json={
+        data={
             "client_id": settings.shopify_api_key,
             "client_secret": settings.shopify_api_secret,
-            "code": code,
+            **data,
         },
+        headers={"Accept": "application/json"},
     )
+    if res.status_code == 400 and data.get("subject_token_type") == ID_TOKEN_TYPE:
+        raise InvalidSessionToken("session token rejected by Shopify")
     if res.status_code != 200:
-        raise ConnectorError(f"token exchange failed: {res.status_code} {res.text[:200]}")
-    return res.json()["access_token"]
+        raise ConnectorError(f"token request failed: {res.status_code} {res.text[:200]}")
+    return dict(res.json())
+
+
+def credentials_from(shop: str, payload: dict, now: float | None = None) -> dict:
+    now = now or time.time()
+    creds: dict = {"shop": shop, "access_token": payload["access_token"]}
+    if payload.get("refresh_token"):
+        creds["refresh_token"] = payload["refresh_token"]
+    if payload.get("expires_in"):
+        creds["expires_at"] = int(now + int(payload["expires_in"]))
+    if payload.get("refresh_token_expires_in"):
+        creds["refresh_expires_at"] = int(now + int(payload["refresh_token_expires_in"]))
+    return creds
+
+
+def exchange_code(shop: str, code: str, client: httpx.Client | None = None) -> dict:
+    """Authorization-code grant (non-embedded install link). Returns stored credentials."""
+    payload = _token_request(shop, {"code": code, "expiring": "1"}, client)
+    return credentials_from(shop, payload)
+
+
+def token_exchange(shop: str, id_token: str, client: httpx.Client | None = None) -> dict:
+    """Embedded install: App Bridge ID token -> expiring offline token, no redirect."""
+    payload = _token_request(
+        shop,
+        {
+            "grant_type": TOKEN_EXCHANGE_GRANT,
+            "subject_token": id_token,
+            "subject_token_type": ID_TOKEN_TYPE,
+            "requested_token_type": OFFLINE_TOKEN_TYPE,
+            "expiring": "1",
+        },
+        client,
+    )
+    return credentials_from(shop, payload)
+
+
+def refresh(creds: dict, client: httpx.Client | None = None) -> dict:
+    payload = _token_request(
+        creds["shop"],
+        {"grant_type": "refresh_token", "refresh_token": creds["refresh_token"]},
+        client,
+    )
+    return credentials_from(creds["shop"], payload)
+
+
+def needs_refresh(creds: dict, now: float | None = None) -> bool:
+    exp = creds.get("expires_at")
+    return bool(exp and creds.get("refresh_token") and exp - (now or time.time()) < REFRESH_MARGIN)
+
+
+# ---- App Bridge session (ID) tokens ----------------------------------------------------------
+def verify_session_token(token: str) -> dict:
+    """Validate an App Bridge ID token (HS256, signed with the app secret). Returns claims plus
+    `shop` (from `dest`). Raises InvalidSessionToken."""
+    import jwt  # PyJWT
+
+    try:
+        claims = jwt.decode(
+            token,
+            settings.shopify_api_secret,
+            algorithms=["HS256"],
+            audience=settings.shopify_api_key,
+            options={"require": ["exp", "nbf", "iss", "dest", "aud"]},
+            leeway=10,
+        )
+    except jwt.PyJWTError as exc:
+        raise InvalidSessionToken(f"invalid session token: {exc}") from exc
+    dest = urlparse(claims["dest"]).hostname or ""
+    iss = urlparse(claims["iss"]).hostname or ""
+    if dest != iss or not valid_shop(dest):
+        raise InvalidSessionToken("session token iss/dest mismatch")
+    claims["shop"] = dest
+    return dict(claims)
 
 
 # ---- webhook body verification ----

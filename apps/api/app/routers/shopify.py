@@ -58,7 +58,7 @@ def callback(request: Request, db: DB, shop: str, code: str, state: str):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "invalid callback signature")
     try:
         org_id = uuid.UUID(oauth.read_state(state))
-        token = oauth.exchange_code(shop, code)
+        creds = oauth.exchange_code(shop, code)
     except ConnectorError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
 
@@ -78,9 +78,7 @@ def callback(request: Request, db: DB, shop: str, code: str, state: str):
             external_shop_id=shop,
         )
         db.add(channel)
-    channel.credentials_encrypted = crypto.encrypt(
-        json.dumps({"shop": shop, "access_token": token})
-    )
+    channel.credentials_encrypted = crypto.encrypt(json.dumps(creds))
     channel.is_active = True
     db.commit()
     db.refresh(channel)
