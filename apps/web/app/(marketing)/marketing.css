@@ -1,0 +1,46 @@
+/* Public-site tokens. Scoped to .mk so the signed-in app keeps its own neutral theme. */
+.mk {
+  --mk-ink: #1b2a3a;
+  --mk-ink-soft: #4a5a6b;
+  --mk-panel: #eef2f6;
+  --mk-line: #d5dde6;
+  --mk-pine: #1f6f5c;
+  --mk-pine-dark: #175646;
+  --mk-wax: #f2b84b;
+  --mk-alert: #b42318;
+  color: var(--mk-ink);
+  background: #fff;
+  font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.mk .mk-display {
+  font-family: "Bricolage Grotesque Variable", "IBM Plex Sans", sans-serif;
+  font-optical-sizing: auto;
+  letter-spacing: -0.02em;
+}
+.mk a:focus-visible,
+.mk button:focus-visible,
+.mk input:focus-visible,
+.mk textarea:focus-visible {
+  outline: 2px solid var(--mk-pine);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .mk .mk-flow {
+    stroke-dasharray: 4 6;
+    animation: mk-flow 1.6s linear 1;
+  }
+  @keyframes mk-flow {
+    from {
+      stroke-dashoffset: 60;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+}
+.mk article h2,
+.mk article h3 {
+  font-family: "Bricolage Grotesque Variable", "IBM Plex Sans", sans-serif;
+  letter-spacing: -0.01em;
+}

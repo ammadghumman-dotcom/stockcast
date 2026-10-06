@@ -4,11 +4,13 @@ import { cookies } from "next/headers";
 
 import { ORG_COOKIE } from "@/lib/api";
 import { clerkEnabled } from "@/lib/auth";
+import { site } from "@/lib/site";
 import { Providers } from "@/lib/query";
 
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(site.url),
   title: "Stockcast",
   description: "AI demand forecasting and raw-material planning for ecommerce brands",
 };
@@ -23,5 +25,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </body>
     </html>
   );
-  return clerkEnabled ? <ClerkProvider afterSignOutUrl="/">{page}</ClerkProvider> : page;
+  return clerkEnabled ? <ClerkProvider
+      afterSignOutUrl="/"
+      signInFallbackRedirectUrl="/dashboard"
+      signUpFallbackRedirectUrl="/onboarding"
+    >{page}</ClerkProvider> : page;
 }

@@ -1180,6 +1180,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/waitlist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Join Waitlist */
+        post: operations["join_waitlist_waitlist_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -2860,6 +2877,43 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** WaitlistIn */
+        WaitlistIn: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** Name */
+            name?: string | null;
+            /** Company */
+            company?: string | null;
+            /** Website */
+            website?: string | null;
+            /** Channels */
+            channels?: string[];
+            /**
+             * Makes Products
+             * @default false
+             */
+            makes_products: boolean;
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Source
+             * @default landing
+             */
+            source: string;
+            /** Fax */
+            fax?: string | null;
+        };
+        /** WaitlistOut */
+        WaitlistOut: {
+            /** Ok */
+            ok: boolean;
+            /** Beta Fit */
+            beta_fit: boolean;
         };
         /** WebhookAck */
         WebhookAck: {
@@ -5933,6 +5987,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WebhookAck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    join_waitlist_waitlist_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WaitlistIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaitlistOut"];
                 };
             };
             /** @description Validation Error */
