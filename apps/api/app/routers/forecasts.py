@@ -4,6 +4,7 @@ from decimal import Decimal
 from fastapi import APIRouter, HTTPException, Query, Request, status
 from sqlalchemy import func, select
 
+from app import analytics
 from app.deps import DB, OrgId
 from app.forecast.channels import load_channel_mix
 from app.forecast.engine import latest_successful_run
@@ -47,6 +48,7 @@ def get_forecast(
     days: int = Query(90, ge=1, le=365),
 ):
     crud.assert_owned(db, Product, org_id, product_id)
+    analytics.track(db, org_id, "forecast_viewed", props={"product_id": str(product_id)})
     run = (
         crud.get_scoped(db, ForecastRun, org_id, run_id)
         if run_id

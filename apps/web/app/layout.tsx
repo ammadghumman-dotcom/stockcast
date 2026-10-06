@@ -2,6 +2,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 
+import { Analytics } from "@/components/analytics";
 import { ORG_COOKIE } from "@/lib/api";
 import { clerkEnabled } from "@/lib/auth";
 import { site } from "@/lib/site";
@@ -22,6 +23,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="en">
       <body className="min-h-screen antialiased">
         <Providers initialOrgId={initialOrgId}>{children}</Providers>
+        <Analytics />
       </body>
     </html>
   );

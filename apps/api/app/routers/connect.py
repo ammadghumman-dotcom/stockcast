@@ -22,7 +22,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 
-from app import crypto
+from app import analytics, crypto
 from app.config import settings
 from app.deps import DB, Ctx
 from app.ingest.amazon.client import LWA_TOKEN_URL
@@ -72,6 +72,7 @@ def _store_and_sync(db, ch: Channel, creds: dict) -> RedirectResponse:
     ch.is_active = True
     db.commit()
     enqueue_sync(db, ch, trigger="install", full=True)
+    analytics.track(db, ch.org_id, "channel_connected", props={"type": ch.type.value})
     return RedirectResponse(f"{settings.web_base_url}/onboarding?connected={ch.id}", 302)
 
 

@@ -1,3 +1,4 @@
+from app.models.analytics import OrgMilestone
 from app.models.base import Base, OrgScoped, TimestampMixin
 from app.models.billing import AuditLog, EmailLog, StripeEvent
 from app.models.calendar import CategoryHolidayUplift, HolidayEvent, PromoLiftModel, Promotion
@@ -25,6 +26,7 @@ from app.models.planning import PlanningRun, PlanningSettings, Recommendation
 from app.models.sync import ProcessedWebhook, SyncRun
 
 __all__ = [
+    "OrgMilestone",
     "WaitlistSignup",
     "AuditLog",
     "Base",

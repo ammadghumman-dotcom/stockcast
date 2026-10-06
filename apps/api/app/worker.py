@@ -19,6 +19,7 @@ celery = Celery(
         "app.planning.tasks",
         "app.emails_tasks",
         "app.ops_tasks",
+        "app.analytics_tasks",
     ],
 )
 celery.conf.update(
@@ -50,6 +51,10 @@ celery.conf.update(
         "daily-trial-ending": {
             "task": "emails.trial_ending",
             "schedule": crontab(hour=9, minute=0),
+        },
+        "weekly-cohort-report": {
+            "task": "analytics.weekly_cohort_report",
+            "schedule": crontab(hour=8, minute=0, day_of_week="mon"),
         },
         "ops-check-health": {
             "task": "ops.check_health",
