@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLoadSampleData, useOnboarding } from "@/components/onboarding-checklist";
 
 const KINDS = ["products", "bom", "inventory", "sales"] as const;
 
@@ -58,6 +59,9 @@ export default function Onboarding() {
     },
     { success: "Forecast and plan are ready", invalidate: [], onSuccess: () => router.push("/dashboard") },
   );
+
+  const loadSample = useLoadSampleData();
+  const onboarding = useOnboarding();
 
   const shopify = channels.data?.find((c) => c.type === "shopify");
   const syncRuns = useOrgQuery(
@@ -155,6 +159,22 @@ export default function Onboarding() {
           </CardContent>
         </Card>
       </div>
+
+      {orgId && !onboarding.data?.sample_data ? (
+        <Card data-testid="sample-card">
+          <CardHeader><CardTitle>Not ready to connect yet?</CardTitle></CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <p className="text-muted-foreground">
+              Explore Stockcast with a year of sales from a demo candle brand selling on Shopify, Amazon and eBay,
+              including a bill of materials for wax, jars and wicks. You can remove it with one click later, and it
+              never counts toward your plan.
+            </p>
+            <Button variant="outline" loading={loadSample.isPending} onClick={() => loadSample.mutate(undefined)} data-testid="load-sample">
+              Explore with sample data
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader><CardTitle>3. Forecast & plan</CardTitle></CardHeader>

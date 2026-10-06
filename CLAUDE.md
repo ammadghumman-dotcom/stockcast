@@ -35,6 +35,11 @@ apps/api/            FastAPI service
   app/services/shopify_compliance.py  GDPR webhooks: customers/data_request + customers/redact
                      (acknowledged + audited — no customer PII is stored), shop/redact (erase the
                      shop's channel + products only it created), app/uninstalled (drop token)
+  app/services/sample_data.py  demo candle brand generator (shared with scripts/seed.py); load()
+                     into any workspace with is_sample=True on root rows (SampleFlag mixin on
+                     products, channels, suppliers, locations, categories, promotions), remove()
+                     deletes it; plan limits (usage_for) ignore sample rows
+  app/routers/onboarding.py  GET /onboarding checklist (own data only), POST|DELETE /sample-data
   app/routers/waitlist.py  POST /waitlist (public, 5/min per IP, honeypot `fax`) -> waitlist_signups;
                      services/waitlist.beta_fit = makes products + 2+ channels
   app/services/listings.py  SKU mapping: suggest() (rapidfuzz on SKU + name), override() moves the
@@ -123,7 +128,8 @@ apps/web/            Next.js 15 app (client components + TanStack Query)
                      categories, team, billing), calendar (events, promotions + simulate, uplifts)
   app/sign-in, sign-up  Clerk pages; middleware.ts protects everything else when Clerk is enabled
   components/ui/     shadcn-style primitives (button, input, table, dialog, tabs, badge, skeleton, empty)
-  components/        shell (org/viewer banners), account (Clerk switcher), billing (plans, usage,
+  components/onboarding-checklist.tsx  dashboard checklist, sample-data banner + loader
+  components/        shell (org/viewer/sample banners), account (Clerk switcher), billing (plans, usage,
                      checkout/portal), connect-channel (Amazon/eBay OAuth or token, WooCommerce
                      keys), sku-mapping (match + override), channel-mix (bar + split),
                      products-table, charts/forecast-chart (Recharts)

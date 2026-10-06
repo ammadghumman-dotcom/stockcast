@@ -9,6 +9,7 @@ import { useOrg } from "@/lib/org";
 import { cn } from "@/lib/utils";
 
 import { AccountControls } from "./account";
+import { SampleDataBanner } from "@/components/onboarding-checklist";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard" },
@@ -73,6 +74,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             You have view-only access in this organization.
           </div>
         ) : null}
+        {orgId ? <SampleDataBanner /> : null}
         <main className="min-w-0 flex-1 p-4 md:p-6">{children}</main>
       </div>
     </div>

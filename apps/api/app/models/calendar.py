@@ -6,7 +6,7 @@ from sqlalchemy import JSON, Boolean, Date, Enum, ForeignKey, Numeric, String, U
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, OrgScoped, TimestampMixin, uuid_pk
+from app.models.base import Base, OrgScoped, SampleFlag, TimestampMixin, uuid_pk
 from app.models.enums import HolidaySource, PromotionScope, PromotionType
 
 
@@ -61,7 +61,7 @@ class CategoryHolidayUplift(OrgScoped, TimestampMixin, Base):
     sample_size: Mapped[int | None] = mapped_column()
 
 
-class Promotion(OrgScoped, TimestampMixin, Base):
+class Promotion(OrgScoped, SampleFlag, TimestampMixin, Base):
     __tablename__ = "promotions"
 
     id: Mapped[uuid.UUID] = uuid_pk()

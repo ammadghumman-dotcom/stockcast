@@ -1197,6 +1197,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/onboarding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Onboarding */
+        get: operations["get_onboarding_onboarding_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sample-data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Load Sample Data */
+        post: operations["load_sample_data_sample_data_post"];
+        /** Remove Sample Data */
+        delete: operations["remove_sample_data_sample_data_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -1927,6 +1962,19 @@ export interface components {
             /** Delta Qty */
             delta_qty: number;
         };
+        /** OnboardingOut */
+        OnboardingOut: {
+            /** Steps */
+            steps: components["schemas"]["StepOut"][];
+            /** Done */
+            done: number;
+            /** Total */
+            total: number;
+            /** Complete */
+            complete: boolean;
+            /** Sample Data */
+            sample_data: boolean;
+        };
         /** OrgCreate */
         OrgCreate: {
             /** Name */
@@ -2592,6 +2640,16 @@ export interface components {
             /** Revenue */
             revenue: string;
         };
+        /** SampleLoaded */
+        SampleLoaded: {
+            /** Loaded */
+            loaded: boolean;
+        };
+        /** SampleRemoved */
+        SampleRemoved: {
+            /** Removed Products */
+            removed_products: number;
+        };
         /** SimulateRequest */
         SimulateRequest: {
             /** Name */
@@ -2634,6 +2692,19 @@ export interface components {
             products: components["schemas"]["ProductDeltaRead"][];
             /** Materials */
             materials: components["schemas"]["MaterialDeltaRead"][];
+        };
+        /** StepOut */
+        StepOut: {
+            /** Key */
+            key: string;
+            /** Title */
+            title: string;
+            /** Hint */
+            hint: string;
+            /** Href */
+            href: string;
+            /** Done */
+            done: boolean;
         };
         /** SuggestionRead */
         SuggestionRead: {
@@ -6020,6 +6091,102 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WaitlistOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_onboarding_onboarding_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnboardingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    load_sample_data_sample_data_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SampleLoaded"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_sample_data_sample_data_delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SampleRemoved"];
                 };
             };
             /** @description Validation Error */

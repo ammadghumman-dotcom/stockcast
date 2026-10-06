@@ -27,6 +27,7 @@ from app.routers import (
     imports,
     listings,
     locations,
+    onboarding,
     orgs,
     planning,
     products,
@@ -95,6 +96,7 @@ app.include_router(planning.router)
 app.include_router(purchase_orders.router)
 app.include_router(billing.router)
 app.include_router(waitlist.router)
+app.include_router(onboarding.router)
 
 
 class Health(BaseModel):
