@@ -17,7 +17,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
-from app import crypto
+from app import analytics, crypto
 from app.billing.plans import assert_can_add_channel
 from app.config import settings
 from app.deps import DB, OrgId
@@ -93,6 +93,7 @@ def callback(request: Request, db: DB, shop: str, code: str, state: str):
         pass  # sync still works; webhooks retried on next install
 
     enqueue_sync(db, channel, trigger="install", full=True)
+    analytics.track(db, org_id, "channel_connected", props={"type": "shopify"})
     return RedirectResponse(f"{settings.web_base_url}/onboarding?connected={channel.id}", 302)
 
 

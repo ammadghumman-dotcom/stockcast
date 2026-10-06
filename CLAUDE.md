@@ -48,6 +48,10 @@ apps/api/            FastAPI service
   app/observability.py  JSON logging (+request_id), Sentry init, OTel traces, alert() -> Sentry+webhook
   app/security.py    RequestIdMiddleware, HttpsMiddleware (308 + HSTS), production_guard() (refuses
                      to boot in staging/prod with dev defaults), cors_origins()
+  app/analytics.py   track(): first-time milestones in org_milestones (first_channel_connected,
+                     first_forecast_viewed, first_po_created) + PostHog capture via Celery
+                     (analytics.capture); analytics_tasks.weekly_cohort_report (Mon 08:00 UTC)
+                     emails REPORT_EMAILS / posts to ALERT_WEBHOOK_URL
   app/ops.py         checks -> alerts: sync failure rate > 5 %/24 h, forecast run > 30 min
   app/ops_tasks.py   Celery: ops.check_health every 15 min
   app/routers/amazon_webhooks.py  POST /webhooks/amazon (HMAC/token verified, deduped -> sync)

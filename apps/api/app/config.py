@@ -82,6 +82,11 @@ class Settings(BaseSettings):
     otel_service_name: str = "stockcast-api"
     # Alerts: Sentry message + optional webhook (Slack incoming webhook / Grafana OnCall)
     alert_webhook_url: str = ""
+    # Product analytics (PostHog). Empty key = events are only recorded as milestones in the db.
+    posthog_api_key: str = ""
+    posthog_host: str = "https://us.i.posthog.com"
+    # Weekly activation cohort report recipients (comma-separated); also posted to the alert hook
+    report_emails: str = ""
     alert_sync_failure_rate: float = 0.05  # over the last 24 h
     alert_forecast_max_minutes: int = 30
     # Security

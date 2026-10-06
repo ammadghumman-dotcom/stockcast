@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import PlainTextResponse, Response
 from sqlalchemy import select
 
+from app import analytics
 from app.deps import DB, Ctx, OrgId
 from app.models import PlanningRun, Product, PurchaseOrder, Supplier
 from app.planning import po as po_svc
@@ -68,6 +69,8 @@ def from_recommendations(db: DB, ctx: Ctx, body: DraftPORequest):
             after={"supplier_id": str(po.supplier_id), "run_id": str(run.id)},
         )
     db.commit()
+    if pos:
+        analytics.track(db, org_id, "po_created", user_id=ctx.user_id, props={"count": len(pos)})
     for po in pos:
         db.refresh(po)
     return [_read(db, po) for po in pos]

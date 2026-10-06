@@ -3,7 +3,7 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, Query, status
 
-from app import crypto
+from app import analytics, crypto
 from app.billing.plans import assert_can_add_channel
 from app.deps import DB, Ctx, OrgId
 from app.ingest.tasks import enqueue_sync
@@ -74,7 +74,12 @@ def create_channel(db: DB, ctx: Ctx, body: ChannelCreate):
     db.add(ch)
     db.commit()
     db.refresh(ch)
-    return _read(ch)
+    out = _read(ch)
+    if encrypted:  # connected with credentials now (OAuth installs track on callback)
+        analytics.track(
+            db, org_id, "channel_connected", user_id=ctx.user_id, props={"type": ch.type.value}
+        )
+    return out
 
 
 @router.patch("/{channel_id}", response_model=ChannelRead)
