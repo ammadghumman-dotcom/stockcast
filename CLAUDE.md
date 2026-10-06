@@ -32,6 +32,9 @@ apps/api/            FastAPI service
   app/billing/       plans.py (PLANS, effective_plan, assert_can_add_channel/skus -> 402),
                      stripe_service.py (Checkout, Portal, webhook parse + idempotent handle_event)
   app/services/audit.py  audit.record(db, ctx, action=, entity=, before=, after=) -> audit_log
+  app/services/shopify_compliance.py  GDPR webhooks: customers/data_request + customers/redact
+                     (acknowledged + audited — no customer PII is stored), shop/redact (erase the
+                     shop's channel + products only it created), app/uninstalled (drop token)
   app/services/listings.py  SKU mapping: suggest() (rapidfuzz on SKU + name), override() moves the
                      listing + its channel's sales/stock rows and drops the orphan product
   app/crypto.py      Fernet encrypt/decrypt for channel credentials
@@ -106,6 +109,8 @@ apps/api/            FastAPI service
     cassettes/       vcrpy cassettes: Shopify (make_cassettes.py), Amazon/eBay/WooCommerce
                      (make_rest_cassettes.py, replayed with match_on=[method, host, path])
 apps/web/            Next.js 15 app (client components + TanStack Query)
+  app/(marketing)/   public site (SiteHeader/SiteFooter): privacy, terms, support; brand/contact
+                     values come from lib/site.ts (NEXT_PUBLIC_SITE_URL, _SUPPORT_EMAIL, ...)
   app/onboarding     create workspace, connect Shopify or upload CSVs (sync progress), run pipeline
   app/(app)/         Shell (sidebar nav, mobile menu): dashboard, products(+[id]: forecast chart
                      p10/p50/p90 + history, inventory, BOM), raw-materials, recommendations
@@ -124,6 +129,7 @@ apps/web/            Next.js 15 app (client components + TanStack Query)
                      (X-Org-Id cookie); useOrg().authHeaders() for raw fetches; lib/hooks.ts
   tests/             vitest (utils, badges); e2e/ Playwright (onboarding -> dashboard -> create PO)
 packages/shared/     openapi.json (exported by `make openapi`) -> src/api.d.ts (GENERATED) + makeClient()
+shopify.app.toml     Shopify app config (compliance webhook URLs, scopes) for `shopify app deploy`
 docker-compose.yml   api, web, postgres (timescaledb), redis; docker-compose.ci.yml = prod images
 infra/railway/       config-as-code per Railway service (api, worker, beat, backup) + README
 apps/web/vercel.json Vercel build + security headers; sentry.*.config.ts gated by NEXT_PUBLIC_SENTRY_DSN

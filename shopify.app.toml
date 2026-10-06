@@ -1,0 +1,38 @@
+# Shopify app configuration (Shopify CLI: `shopify app config link`, then `shopify app deploy`).
+# Mirrors what the Partner dashboard must contain for App Store review. Replace the two
+# placeholders: client_id = SHOPIFY_API_KEY, and the production api host if it changes.
+
+name = "Stockcast"
+client_id = "REPLACE_WITH_SHOPIFY_API_KEY"
+application_url = "https://stockcast-web-phi.vercel.app/shopify"
+embedded = true
+
+[access_scopes]
+# read_all_orders is requested separately in the Partner dashboard (needed for >60-day backfill)
+scopes = "read_products,read_orders,read_inventory,read_locations"
+
+[auth]
+redirect_urls = ["https://api-production-6c52.up.railway.app/shopify/callback"]
+
+[webhooks]
+api_version = "2025-07"
+
+  # Mandatory compliance webhooks (GDPR / CCPA). Handlers: apps/api/app/services/shopify_compliance.py
+  [[webhooks.subscriptions]]
+  compliance_topics = ["customers/data_request"]
+  uri = "https://api-production-6c52.up.railway.app/webhooks/shopify/customers-data-request"
+
+  [[webhooks.subscriptions]]
+  compliance_topics = ["customers/redact"]
+  uri = "https://api-production-6c52.up.railway.app/webhooks/shopify/customers-redact"
+
+  [[webhooks.subscriptions]]
+  compliance_topics = ["shop/redact"]
+  uri = "https://api-production-6c52.up.railway.app/webhooks/shopify/shop-redact"
+
+  [[webhooks.subscriptions]]
+  topics = ["app/uninstalled"]
+  uri = "https://api-production-6c52.up.railway.app/webhooks/shopify/app-uninstalled"
+
+[pos]
+embedded = false

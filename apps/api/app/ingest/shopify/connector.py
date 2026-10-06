@@ -26,6 +26,7 @@ from app.models.enums import ProductType
 WEBHOOK_TOPICS = {
     "ORDERS_CREATE": "orders-create",
     "INVENTORY_LEVELS_UPDATE": "inventory-levels-update",
+    "APP_UNINSTALLED": "app-uninstalled",
 }
 
 
