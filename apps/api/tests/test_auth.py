@@ -26,6 +26,10 @@ PUBLIC = {
     ("GET", "/ebay/callback"),
     ("POST", "/webhooks/shopify/orders-create"),  # HMAC-signed
     ("POST", "/webhooks/shopify/inventory-levels-update"),
+    ("POST", "/webhooks/shopify/app-uninstalled"),
+    ("POST", "/webhooks/shopify/customers-data-request"),  # GDPR, HMAC-signed
+    ("POST", "/webhooks/shopify/customers-redact"),
+    ("POST", "/webhooks/shopify/shop-redact"),
     ("POST", "/webhooks/stripe"),  # Stripe-Signature
     ("POST", "/webhooks/amazon"),  # shared-secret HMAC
     ("GET", "/health/ready"),

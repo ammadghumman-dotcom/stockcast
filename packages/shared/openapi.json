@@ -3259,6 +3259,82 @@
         }
       }
     },
+    "/webhooks/shopify/customers-data-request": {
+      "post": {
+        "tags": [
+          "shopify"
+        ],
+        "summary": "Customers Data Request",
+        "operationId": "customers_data_request_webhooks_shopify_customers_data_request_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhooks/shopify/customers-redact": {
+      "post": {
+        "tags": [
+          "shopify"
+        ],
+        "summary": "Customers Redact",
+        "operationId": "customers_redact_webhooks_shopify_customers_redact_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhooks/shopify/shop-redact": {
+      "post": {
+        "tags": [
+          "shopify"
+        ],
+        "summary": "Shop Redact",
+        "operationId": "shop_redact_webhooks_shopify_shop_redact_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhooks/shopify/app-uninstalled": {
+      "post": {
+        "tags": [
+          "shopify"
+        ],
+        "summary": "App Uninstalled",
+        "operationId": "app_uninstalled_webhooks_shopify_app_uninstalled_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/webhooks/shopify/inventory-levels-update": {
       "post": {
         "tags": [

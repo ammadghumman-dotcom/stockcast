@@ -2,7 +2,8 @@
 
 Install:  GET /shopify/install?shop=x.myshopify.com  (X-Org-Id header) -> 302 to Shopify
 Callback: GET /shopify/callback?code&hmac&shop&state   (from Shopify)   -> 302 to web app
-Webhooks: POST /webhooks/shopify/{orders-create|inventory-levels-update}
+Webhooks: POST /webhooks/shopify/{orders-create|inventory-levels-update|app-uninstalled}
+Compliance (GDPR): POST /webhooks/shopify/{customers-data-request|customers-redact|shop-redact}
 """
 
 import json
@@ -27,6 +28,7 @@ from app.ingest.shopify import oauth
 from app.ingest.shopify.connector import ShopifyConnector, webhook_order_to_records
 from app.ingest.tasks import enqueue_sync
 from app.models import Channel, ChannelType, ProcessedWebhook
+from app.services import shopify_compliance as compliance
 
 
 class InstallUrl(BaseModel):
@@ -130,6 +132,50 @@ async def orders_create(request: Request, db: DB):
     if got:
         channel, payload = got
         upsert.increment_sales(db, channel.org_id, channel, webhook_order_to_records(payload))
+    db.commit()
+    return {"ok": True}
+
+
+# ---- mandatory compliance (GDPR) webhooks + uninstall ----
+# Configured once per app (shopify.app.toml `compliance_topics`), signed with the app secret.
+# Every handler is idempotent, so Shopify retries need no dedupe table.
+async def _compliance(request: Request) -> tuple[str, dict]:
+    body = await request.body()
+    if not oauth.verify_webhook(body, request.headers.get("X-Shopify-Hmac-Sha256")):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "bad hmac")
+    payload = json.loads(body or b"{}")
+    shop = request.headers.get("X-Shopify-Shop-Domain") or payload.get("shop_domain") or ""
+    return shop, payload
+
+
+@router.post("/webhooks/shopify/customers-data-request", status_code=200)
+async def customers_data_request(request: Request, db: DB):
+    shop, payload = await _compliance(request)
+    compliance.customers_data_request(db, shop, payload)
+    db.commit()
+    return {"ok": True}
+
+
+@router.post("/webhooks/shopify/customers-redact", status_code=200)
+async def customers_redact(request: Request, db: DB):
+    shop, payload = await _compliance(request)
+    compliance.customers_redact(db, shop, payload)
+    db.commit()
+    return {"ok": True}
+
+
+@router.post("/webhooks/shopify/shop-redact", status_code=200)
+async def shop_redact(request: Request, db: DB):
+    shop, _ = await _compliance(request)
+    compliance.shop_redact(db, shop)
+    db.commit()
+    return {"ok": True}
+
+
+@router.post("/webhooks/shopify/app-uninstalled", status_code=200)
+async def app_uninstalled(request: Request, db: DB):
+    shop, _ = await _compliance(request)
+    compliance.app_uninstalled(db, shop)
     db.commit()
     return {"ok": True}
 
