@@ -33,6 +33,7 @@ PUBLIC = {
     ("POST", "/webhooks/stripe"),  # Stripe-Signature
     ("POST", "/webhooks/amazon"),  # shared-secret HMAC
     ("GET", "/health/ready"),
+    ("POST", "/waitlist"),  # public landing-page form, IP rate-limited
 }
 
 

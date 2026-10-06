@@ -6750,6 +6750,47 @@
         }
       }
     },
+    "/waitlist": {
+      "post": {
+        "tags": [
+          "marketing"
+        ],
+        "summary": "Join Waitlist",
+        "operationId": "join_waitlist_waitlist_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WaitlistIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaitlistOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "tags": [
@@ -11164,6 +11205,117 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "WaitlistIn": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "company": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website"
+          },
+          "channels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Channels"
+          },
+          "makes_products": {
+            "type": "boolean",
+            "title": "Makes Products",
+            "default": false
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 60,
+            "title": "Source",
+            "default": "landing"
+          },
+          "fax": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fax"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "WaitlistIn"
+      },
+      "WaitlistOut": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "beta_fit": {
+            "type": "boolean",
+            "title": "Beta Fit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "beta_fit"
+        ],
+        "title": "WaitlistOut"
       },
       "WebhookAck": {
         "properties": {

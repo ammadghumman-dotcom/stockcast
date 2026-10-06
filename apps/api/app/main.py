@@ -33,6 +33,7 @@ from app.routers import (
     purchase_orders,
     shopify,
     suppliers,
+    waitlist,
 )
 from app.security import (
     HttpsMiddleware,
@@ -93,6 +94,7 @@ app.include_router(calendar.router)
 app.include_router(planning.router)
 app.include_router(purchase_orders.router)
 app.include_router(billing.router)
+app.include_router(waitlist.router)
 
 
 class Health(BaseModel):

@@ -20,10 +20,12 @@ from app.models.enums import (
 )
 from app.models.forecast import Forecast, ForecastAccuracy, ForecastChannelShare, ForecastRun
 from app.models.inventory import InventoryLevel, PurchaseOrder, PurchaseOrderLine, SalesDaily
+from app.models.marketing import WaitlistSignup
 from app.models.planning import PlanningRun, PlanningSettings, Recommendation
 from app.models.sync import ProcessedWebhook, SyncRun
 
 __all__ = [
+    "WaitlistSignup",
     "AuditLog",
     "Base",
     "BomLine",

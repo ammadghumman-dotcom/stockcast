@@ -35,6 +35,8 @@ apps/api/            FastAPI service
   app/services/shopify_compliance.py  GDPR webhooks: customers/data_request + customers/redact
                      (acknowledged + audited — no customer PII is stored), shop/redact (erase the
                      shop's channel + products only it created), app/uninstalled (drop token)
+  app/routers/waitlist.py  POST /waitlist (public, 5/min per IP, honeypot `fax`) -> waitlist_signups;
+                     services/waitlist.beta_fit = makes products + 2+ channels
   app/services/listings.py  SKU mapping: suggest() (rapidfuzz on SKU + name), override() moves the
                      listing + its channel's sales/stock rows and drops the orphan product
   app/crypto.py      Fernet encrypt/decrypt for channel credentials
@@ -109,7 +111,9 @@ apps/api/            FastAPI service
     cassettes/       vcrpy cassettes: Shopify (make_cassettes.py), Amazon/eBay/WooCommerce
                      (make_rest_cassettes.py, replayed with match_on=[method, host, path])
 apps/web/            Next.js 15 app (client components + TanStack Query)
-  app/(marketing)/   public site (SiteHeader/SiteFooter): privacy, terms, support; brand/contact
+  app/(marketing)/   public site at / (landing: hero production ticket, how it works, pricing from
+                     lib/plans.ts — mirror of billing/plans.py, beta form), privacy, terms, support;
+                     own tokens in marketing.css (.mk), fonts from @fontsource; brand/contact
                      values come from lib/site.ts (NEXT_PUBLIC_SITE_URL, _SUPPORT_EMAIL, ...)
   app/onboarding     create workspace, connect Shopify or upload CSVs (sync progress), run pipeline
   app/(app)/         Shell (sidebar nav, mobile menu): dashboard, products(+[id]: forecast chart
