@@ -23,6 +23,7 @@ from app.routers import (
     catalog_extras,
     channels,
     connect,
+    feedback,
     forecasts,
     imports,
     listings,
@@ -99,6 +100,7 @@ app.include_router(purchase_orders.router)
 app.include_router(billing.router)
 app.include_router(waitlist.router)
 app.include_router(onboarding.router)
+app.include_router(feedback.router)
 
 
 class Health(BaseModel):

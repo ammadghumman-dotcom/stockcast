@@ -5,7 +5,18 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, DateTime, String, Text, UniqueConstraint, func
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, uuid_pk
@@ -25,6 +36,24 @@ class WaitlistSignup(Base):
     notes: Mapped[str | None] = mapped_column(Text)
     source: Mapped[str] = mapped_column(String(60), default="landing", nullable=False)
     beta_invited_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class Feedback(Base):
+    """In-app feedback (beta program). Org-linked but kept if the org is deleted (SET NULL)."""
+
+    __tablename__ = "feedback"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    org_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="SET NULL"), index=True
+    )
+    actor: Mapped[str] = mapped_column(String(200), default="", nullable=False)
+    rating: Mapped[int | None] = mapped_column(Integer)  # 1-5 "how useful is Stockcast"
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    page: Mapped[str | None] = mapped_column(String(300))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
