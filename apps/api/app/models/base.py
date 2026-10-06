@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, false, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
 
@@ -34,3 +34,11 @@ class OrgScoped:
             nullable=False,
             index=True,
         )
+
+
+class SampleFlag:
+    """Rows created by "explore with sample data"; removed together, ignored by plan limits."""
+
+    is_sample: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=false(), nullable=False
+    )

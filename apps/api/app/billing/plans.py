@@ -74,8 +74,17 @@ def limits_for(org: Organization) -> dict[str, int | None]:
 
 
 def usage_for(db: Session, org_id: uuid.UUID) -> dict[str, int]:
-    channels = db.scalar(select(func.count()).select_from(Channel).where(Channel.org_id == org_id))
-    skus = db.scalar(select(func.count()).select_from(Product).where(Product.org_id == org_id))
+    """Counts toward plan limits; sample data (onboarding demo) never does."""
+    channels = db.scalar(
+        select(func.count())
+        .select_from(Channel)
+        .where(Channel.org_id == org_id, Channel.is_sample.is_(False))
+    )
+    skus = db.scalar(
+        select(func.count())
+        .select_from(Product)
+        .where(Product.org_id == org_id, Product.is_sample.is_(False))
+    )
     return {"channels": int(channels or 0), "skus": int(skus or 0)}
 
 

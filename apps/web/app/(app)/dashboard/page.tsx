@@ -6,6 +6,7 @@ import { unwrap } from "@/lib/api";
 import { useAction, useLatestPlanningRun, useOrgQuery, useRecommendations } from "@/lib/hooks";
 import { useApi } from "@/lib/org";
 import { daysFromToday, fmtDate, fmtMoney, fmtNum } from "@/lib/utils";
+import { OnboardingChecklist } from "@/components/onboarding-checklist";
 import { PageHeader } from "@/components/shell";
 import { ActionBadge, HealthBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,7 @@ export default function Dashboard() {
         sub={run.data?.as_of ? `Plan as of ${fmtDate(run.data.as_of)}` : undefined}
         actions={<Button onClick={() => rerun.mutate()} loading={rerun.isPending} variant="outline" data-testid="rerun">Re-run forecast & plan</Button>}
       />
+      <OnboardingChecklist />
       {run.isLoading ? <TilesSkeleton /> : !run.data ? (
         <Empty title="No plan yet" body="Import data or connect a store, then run your first forecast." action={{ label: "Go to onboarding", href: "/onboarding" }} />
       ) : (

@@ -5,7 +5,7 @@ from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, Text, Unique
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, OrgScoped, TimestampMixin, uuid_pk
+from app.models.base import Base, OrgScoped, SampleFlag, TimestampMixin, uuid_pk
 from app.models.enums import ChannelType
 
 
@@ -48,7 +48,7 @@ class Region(OrgScoped, TimestampMixin, Base):
     currency: Mapped[str] = mapped_column(String(3), default="USD", nullable=False)
 
 
-class Location(OrgScoped, TimestampMixin, Base):
+class Location(OrgScoped, SampleFlag, TimestampMixin, Base):
     """Warehouse or 3PL that holds stock."""
 
     __tablename__ = "locations"
@@ -60,7 +60,7 @@ class Location(OrgScoped, TimestampMixin, Base):
     is_default: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
 
-class Channel(OrgScoped, TimestampMixin, Base):
+class Channel(OrgScoped, SampleFlag, TimestampMixin, Base):
     """A connected sales channel. `credentials_encrypted` is a Fernet token."""
 
     __tablename__ = "channels"

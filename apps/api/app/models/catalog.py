@@ -13,11 +13,11 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, OrgScoped, TimestampMixin, uuid_pk
+from app.models.base import Base, OrgScoped, SampleFlag, TimestampMixin, uuid_pk
 from app.models.enums import ProductType
 
 
-class ProductCategory(OrgScoped, TimestampMixin, Base):
+class ProductCategory(OrgScoped, SampleFlag, TimestampMixin, Base):
     __tablename__ = "product_categories"
     __table_args__ = (UniqueConstraint("org_id", "name", name="uq_product_categories_org_name"),)
 
@@ -25,7 +25,7 @@ class ProductCategory(OrgScoped, TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
 
 
-class Product(OrgScoped, TimestampMixin, Base):
+class Product(OrgScoped, SampleFlag, TimestampMixin, Base):
     __tablename__ = "products"
     __table_args__ = (UniqueConstraint("org_id", "sku", name="uq_products_org_sku"),)
 
@@ -103,7 +103,7 @@ class BomLine(OrgScoped, TimestampMixin, Base):
     component: Mapped[Product] = relationship(foreign_keys=[component_product_id])
 
 
-class Supplier(OrgScoped, TimestampMixin, Base):
+class Supplier(OrgScoped, SampleFlag, TimestampMixin, Base):
     __tablename__ = "suppliers"
 
     id: Mapped[uuid.UUID] = uuid_pk()
