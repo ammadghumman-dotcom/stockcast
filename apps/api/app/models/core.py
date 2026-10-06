@@ -1,7 +1,16 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Enum,
+    ForeignKey,
+    String,
+    Text,
+    UniqueConstraint,
+    false,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -11,6 +20,7 @@ from app.models.enums import ChannelType
 
 class Organization(TimestampMixin, Base):
     __tablename__ = "organizations"
+    __table_args__ = (UniqueConstraint("shopify_shop", name="uq_organizations_shopify_shop"),)
 
     id: Mapped[uuid.UUID] = uuid_pk()
     name: Mapped[str] = mapped_column(String(200), nullable=False)
@@ -23,6 +33,13 @@ class Organization(TimestampMixin, Base):
     stripe_customer_id: Mapped[str | None] = mapped_column(String(100), unique=True)
     stripe_subscription_id: Mapped[str | None] = mapped_column(String(100))
     billing_email: Mapped[str | None] = mapped_column(String(320))
+    # Installed from the Shopify App Store: the owning shop, billed through Shopify
+    shopify_shop: Mapped[str | None] = mapped_column(String(200))
+    shopify_subscription_id: Mapped[str | None] = mapped_column(String(100))
+    # Beta program: 50 % off the first 6 billing months (Shopify discount / coupon)
+    is_beta: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=false(), nullable=False
+    )
 
 
 class User(OrgScoped, TimestampMixin, Base):

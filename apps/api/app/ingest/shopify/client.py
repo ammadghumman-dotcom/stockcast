@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from typing import Any
 
 import httpx
@@ -13,8 +13,16 @@ from app.ingest.base import ConnectorError
 
 
 class ShopifyGraphQL:
-    def __init__(self, shop: str, access_token: str, *, client: httpx.Client | None = None):
+    def __init__(
+        self,
+        shop: str,
+        access_token: str,
+        *,
+        client: httpx.Client | None = None,
+        refresh: Callable[[], str] | None = None,
+    ):
         self.shop = shop
+        self._refresh = refresh  # expiring tokens: called once on a 401 to get a new token
         self.url = f"https://{shop}/admin/api/{settings.shopify_api_version}/graphql.json"
         self._client = client or httpx.Client(timeout=30)
         self._headers = {
@@ -38,6 +46,10 @@ class ShopifyGraphQL:
             if res.status_code >= 500:
                 raise ConnectorError(f"Shopify {res.status_code}: {res.text[:200]}")
             if res.status_code == 401:
+                if self._refresh is not None:
+                    self._headers["X-Shopify-Access-Token"] = self._refresh()
+                    self._refresh = None  # only once per client
+                    continue
                 raise ConnectorError("Shopify token rejected (401); reconnect the store")
             body = res.json()
             errors = body.get("errors") or []

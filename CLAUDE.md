@@ -32,6 +32,12 @@ apps/api/            FastAPI service
   app/billing/       plans.py (PLANS, effective_plan, assert_can_add_channel/skus -> 402),
                      stripe_service.py (Checkout, Portal, webhook parse + idempotent handle_event)
   app/services/audit.py  audit.record(db, ctx, action=, entity=, before=, after=) -> audit_log
+  app/services/shopify_app.py  embedded Shopify app: org_for_shop (workspace per shop, reuses a
+                     standalone-connected one), install (token exchange -> expiring offline token,
+                     webhooks, backfill), Billing API subscribe (beta 50% x 6 months discount, test
+                     charges on dev stores) + app_subscriptions/update -> org.plan
+  app/routers/shopify_embedded.py  POST /shopify/session, GET /shopify/billing,
+                     POST /shopify/billing/subscribe, POST /webhooks/shopify/app-subscriptions-update
   app/services/shopify_compliance.py  GDPR webhooks: customers/data_request + customers/redact
                      (acknowledged + audited — no customer PII is stored), shop/redact (erase the
                      shop's channel + products only it created), app/uninstalled (drop token)
@@ -124,6 +130,10 @@ apps/web/            Next.js 15 app (client components + TanStack Query)
                      lib/plans.ts — mirror of billing/plans.py, beta form), privacy, terms, support;
                      own tokens in marketing.css (.mk), fonts from @fontsource; brand/contact
                      values come from lib/site.ts (NEXT_PUBLIC_SITE_URL, _SUPPORT_EMAIL, ...)
+  app/shopify/       embedded app (App Bridge + Polaris web components from Shopify's CDN; no
+                     Clerk): home (install/sync/checklist/trial), recommendations (+ draft POs),
+                     plan (Shopify Billing). middleware.ts skips Clerk for /shopify and sets
+                     CSP frame-ancestors to the shop's admin; root layout swaps head + providers
   app/onboarding     create workspace, connect Shopify or upload CSVs (sync progress), run pipeline
   app/(app)/         Shell (sidebar nav, mobile menu): dashboard, products(+[id]: forecast chart
                      p10/p50/p90 + history, inventory, BOM), raw-materials, recommendations
@@ -201,7 +211,15 @@ Shopify tests replay vcrpy cassettes in `tests/cassettes/` that were **synthesiz
 
 API tests need Postgres: with `make dev` running, `TEST_DATABASE_URL` from `.env.example` works. In header mode call data routes with `X-Org-Id: <org uuid>` (demo org: `00000000-0000-0000-0000-00000000d3a0`), optionally `X-Role: viewer|admin|owner`.
 
-Auth & billing (Step 7): the web app switches to Clerk when `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` is set (`lib/auth.ts`, `middleware.ts`, `lib/org.tsx` sends the session JWT as Bearer); the API must then run `AUTH_MODE=clerk`. Clerk org -> `organizations.clerk_org_id`, Clerk user -> `users.external_auth_id`, roles org:owner|admin|member -> owner|admin|viewer. Plans: trial (14 d, Growth limits) / starter / growth / scale; `effective_plan()` returns LOCKED (nothing new can be added, reads still work) when the trial expired or the subscription is canceled/unpaid. Billing is optional: `settings.billing_enabled` = `STRIPE_SECRET_KEY` set; without it expired trials keep Trial limits, trial-ending emails are skipped, `GET /billing` returns `billing_enabled=false` and the UI shows "Early access" with no checkout (Stripe can't onboard Pakistan; Paddle is the planned replacement). Limits are enforced at channel create, Shopify install/callback, product create, CSV import and channel sync (402 with a human message). Stripe webhooks are the only thing that changes `org.plan`; each event id is inserted into `stripe_events` first so replays are no-ops. `tests/test_auth.py::test_every_route_is_org_scoped_or_allowlisted` walks every route and fails if one lacks `OrgId`/`Ctx` — extend `PUBLIC` only for routes signed another way.
+Shopify embedded app (Step 10): `deps.get_auth` also accepts App Bridge session tokens (JWT with
+`dest`, HS256 with the app secret) -> the shop's workspace, role owner, mode "shopify". Tokens are
+**expiring offline tokens** (required for public apps created after Apr 2026): every token
+request sends `expiring=1`, credentials keep `refresh_token` + `expires_at`, and
+`connector.fresh_credentials` refreshes 5 min before expiry (and once on a 401). Shopify-installed
+workspaces bill through the Billing API, so `effective_plan` locks them after the trial even
+without Stripe. `shopify.app.toml` holds scopes, compliance webhooks and the app URL.
+
+Auth & billing (Step 7): the web app switches to Clerk when `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` is set (`lib/auth.ts`, `middleware.ts`, `lib/org.tsx` sends the session JWT as Bearer); the API must then run `AUTH_MODE=clerk`. Clerk org -> `organizations.clerk_org_id`, Clerk user -> `users.external_auth_id`, roles org:owner|admin|member -> owner|admin|viewer. Plans: trial (14 d, Growth limits) / starter / growth / scale; `effective_plan()` returns LOCKED (nothing new can be added, reads still work) when the trial expired or the subscription is canceled/unpaid. Billing is optional: `settings.billing_enabled` = `STRIPE_SECRET_KEY` set; without it expired trials keep Trial limits, trial-ending emails are skipped, `GET /billing` returns `billing_enabled=false` and the UI shows "Early access" with no checkout (Stripe can't onboard Pakistan; Paddle is the planned replacement). Limits are enforced at channel create, Shopify install/callback, product create, CSV import and channel sync (402 with a human message). Stripe webhooks (or, for Shopify-installed workspaces, `app_subscriptions/update`) are the only thing that changes `org.plan`; each event id is inserted into `stripe_events` first so replays are no-ops. `tests/test_auth.py::test_every_route_is_org_scoped_or_allowlisted` walks every route and fails if one lacks `OrgId`/`Ctx` — extend `PUBLIC` only for routes signed another way.
 
 Requirements: Docker, Node 22 + pnpm 9 (`corepack enable`), Python 3.12 + `uv`.
 

@@ -583,6 +583,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/shopify/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Session */
+        post: operations["session_shopify_session_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/shopify/billing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Billing */
+        get: operations["billing_shopify_billing_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/shopify/billing/subscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Subscribe */
+        post: operations["subscribe_shopify_billing_subscribe_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/webhooks/shopify/app-subscriptions-update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** App Subscriptions Update */
+        post: operations["app_subscriptions_update_webhooks_shopify_app_subscriptions_update_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/amazon/install": {
         parameters: {
             query?: never;
@@ -1318,6 +1386,21 @@ export interface components {
             };
             /** Worst */
             worst: components["schemas"]["AccuracyRow"][];
+        };
+        /** BillingOut */
+        BillingOut: {
+            /** Plans */
+            plans: components["schemas"]["PlanOut"][];
+            /** Current Plan */
+            current_plan: string;
+            /** Plan Status */
+            plan_status: string;
+            /** Effective Plan */
+            effective_plan: string;
+            /** Is Beta */
+            is_beta: boolean;
+            /** Beta Discount Months */
+            beta_discount_months: number;
         };
         /** BillingRead */
         BillingRead: {
@@ -2077,6 +2160,21 @@ export interface components {
             /** Skus */
             skus: number | null;
         };
+        /** PlanOut */
+        PlanOut: {
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Price Usd */
+            price_usd: number;
+            /** Beta Price Usd */
+            beta_price_usd: number;
+            /** Channels */
+            channels: number | null;
+            /** Skus */
+            skus: number | null;
+        };
         /** PlanningRunRead */
         PlanningRunRead: {
             /**
@@ -2650,6 +2748,27 @@ export interface components {
             /** Removed Products */
             removed_products: number;
         };
+        /** SessionOut */
+        SessionOut: {
+            /** Org Id */
+            org_id: string;
+            /** Org Name */
+            org_name: string;
+            /** Shop */
+            shop: string;
+            /** Channel Id */
+            channel_id: string;
+            /** Installed */
+            installed: boolean;
+            /** Plan */
+            plan: string;
+            /** Plan Status */
+            plan_status: string;
+            /** Trial Ends At */
+            trial_ends_at: string | null;
+            /** Is Beta */
+            is_beta: boolean;
+        };
         /** SimulateRequest */
         SimulateRequest: {
             /** Name */
@@ -2705,6 +2824,16 @@ export interface components {
             href: string;
             /** Done */
             done: boolean;
+        };
+        /** SubscribeIn */
+        SubscribeIn: {
+            /** Plan */
+            plan: string;
+        };
+        /** SubscribeOut */
+        SubscribeOut: {
+            /** Confirmation Url */
+            confirmation_url: string;
         };
         /** SuggestionRead */
         SuggestionRead: {
@@ -4584,6 +4713,126 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    session_shopify_session_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    billing_shopify_billing_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    subscribe_shopify_billing_subscribe_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubscribeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscribeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    app_subscriptions_update_webhooks_shopify_app_subscriptions_update_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };

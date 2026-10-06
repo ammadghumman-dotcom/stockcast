@@ -15,7 +15,7 @@ type OrgCtx = {
   api: ApiClient;
   /** Auth headers for raw `fetch` calls (multipart upload, file download). */
   authHeaders: () => Promise<Record<string, string>>;
-  mode: "clerk" | "header";
+  mode: "clerk" | "header" | "shopify";
   role: "owner" | "admin" | "viewer";
 };
 
@@ -63,6 +63,36 @@ function ClerkOrgProvider({ children }: { children: React.ReactNode }) {
   }, []);
   const role = CLERK_ROLES[orgRole ?? ""] ?? "viewer";
   return <Ctx.Provider value={{ orgId: orgId ?? null, setOrgId, api, authHeaders, mode: "clerk", role }}>{children}</Ctx.Provider>;
+}
+
+/** App Bridge loads from Shopify's CDN; Next's own chunks can hydrate first. Wait briefly. */
+export async function waitForAppBridge(timeoutMs = 5000): Promise<NonNullable<Window["shopify"]> | null> {
+  if (typeof window === "undefined") return null;
+  const start = Date.now();
+  while (!window.shopify && Date.now() - start < timeoutMs) {
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  return window.shopify ?? null;
+}
+
+/** Embedded in the Shopify admin: App Bridge issues a fresh session token per request and the
+ * API derives the workspace from the shop, so there is no org header and no org switching. */
+export function ShopifyOrgProvider({ children }: { children: React.ReactNode }) {
+  const [orgId, setOrgId] = useState<string | null>(null);
+  const getToken = useCallback<TokenGetter>(async () => {
+    const bridge = await waitForAppBridge();
+    return bridge ? bridge.idToken() : null;
+  }, []);
+  const api = useMemo(() => clientFor(null, getToken), [getToken]);
+  const authHeaders = useCallback(async (): Promise<Record<string, string>> => {
+    const token = await getToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }, [getToken]);
+  return (
+    <Ctx.Provider value={{ orgId, setOrgId, api, authHeaders, mode: "shopify", role: "owner" }}>
+      {children}
+    </Ctx.Provider>
+  );
 }
 
 export function useOrg(): OrgCtx {

@@ -30,6 +30,7 @@ PUBLIC = {
     ("POST", "/webhooks/shopify/customers-data-request"),  # GDPR, HMAC-signed
     ("POST", "/webhooks/shopify/customers-redact"),
     ("POST", "/webhooks/shopify/shop-redact"),
+    ("POST", "/webhooks/shopify/app-subscriptions-update"),  # HMAC-signed
     ("POST", "/webhooks/stripe"),  # Stripe-Signature
     ("POST", "/webhooks/amazon"),  # shared-secret HMAC
     ("GET", "/health/ready"),

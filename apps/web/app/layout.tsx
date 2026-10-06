@@ -1,12 +1,13 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 
 import { Analytics } from "@/components/analytics";
 import { ORG_COOKIE } from "@/lib/api";
 import { clerkEnabled } from "@/lib/auth";
 import { site } from "@/lib/site";
-import { Providers } from "@/lib/query";
+import { EmbeddedProviders, Providers } from "@/lib/query";
+import { APP_BRIDGE_SRC, POLARIS_SRC, SHOPIFY_API_KEY, isEmbeddedPath } from "@/lib/shopify-embed";
 
 import "./globals.css";
 
@@ -17,6 +18,23 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  if (isEmbeddedPath((await headers()).get("x-pathname"))) {
+    // Inside the Shopify admin: App Bridge must be the first script in <head>; no Clerk.
+    return (
+      <html lang="en">
+        <head>
+          <meta name="shopify-api-key" content={SHOPIFY_API_KEY} />
+          {/* eslint-disable-next-line @next/next/no-sync-scripts -- App Bridge requires a blocking script */}
+          <script src={APP_BRIDGE_SRC} />
+          {/* eslint-disable-next-line @next/next/no-sync-scripts -- Polaris web components */}
+          <script src={POLARIS_SRC} />
+        </head>
+        <body>
+          <EmbeddedProviders>{children}</EmbeddedProviders>
+        </body>
+      </html>
+    );
+  }
   const jar = await cookies();
   const initialOrgId = jar.get(ORG_COOKIE)?.value ?? null;
   const page = (
