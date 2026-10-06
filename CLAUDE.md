@@ -46,6 +46,7 @@ apps/api/            FastAPI service
                      products, channels, suppliers, locations, categories, promotions), remove()
                      deletes it; plan limits (usage_for) ignore sample rows
   app/routers/onboarding.py  GET /onboarding checklist (own data only), POST|DELETE /sample-data
+  app/routers/feedback.py  POST /feedback (in-app, beta) -> feedback table + REPORT_EMAILS / alert hook
   app/routers/waitlist.py  POST /waitlist (public, 5/min per IP, honeypot `fax`) -> waitlist_signups;
                      services/waitlist.beta_fit = makes products + 2+ channels
   app/services/listings.py  SKU mapping: suggest() (rapidfuzz on SKU + name), override() moves the
@@ -116,6 +117,8 @@ apps/api/            FastAPI service
                      connect (GET /amazon|ebay/install -> {url}; /amazon|ebay/callback), listings
                      (GET/POST /listings, POST /listings/match, POST /listings/{id}/override)
   alembic/           migrations (sales_daily becomes a Timescale hypertable when available)
+  scripts/beta.py    beta ops: candidates (waitlist fits), grant <slug|shop|email> (org.is_beta ->
+                     50% x 6 months on Shopify billing), invited <emails>, feedback [--days]
   scripts/           seed.py, seed_load.py (N orgs x M SKUs), bench_forecast.py (SKU/s + window
                      projection), migrate.sh, start-worker.sh, start-beat.sh, backup.sh/restore.sh
                      (pg_dump -> S3, 30-day prune), s3.py
@@ -142,6 +145,7 @@ apps/web/            Next.js 15 app (client components + TanStack Query)
                      categories, team, billing), calendar (events, promotions + simulate, uplifts)
   app/sign-in, sign-up  Clerk pages; middleware.ts protects everything else when Clerk is enabled
   components/ui/     shadcn-style primitives (button, input, table, dialog, tabs, badge, skeleton, empty)
+  components/feedback.tsx  sidebar "Send feedback" dialog (rating 1-5 + message + page)
   components/onboarding-checklist.tsx  dashboard checklist, sample-data banner + loader
   components/        shell (org/viewer/sample banners), account (Clerk switcher), billing (plans, usage,
                      checkout/portal), connect-channel (Amazon/eBay OAuth or token, WooCommerce

@@ -9,6 +9,7 @@ import { useOrg } from "@/lib/org";
 import { cn } from "@/lib/utils";
 
 import { AccountControls } from "./account";
+import { FeedbackButton } from "./feedback";
 import { SampleDataBanner } from "@/components/onboarding-checklist";
 
 const NAV = [
@@ -49,6 +50,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           Stockcast
         </Link>
         {nav}
+        <div className="mt-4"><FeedbackButton /></div>
         {clerkEnabled ? <div className="mt-6 border-t pt-4"><AccountControls /></div> : null}
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">

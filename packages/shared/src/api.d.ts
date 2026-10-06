@@ -1300,6 +1300,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send Feedback */
+        post: operations["send_feedback_feedback_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -1662,6 +1679,20 @@ export interface components {
              * @description omit = latest planning run
              */
             run_id?: string | null;
+        };
+        /** FeedbackIn */
+        FeedbackIn: {
+            /** Message */
+            message: string;
+            /** Rating */
+            rating?: number | null;
+            /** Page */
+            page?: string | null;
+        };
+        /** FeedbackOut */
+        FeedbackOut: {
+            /** Id */
+            id: string;
         };
         /** ForecastPoint */
         ForecastPoint: {
@@ -6436,6 +6467,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SampleRemoved"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_feedback_feedback_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedbackIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackOut"];
                 };
             };
             /** @description Validation Error */
