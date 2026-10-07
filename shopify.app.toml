@@ -1,9 +1,9 @@
 # Shopify app configuration (Shopify CLI: `shopify app config link`, then `shopify app deploy`).
 # Mirrors what the Partner dashboard must contain for App Store review. Replace the two
-# placeholders: client_id = SHOPIFY_API_KEY, and the production api host if it changes.
+# placeholders: client_id = SHOPIFY_API_KEY (set), and the production api host if it changes.
 
 name = "Stockcast"
-client_id = "REPLACE_WITH_SHOPIFY_API_KEY"
+client_id = "a888cc0d807d5ee5158a2f10419f14d2"
 application_url = "https://stockcast-web-phi.vercel.app/shopify"
 handle = "stockcast"
 embedded = true
