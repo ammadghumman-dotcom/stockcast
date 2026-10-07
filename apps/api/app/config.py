@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     shopify_app_handle: str = "stockcast"
     # Billing API test charges (dev stores always get test charges regardless)
     shopify_billing_test: bool = False
-    shopify_scopes: str = "read_products,read_orders,read_inventory,read_locations"
+    shopify_scopes: str = "read_products,read_orders,read_all_orders,read_inventory,read_locations"
     shopify_backfill_days: int = 730
 
     # Auth: "clerk" verifies Clerk session JWTs; "header" trusts X-Org-Id (dev / e2e only)

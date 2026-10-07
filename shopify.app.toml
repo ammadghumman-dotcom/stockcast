@@ -12,8 +12,8 @@ embedded = true
 include_config_on_deploy = true
 
 [access_scopes]
-# read_all_orders is requested separately in the Partner dashboard (needed for >60-day backfill)
-scopes = "read_products,read_orders,read_inventory,read_locations"
+# read_all_orders was granted in the Partner dashboard (Oct 2026); needed for the 2-year backfill
+scopes = "read_products,read_orders,read_all_orders,read_inventory,read_locations"
 
 # Managed install: Shopify grants these scopes at install time, then the embedded page does a
 # token exchange (no OAuth redirect). The callback URL stays for installs started from
