@@ -1,0 +1,7 @@
+sku,name,type,unit_cost,unit,category
+QA-CAN-LAV,QA Lavender Candle 8oz,finished,6.50,unit,Candles
+QA-CAN-VAN,QA Vanilla Candle 8oz,finished,6.50,unit,Candles
+QA-CAN-OUD,QA Oud Candle 8oz,finished,9.00,unit,Candles
+QA-WAX-SOY,QA Soy Wax,raw_material,4.20,kg,Raw materials
+QA-JAR-8OZ,QA Amber Jar 8oz,raw_material,0.85,unit,Raw materials
+QA-WICK-CT,QA Cotton Wick,raw_material,0.05,unit,Raw materials

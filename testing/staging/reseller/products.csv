@@ -1,0 +1,5 @@
+sku,name,type,unit_cost,unit,category
+QA-GFT-MUG,QA Ceramic Mug,finished,3.10,unit,Kitchen
+QA-GFT-TOTE,QA Canvas Tote,finished,2.40,unit,Bags
+QA-GFT-CARD,QA Greeting Card,finished,0.30,unit,Stationery
+QA-GFT-BOX,QA Gift Box,finished,1.10,unit,Packaging

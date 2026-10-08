@@ -1,0 +1,295 @@
+{
+  "generated_for": "2026-10-08",
+  "models": "autoets only (no chronos)",
+  "settings": {
+    "service_level": "0.95",
+    "default_lead_time_days": 14,
+    "production_lead_time_days": 7,
+    "target_cover_days": 30
+  },
+  "suppliers": {
+    "maker": [
+      {
+        "name": "QA Wax Supplier",
+        "email": "qa-wax@example.com",
+        "lead_time_days": 21,
+        "moq": 100
+      },
+      {
+        "name": "QA Glass Co",
+        "email": "qa-glass@example.com",
+        "lead_time_days": 30,
+        "moq": 500
+      },
+      {
+        "name": "QA Wick Co",
+        "email": "qa-wick@example.com",
+        "lead_time_days": 14,
+        "moq": 1000
+      }
+    ],
+    "reseller": [
+      {
+        "name": "QA Vendor Alpha",
+        "email": "qa-alpha@example.com",
+        "lead_time_days": 10,
+        "moq": 50
+      },
+      {
+        "name": "QA Vendor Beta",
+        "email": "qa-beta@example.com",
+        "lead_time_days": 20,
+        "moq": 200
+      }
+    ]
+  },
+  "preferred": {
+    "maker": {
+      "QA-WAX-SOY": "QA Wax Supplier",
+      "QA-JAR-8OZ": "QA Glass Co",
+      "QA-WICK-CT": "QA Wick Co"
+    },
+    "reseller": {
+      "QA-GFT-MUG": "QA Vendor Alpha",
+      "QA-GFT-TOTE": "QA Vendor Alpha",
+      "QA-GFT-CARD": "QA Vendor Beta",
+      "QA-GFT-BOX": "QA Vendor Beta"
+    }
+  },
+  "maker": {
+    "import": {
+      "channel_id": "a0274858-a35a-4b82-951a-05f8d918879e",
+      "results": [
+        {
+          "kind": "products",
+          "received": 6,
+          "inserted": 6,
+          "updated": 0,
+          "skipped": 0,
+          "errors": []
+        },
+        {
+          "kind": "bom",
+          "received": 9,
+          "inserted": 9,
+          "updated": 0,
+          "skipped": 0,
+          "errors": []
+        },
+        {
+          "kind": "inventory",
+          "received": 6,
+          "inserted": 6,
+          "updated": 0,
+          "skipped": 0,
+          "errors": []
+        },
+        {
+          "kind": "sales",
+          "received": 1200,
+          "inserted": 1200,
+          "updated": 0,
+          "skipped": 0,
+          "errors": []
+        }
+      ]
+    },
+    "forecast_run_status": "success",
+    "recommendations": [
+      {
+        "sku": "QA-CAN-LAV",
+        "action": "produce",
+        "health": "healthy",
+        "qty": "600.0000",
+        "order_by_date": "2026-10-15",
+        "supplier_name": null,
+        "daily_demand": "20.0000",
+        "lead_time_days": 7,
+        "safety_stock": "0.0000",
+        "reorder_point": "140.0000",
+        "on_hand": "300.0000",
+        "stockout_date": "2026-10-23",
+        "days_of_cover": 15,
+        "reason": "Produce 600 units by Oct 15 (arrives Oct 22, 7d lead) \u2014 stock runs out Oct 23 \u2014 covers 30 days at 20.0/day + 0 safety"
+      },
+      {
+        "sku": "QA-CAN-OUD",
+        "action": "produce",
+        "health": "at_risk",
+        "qty": "90.0000",
+        "order_by_date": "2026-10-10",
+        "supplier_name": null,
+        "daily_demand": "3.0000",
+        "lead_time_days": 7,
+        "safety_stock": "0.0000",
+        "reorder_point": "21.0000",
+        "on_hand": "30.0000",
+        "stockout_date": "2026-10-18",
+        "days_of_cover": 10,
+        "reason": "Produce 90 units by Oct 10 (arrives Oct 17, 7d lead) \u2014 stock runs out Oct 18 \u2014 covers 30 days at 3.0/day + 0 safety"
+      },
+      {
+        "sku": "QA-CAN-VAN",
+        "action": "produce",
+        "health": "healthy",
+        "qty": "360.0000",
+        "order_by_date": "2026-11-19",
+        "supplier_name": null,
+        "daily_demand": "12.0000",
+        "lead_time_days": 7,
+        "safety_stock": "0.0000",
+        "reorder_point": "84.0000",
+        "on_hand": "600.0000",
+        "stockout_date": "2026-11-27",
+        "days_of_cover": 50,
+        "reason": "Produce 360 units by Nov 19 (arrives Nov 26, 7d lead) \u2014 stock runs out Nov 27 \u2014 covers 30 days at 12.0/day + 0 safety"
+      },
+      {
+        "sku": "QA-JAR-8OZ",
+        "action": "reorder",
+        "health": "at_risk",
+        "qty": "1050.0000",
+        "order_by_date": "2026-10-07",
+        "supplier_name": "QA Glass Co",
+        "daily_demand": "35.0000",
+        "lead_time_days": 30,
+        "safety_stock": "0.0000",
+        "reorder_point": "1050.0000",
+        "on_hand": "500.0000",
+        "stockout_date": "2026-10-22",
+        "days_of_cover": 14,
+        "reason": "Reorder 1,050 units by Oct 07 (arrives Nov 06, 30d lead) \u2014 stock runs out Oct 22 \u2014 covers 30 days at 35.0/day + 0 safety from QA Glass Co (MOQ 500, pack 1)"
+      },
+      {
+        "sku": "QA-WAX-SOY",
+        "action": "reorder",
+        "health": "at_risk",
+        "qty": "239.0000",
+        "order_by_date": "2026-10-11",
+        "supplier_name": "QA Wax Supplier",
+        "daily_demand": "7.9450",
+        "lead_time_days": 21,
+        "safety_stock": "0.0000",
+        "reorder_point": "166.8450",
+        "on_hand": "200.0000",
+        "stockout_date": "2026-11-02",
+        "days_of_cover": 25,
+        "reason": "Reorder 239 kg by Oct 11 (arrives Nov 01, 21d lead) \u2014 stock runs out Nov 02 \u2014 covers 30 days at 7.9/day + 0 safety from QA Wax Supplier (MOQ 100, pack 1)"
+      },
+      {
+        "sku": "QA-WICK-CT",
+        "action": "none",
+        "health": "overstock",
+        "qty": "0.0000",
+        "order_by_date": null,
+        "supplier_name": "QA Wick Co",
+        "daily_demand": "35.0000",
+        "lead_time_days": 14,
+        "safety_stock": "0.0000",
+        "reorder_point": "490.0000",
+        "on_hand": "5000.0000",
+        "stockout_date": null,
+        "days_of_cover": null,
+        "reason": "Covered: 35/day demand, stock lasts past the planning horizon."
+      }
+    ]
+  },
+  "reseller": {
+    "import": {
+      "channel_id": "61ca9a0b-1fe3-4d55-b4bf-d67e0628bf6c",
+      "results": [
+        {
+          "kind": "products",
+          "received": 4,
+          "inserted": 4,
+          "updated": 0,
+          "skipped": 0,
+          "errors": []
+        },
+        {
+          "kind": "inventory",
+          "received": 4,
+          "inserted": 4,
+          "updated": 0,
+          "skipped": 0,
+          "errors": []
+        },
+        {
+          "kind": "sales",
+          "received": 1600,
+          "inserted": 1600,
+          "updated": 0,
+          "skipped": 0,
+          "errors": []
+        }
+      ]
+    },
+    "forecast_run_status": "success",
+    "recommendations": [
+      {
+        "sku": "QA-GFT-BOX",
+        "action": "reorder",
+        "health": "at_risk",
+        "qty": "200.0000",
+        "order_by_date": "2026-10-07",
+        "supplier_name": "QA Vendor Beta",
+        "daily_demand": "5.0000",
+        "lead_time_days": 20,
+        "safety_stock": "0.0000",
+        "reorder_point": "100.0000",
+        "on_hand": "50.0000",
+        "stockout_date": "2026-10-18",
+        "days_of_cover": 10,
+        "reason": "Reorder 200 units by Oct 07 (arrives Oct 27, 20d lead) \u2014 stock runs out Oct 18 \u2014 covers 30 days at 5.0/day + 0 safety from QA Vendor Beta (MOQ 200, pack 1)"
+      },
+      {
+        "sku": "QA-GFT-CARD",
+        "action": "none",
+        "health": "overstock",
+        "qty": "0.0000",
+        "order_by_date": null,
+        "supplier_name": "QA Vendor Beta",
+        "daily_demand": "40.0000",
+        "lead_time_days": 20,
+        "safety_stock": "0.0000",
+        "reorder_point": "800.0000",
+        "on_hand": "9000.0000",
+        "stockout_date": null,
+        "days_of_cover": null,
+        "reason": "Covered: 40/day demand, stock lasts past the planning horizon."
+      },
+      {
+        "sku": "QA-GFT-MUG",
+        "action": "reorder",
+        "health": "at_risk",
+        "qty": "450.0000",
+        "order_by_date": "2026-10-10",
+        "supplier_name": "QA Vendor Alpha",
+        "daily_demand": "15.0000",
+        "lead_time_days": 10,
+        "safety_stock": "0.0000",
+        "reorder_point": "150.0000",
+        "on_hand": "200.0000",
+        "stockout_date": "2026-10-21",
+        "days_of_cover": 13,
+        "reason": "Reorder 450 units by Oct 10 (arrives Oct 20, 10d lead) \u2014 stock runs out Oct 21 \u2014 covers 30 days at 15.0/day + 0 safety from QA Vendor Alpha (MOQ 50, pack 1)"
+      },
+      {
+        "sku": "QA-GFT-TOTE",
+        "action": "reorder",
+        "health": "healthy",
+        "qty": "240.0000",
+        "order_by_date": "2026-11-16",
+        "supplier_name": "QA Vendor Alpha",
+        "daily_demand": "8.0000",
+        "lead_time_days": 10,
+        "safety_stock": "0.0000",
+        "reorder_point": "80.0000",
+        "on_hand": "400.0000",
+        "stockout_date": "2026-11-27",
+        "days_of_cover": 50,
+        "reason": "Reorder 240 units by Nov 16 (arrives Nov 26, 10d lead) \u2014 stock runs out Nov 27 \u2014 covers 30 days at 8.0/day + 0 safety from QA Vendor Alpha (MOQ 50, pack 1)"
+      }
+    ]
+  }
+}

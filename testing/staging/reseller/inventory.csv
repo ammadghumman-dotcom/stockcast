@@ -1,0 +1,5 @@
+sku,location,on_hand,inbound
+QA-GFT-MUG,Main,200,0
+QA-GFT-TOTE,Main,400,0
+QA-GFT-CARD,Main,9000,0
+QA-GFT-BOX,Main,50,0

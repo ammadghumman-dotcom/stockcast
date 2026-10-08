@@ -162,6 +162,8 @@ docker-compose.yml   api, web, postgres (timescaledb), redis; docker-compose.ci.
 infra/railway/       config-as-code per Railway service (api, worker, beat, backup) + README
 apps/web/vercel.json Vercel build + security headers; sentry.*.config.ts gated by NEXT_PUBLIC_SENTRY_DSN
 loadtest/k6/api.js   k6 scenario (50 VUs, p95 thresholds)
+testing/staging/     staging test data: make_data.py (flat-demand maker + reseller CSVs for a given
+                     test day), build_expected.py -> expected_results.json (planning oracle)
 docs/RUNBOOK.md      environments, deploy flow, one-time setup, alerts, rollback, backups/restore
                      drill, security posture, capacity; docs/CHANGELOG.md = ops log
 Makefile             make dev / test / lint / typecheck / coverage / ci-stack / bench / loadtest
