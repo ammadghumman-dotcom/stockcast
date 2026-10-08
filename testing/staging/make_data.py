@@ -30,8 +30,12 @@ MAKER_PRODUCTS = [
     ("QA-WICK-CT", "QA Cotton Wick", "raw_material", "0.05", "unit", "Raw materials", 0),
 ]
 MAKER_STOCK = {
-    "QA-CAN-LAV": 300, "QA-CAN-VAN": 600, "QA-CAN-OUD": 30,
-    "QA-WAX-SOY": 200, "QA-JAR-8OZ": 500, "QA-WICK-CT": 5000,
+    "QA-CAN-LAV": 300,
+    "QA-CAN-VAN": 600,
+    "QA-CAN-OUD": 30,
+    "QA-WAX-SOY": 200,
+    "QA-JAR-8OZ": 500,
+    "QA-WICK-CT": 5000,
 }
 # parent, component, qty per unit (every candle uses the same recipe)
 MAKER_BOM = [
@@ -49,8 +53,13 @@ RESELLER_PRODUCTS = [
 RESELLER_STOCK = {"QA-GFT-MUG": 200, "QA-GFT-TOTE": 400, "QA-GFT-CARD": 9000, "QA-GFT-BOX": 50}
 
 PRICE = {  # retail price used for the revenue column
-    "QA-CAN-LAV": 24, "QA-CAN-VAN": 24, "QA-CAN-OUD": 32,
-    "QA-GFT-MUG": 14, "QA-GFT-TOTE": 12, "QA-GFT-CARD": 4, "QA-GFT-BOX": 5,
+    "QA-CAN-LAV": 24,
+    "QA-CAN-VAN": 24,
+    "QA-CAN-OUD": 32,
+    "QA-GFT-MUG": 14,
+    "QA-GFT-TOTE": 12,
+    "QA-GFT-CARD": 4,
+    "QA-GFT-BOX": 5,
 }
 
 
@@ -64,8 +73,11 @@ def _write(path: Path, header: list[str], rows: list[tuple]) -> None:
 
 def build(folder: str, products, stock, bom, end: date, days: int) -> None:
     out = HERE / folder
-    _write(out / "products.csv", ["sku", "name", "type", "unit_cost", "unit", "category"],
-           [p[:6] for p in products])
+    _write(
+        out / "products.csv",
+        ["sku", "name", "type", "unit_cost", "unit", "category"],
+        [p[:6] for p in products],
+    )
     first = end - timedelta(days=days)
     sales = []
     for i in range(days):
@@ -74,16 +86,23 @@ def build(folder: str, products, stock, bom, end: date, days: int) -> None:
             if per_day:
                 sales.append((d.isoformat(), sku, per_day, per_day * PRICE[sku]))
     _write(out / "sales.csv", ["date", "sku", "units", "revenue"], sales)
-    _write(out / "inventory.csv", ["sku", "location", "on_hand", "inbound"],
-           [(sku, "Main", qty, 0) for sku, qty in stock.items()])
+    _write(
+        out / "inventory.csv",
+        ["sku", "location", "on_hand", "inbound"],
+        [(sku, "Main", qty, 0) for sku, qty in stock.items()],
+    )
     if bom:
         _write(out / "bom.csv", ["parent_sku", "component_sku", "qty_per_unit"], bom)
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--end", type=date.fromisoformat, default=date.today(),
-                    help="day the test runs; history ends the day before")
+    ap.add_argument(
+        "--end",
+        type=date.fromisoformat,
+        default=date.today(),
+        help="day the test runs; history ends the day before",
+    )
     ap.add_argument("--days", type=int, default=400)
     a = ap.parse_args()
     build("maker", MAKER_PRODUCTS, MAKER_STOCK, MAKER_BOM, a.end, a.days)

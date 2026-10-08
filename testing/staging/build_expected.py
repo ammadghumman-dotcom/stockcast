@@ -7,7 +7,8 @@ preferred suppliers and planning settings, run forecast + planning), then saves 
 Run from apps/api with a throwaway database (it is written to, not rolled back):
   DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/stockcast_qa \\
   AUTH_MODE=header CELERY_TASK_ALWAYS_EAGER=true RATE_LIMIT_ENABLED=false \\
-  uv run alembic upgrade head && uv run python ../../testing/staging/build_expected.py [--end YYYY-MM-DD]
+  uv run alembic upgrade head && \\
+  PYTHONPATH=. uv run python ../../testing/staging/build_expected.py [--end YYYY-MM-DD]
 """
 
 from __future__ import annotations
@@ -26,17 +27,36 @@ HERE = Path(__file__).resolve().parent
 # planning panel). Kept here so the expected file and the cases cannot drift apart.
 SUPPLIERS = {
     "maker": [
-        {"name": "QA Wax Supplier", "email": "qa-wax@example.com", "lead_time_days": 21, "moq": 100},
+        {
+            "name": "QA Wax Supplier",
+            "email": "qa-wax@example.com",
+            "lead_time_days": 21,
+            "moq": 100,
+        },
         {"name": "QA Glass Co", "email": "qa-glass@example.com", "lead_time_days": 30, "moq": 500},
         {"name": "QA Wick Co", "email": "qa-wick@example.com", "lead_time_days": 14, "moq": 1000},
     ],
     "reseller": [
-        {"name": "QA Vendor Alpha", "email": "qa-alpha@example.com", "lead_time_days": 10, "moq": 50},
-        {"name": "QA Vendor Beta", "email": "qa-beta@example.com", "lead_time_days": 20, "moq": 200},
+        {
+            "name": "QA Vendor Alpha",
+            "email": "qa-alpha@example.com",
+            "lead_time_days": 10,
+            "moq": 50,
+        },
+        {
+            "name": "QA Vendor Beta",
+            "email": "qa-beta@example.com",
+            "lead_time_days": 20,
+            "moq": 200,
+        },
     ],
 }
 PREFERRED = {
-    "maker": {"QA-WAX-SOY": "QA Wax Supplier", "QA-JAR-8OZ": "QA Glass Co", "QA-WICK-CT": "QA Wick Co"},
+    "maker": {
+        "QA-WAX-SOY": "QA Wax Supplier",
+        "QA-JAR-8OZ": "QA Glass Co",
+        "QA-WICK-CT": "QA Wick Co",
+    },
     "reseller": {
         "QA-GFT-MUG": "QA Vendor Alpha",
         "QA-GFT-TOTE": "QA Vendor Alpha",
@@ -44,12 +64,29 @@ PREFERRED = {
         "QA-GFT-BOX": "QA Vendor Beta",
     },
 }
-SETTINGS = {"service_level": "0.95", "default_lead_time_days": 14, "production_lead_time_days": 7,
-            "target_cover_days": 30}
+SETTINGS = {
+    "service_level": "0.95",
+    "default_lead_time_days": 14,
+    "production_lead_time_days": 7,
+    "target_cover_days": 30,
+}
 
-KEEP = ["sku", "action", "health", "qty", "order_by_date", "supplier_name", "daily_demand",
-        "lead_time_days", "safety_stock", "reorder_point", "on_hand", "stockout_date",
-        "days_of_cover", "reason"]
+KEEP = [
+    "sku",
+    "action",
+    "health",
+    "qty",
+    "order_by_date",
+    "supplier_name",
+    "daily_demand",
+    "lead_time_days",
+    "safety_stock",
+    "reorder_point",
+    "on_hand",
+    "stockout_date",
+    "days_of_cover",
+    "reason",
+]
 
 
 def run(kind: str, client, end: date) -> dict:
@@ -57,14 +94,19 @@ def run(kind: str, client, end: date) -> dict:
     from app.models import Organization
 
     with SessionLocal() as db:
-        org = Organization(id=uuid.uuid4(), name=f"QA {kind}", slug=f"qa-{kind}-{uuid.uuid4().hex[:6]}")
+        org = Organization(
+            id=uuid.uuid4(), name=f"QA {kind}", slug=f"qa-{kind}-{uuid.uuid4().hex[:6]}"
+        )
         db.add(org)
         db.commit()
         h = {"X-Org-Id": str(org.id), "X-Role": "owner"}
 
     folder = HERE / kind
-    files = {k: (f"{k}.csv", (folder / f"{k}.csv").read_bytes(), "text/csv")
-             for k in ("products", "sales", "inventory", "bom") if (folder / f"{k}.csv").exists()}
+    files = {
+        k: (f"{k}.csv", (folder / f"{k}.csv").read_bytes(), "text/csv")
+        for k in ("products", "sales", "inventory", "bom")
+        if (folder / f"{k}.csv").exists()
+    }
     r = client.post("/imports", headers=h, files=files)
     r.raise_for_status()
     imported = r.json()
@@ -74,10 +116,15 @@ def run(kind: str, client, end: date) -> dict:
         r = client.post("/suppliers", headers=h, json=s)
         r.raise_for_status()
         sup_ids[s["name"]] = r.json()["id"]
-    products = {p["sku"]: p for p in client.get("/products", headers=h, params={"limit": 500}).json()}
+    products = {
+        p["sku"]: p for p in client.get("/products", headers=h, params={"limit": 500}).json()
+    }
     for sku, sup in PREFERRED[kind].items():
-        r = client.patch(f"/products/{products[sku]['id']}/planning", headers=h,
-                         json={"preferred_supplier_id": sup_ids[sup]})
+        r = client.patch(
+            f"/products/{products[sku]['id']}/planning",
+            headers=h,
+            json={"preferred_supplier_id": sup_ids[sup]},
+        )
         r.raise_for_status()
     client.patch("/planning-settings", headers=h, json=SETTINGS).raise_for_status()
 
@@ -100,7 +147,9 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--end", type=date.fromisoformat, default=date.today())
     a = ap.parse_args()
-    subprocess.run([sys.executable, str(HERE / "make_data.py"), "--end", a.end.isoformat()], check=True)
+    subprocess.run(
+        [sys.executable, str(HERE / "make_data.py"), "--end", a.end.isoformat()], check=True
+    )
 
     from fastapi.testclient import TestClient
 
