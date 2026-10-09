@@ -212,12 +212,29 @@ def provision_user(
         new_role = _sync_role(user.role, role)
         if new_role != user.role:
             user.role, changed = new_role, True
-        if user.email.endswith(PLACEHOLDER_EMAIL_DOMAIN) and _due(f"user:{sub}"):
+        placeholder = user.email.endswith(PLACEHOLDER_EMAIL_DOMAIN) or user.name.endswith(
+            PLACEHOLDER_EMAIL_DOMAIN
+        )
+        if placeholder and _due(f"user:{sub}"):
             email, name = _clerk_identity(sub, claims)
-            if email and not _email_taken(db, org, email, user.id):
+            if (
+                email
+                and user.email.endswith(PLACEHOLDER_EMAIL_DOMAIN)
+                and not _email_taken(db, org, email, user.id)
+            ):
                 user.email, changed = email, True
-                if name and user.name.endswith(PLACEHOLDER_EMAIL_DOMAIN):
-                    user.name = name
+            if user.name.endswith(PLACEHOLDER_EMAIL_DOMAIN) and not user.email.endswith(
+                PLACEHOLDER_EMAIL_DOMAIN
+            ):
+                user.name, changed = name or user.email, True
+        # rows created before owners existed: the workspace creator is promoted once
+        if (
+            user.role == "admin"
+            and not _has_owner(db, org)
+            and _due(f"owner:{org.id}:{sub}")
+            and _is_creator(org, sub)
+        ):
+            user.role, changed = "owner", True
         if changed:
             db.commit()
         return user

@@ -219,6 +219,35 @@ def test_placeholder_email_is_repaired_later(client, db, clerk, monkeypatch) -> 
     assert u.email == "owner@example.com" and org.name == "Acme Candles"
 
 
+def test_pre_existing_creator_row_becomes_owner_and_gets_a_name(client, db, clerk) -> None:
+    """Staging: the creator's row predates owners (admin, name = user_...@clerk.local)."""
+    org = Organization(name="Acme Candles", slug="acme-pre", clerk_org_id="org_acme")
+    db.add(org)
+    db.flush()
+    placeholder = f"u_owner{deps.PLACEHOLDER_EMAIL_DOMAIN}"
+    old = User(
+        org_id=org.id,
+        email="owner@example.com",
+        name=placeholder,
+        role="admin",
+        external_auth_id="u_owner",
+    )
+    stranger = User(
+        org_id=org.id, email="ada@example.com", name="Ada", role="admin", external_auth_id="u_ada"
+    )
+    db.add_all([old, stranger])
+    db.flush()
+
+    # a non-creator admin is not promoted
+    assert client.get("/me", headers=_h(clerk(sub="u_ada"))).json()["role"] == "admin"
+    me = client.get("/me", headers=_h(clerk())).json()
+    assert me["role"] == "owner"
+    db.refresh(old)
+    assert old.name == "Olive" and old.role == "owner"
+    # with an owner in place nobody else is promoted later
+    assert client.get("/me", headers=_h(clerk(sub="u_ada"))).json()["role"] == "admin"
+
+
 def test_clock_skew_within_leeway_is_accepted(client, clerk) -> None:
     now = int(time.time())
     tok = clerk(iat=now - 70, exp=now - 10)  # expired 10 s ago, inside the 30 s leeway
