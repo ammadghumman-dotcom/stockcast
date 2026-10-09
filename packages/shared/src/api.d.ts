@@ -244,7 +244,8 @@ export interface paths {
         get: operations["get_bom_line_bom_lines__bom_line_id__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Delete Bom Line */
+        delete: operations["delete_bom_line_bom_lines__bom_line_id__delete"];
         options?: never;
         head?: never;
         /** Update Bom Line */
@@ -912,7 +913,7 @@ export interface paths {
         head?: never;
         /**
          * Update Uplift
-         * @description Editing a learned value turns it into a manual prior (learned=false).
+         * @description Editing a value makes it manual: forecasts use it as is and learning never replaces it.
          */
         patch: operations["update_uplift_category_uplifts__uplift_id__patch"];
         trace?: never;
@@ -3034,6 +3035,11 @@ export interface components {
             learned: boolean;
             /** Sample Size */
             sample_size: number | null;
+            /**
+             * Manual
+             * @default false
+             */
+            manual: boolean;
         };
         /** UpliftUpdate */
         UpliftUpdate: {
@@ -3924,6 +3930,38 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["BomLineRead"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_bom_line_bom_lines__bom_line_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                bom_line_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -5061,6 +5099,8 @@ export interface operations {
         parameters: {
             query?: {
                 horizon?: number;
+                /** @description Re-run planning automatically once this forecast succeeds */
+                then_plan?: boolean;
             };
             header?: {
                 authorization?: string | null;

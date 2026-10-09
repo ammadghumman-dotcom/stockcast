@@ -131,3 +131,27 @@ def test_derived_band_ratio_is_capped() -> None:
     parent, comp = uuid.uuid4(), uuid.uuid4()
     fc = {parent: (np.full(10, 0.001), np.full(10, 5.0), np.ones(10), [None] * 10)}
     assert _rel_band(fc, {parent: [(comp, 1.0)]}, comp) == 3.0
+
+
+def test_cover_window_past_forecast_horizon_is_not_truncated() -> None:
+    """Staging bug #18: Tote (8/day, 400 on hand, 10-day lead, 60-day cover) ordered 312 because
+    the cover window ran to day 110 but only the 90 forecast days were summed."""
+    p50 = np.full(90, 8.0)
+    plan = pm.reorder(
+        400,
+        p50,
+        p50.copy(),
+        inbound=None,
+        lead_time_days=10,
+        service_level=0.95,
+        target_cover_days=60,
+    )
+    assert plan.order_day == 40 and plan.arrival_day == 50
+    assert plan.qty == 480  # 60 days x 8, nothing on hand at arrival
+
+
+def test_cover_window_demand_fills_missing_days_at_tail_rate() -> None:
+    p50 = np.concatenate([np.full(83, 5.0), np.full(7, 10.0)])
+    assert pm.cover_window_demand(p50, 79, 20) == pytest.approx(3 * 5 + 7 * 10 + 10 * 10)
+    assert pm.cover_window_demand(p50, 120, 5) == pytest.approx(50)  # all beyond the horizon
+    assert pm.cover_window_demand(p50, 0, 10) == pytest.approx(50)  # inside: unchanged

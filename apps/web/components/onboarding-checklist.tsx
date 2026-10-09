@@ -9,7 +9,13 @@ import { useApi, useOrg } from "@/lib/org";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export type OnboardingStep = { key: string; title: string; hint: string; href: string; done: boolean };
+export type OnboardingStep = {
+  key: string;
+  title: string;
+  hint: string;
+  href: string;
+  done: boolean;
+};
 export type OnboardingState = {
   steps: OnboardingStep[];
   done: number;
@@ -20,7 +26,10 @@ export type OnboardingState = {
 
 export function useOnboarding() {
   const api = useApi();
-  return useOrgQuery(["onboarding"], async () => unwrap(await api.GET("/onboarding")) as OnboardingState);
+  return useOrgQuery(
+    ["onboarding"],
+    async () => unwrap(await api.GET("/onboarding")) as OnboardingState,
+  );
 }
 
 /** The next step to suggest: the first one not done (steps come back in order). */
@@ -42,17 +51,31 @@ export function ChecklistView({ state }: { state: OnboardingState }) {
     <Card className="mb-6" data-testid="onboarding-checklist">
       <CardHeader className="flex flex-row items-baseline justify-between gap-3">
         <CardTitle>Set up Stockcast</CardTitle>
-        <span className="text-sm text-muted-foreground" data-testid="onboarding-progress">
+        <span
+          className="text-sm text-muted-foreground"
+          data-testid="onboarding-progress"
+        >
           {done} of {total} done
         </span>
       </CardHeader>
       <CardContent>
-        <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden>
-          <div className="h-full bg-primary transition-[width]" style={{ width: `${(100 * done) / total}%` }} />
+        <div
+          className="mb-4 h-1.5 overflow-hidden rounded-full bg-muted"
+          aria-hidden
+        >
+          <div
+            className="h-full bg-primary transition-[width]"
+            style={{ width: `${(100 * done) / total}%` }}
+          />
         </div>
         <ol className="space-y-2">
           {steps.map((s) => (
-            <li key={s.key} className="flex items-start gap-3" data-testid={`step-${s.key}`} data-done={s.done}>
+            <li
+              key={s.key}
+              className="flex items-start gap-3"
+              data-testid={`step-${s.key}`}
+              data-done={s.done}
+            >
               <span
                 aria-hidden
                 className={
@@ -65,14 +88,25 @@ export function ChecklistView({ state }: { state: OnboardingState }) {
               </span>
               <div className="min-w-0">
                 {s.done ? (
-                  <span className="text-muted-foreground line-through">{s.title}</span>
+                  <span className="text-muted-foreground line-through">
+                    {s.title}
+                  </span>
                 ) : (
-                  <Link href={s.href} className={s === next ? "font-medium underline" : "underline"}>
+                  <Link
+                    href={s.href}
+                    className={
+                      s === next ? "font-medium underline" : "underline"
+                    }
+                  >
                     {s.title}
                   </Link>
                 )}
-                <span className="sr-only">{s.done ? " (done)" : " (to do)"}</span>
-                {!s.done ? <p className="text-xs text-muted-foreground">{s.hint}</p> : null}
+                <span className="sr-only">
+                  {s.done ? " (done)" : " (to do)"}
+                </span>
+                {!s.done ? (
+                  <p className="text-xs text-muted-foreground">{s.hint}</p>
+                ) : null}
               </div>
             </li>
           ))}
@@ -89,10 +123,18 @@ export function useLoadSampleData() {
   return useAction(
     async () => {
       unwrap(await api.POST("/sample-data"));
-      unwrap(await api.POST("/forecast-runs", { params: { query: { horizon: 90 } } }));
-      return unwrap(await api.POST("/planning-runs"));
+      return unwrap(
+        await api.POST("/forecast-runs", {
+          params: { query: { horizon: 90, then_plan: true } },
+        }),
+      );
     },
-    { success: "Sample data loaded", invalidate: [], onSuccess: () => router.push("/dashboard") },
+    {
+      success:
+        "Sample data loaded. The forecast and plan are being built and appear in a few minutes.",
+      invalidate: [],
+      onSuccess: () => router.push("/dashboard"),
+    },
   );
 }
 
@@ -101,10 +143,13 @@ export function SampleDataBanner() {
   const api = useApi();
   const { role } = useOrg();
   const q = useOnboarding();
-  const remove = useAction(async () => unwrap(await api.DELETE("/sample-data")), {
-    success: (r) => `Removed sample data (${r.removed_products} products)`,
-    invalidate: [],
-  });
+  const remove = useAction(
+    async () => unwrap(await api.DELETE("/sample-data")),
+    {
+      success: (r) => `Removed sample data (${r.removed_products} products)`,
+      invalidate: [],
+    },
+  );
   if (!q.data?.sample_data) return null;
   return (
     <div
@@ -112,11 +157,17 @@ export function SampleDataBanner() {
       data-testid="sample-banner"
     >
       <span>
-        You&apos;re looking at sample data for a demo candle brand. Products and channels marked
-        &ldquo;sample&rdquo; disappear when you remove it.
+        You&apos;re looking at sample data for a demo candle brand. Products and
+        channels marked &ldquo;sample&rdquo; disappear when you remove it.
       </span>
       {role !== "viewer" ? (
-        <Button size="sm" variant="outline" loading={remove.isPending} onClick={() => remove.mutate(undefined)} data-testid="remove-sample">
+        <Button
+          size="sm"
+          variant="outline"
+          loading={remove.isPending}
+          onClick={() => remove.mutate(undefined)}
+          data-testid="remove-sample"
+        >
           Remove sample data
         </Button>
       ) : null}

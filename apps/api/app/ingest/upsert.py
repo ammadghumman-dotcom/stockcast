@@ -288,8 +288,11 @@ def upsert_inventory(
 
 
 def upsert_bom(db: Session, org_id: uuid.UUID, records: Iterable[BomRecord]) -> IngestResult:
+    from app.services.bom import creates_cycle, load_graph
+
     res = IngestResult(kind="bom")
     resolver = ProductResolver(db, org_id)
+    graph = load_graph(db, org_id)
     for i, rec in enumerate(records, start=1):
         res.received += 1
         parent = resolver.resolve(rec.parent_sku, None)
@@ -301,6 +304,16 @@ def upsert_bom(db: Session, org_id: uuid.UUID, records: Iterable[BomRecord]) -> 
         if parent == comp:
             res.errors.append(RowError(row=i, message="parent and component are the same sku"))
             continue
+        if comp not in graph.get(parent, ()) and creates_cycle(graph, parent, comp):
+            res.errors.append(
+                RowError(
+                    row=i,
+                    message=f"{rec.component_sku} already contains {rec.parent_sku}; "
+                    "this line would make a loop in the bill of materials",
+                )
+            )
+            continue
+        graph[parent].add(comp)
         stmt = pg_insert(BomLine).values(
             id=uuid.uuid4(),
             org_id=org_id,

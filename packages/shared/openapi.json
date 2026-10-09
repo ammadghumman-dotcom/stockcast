@@ -1779,6 +1779,72 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "bom"
+        ],
+        "summary": "Delete Bom Line",
+        "operationId": "delete_bom_line_bom_lines__bom_line_id__delete",
+        "parameters": [
+          {
+            "name": "bom_line_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Bom Line Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/locations": {
@@ -3930,6 +3996,18 @@
             }
           },
           {
+            "name": "then_plan",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Re-run planning automatically once this forecast succeeds",
+              "default": false,
+              "title": "Then Plan"
+            },
+            "description": "Re-run planning automatically once this forecast succeeds"
+          },
+          {
             "name": "authorization",
             "in": "header",
             "required": false,
@@ -5014,7 +5092,7 @@
           "calendar"
         ],
         "summary": "Update Uplift",
-        "description": "Editing a learned value turns it into a manual prior (learned=false).",
+        "description": "Editing a value makes it manual: forecasts use it as is and learning never replaces it.",
         "operationId": "update_uplift_category_uplifts__uplift_id__patch",
         "parameters": [
           {
@@ -11827,6 +11905,11 @@
               }
             ],
             "title": "Sample Size"
+          },
+          "manual": {
+            "type": "boolean",
+            "title": "Manual",
+            "default": false
           }
         },
         "type": "object",

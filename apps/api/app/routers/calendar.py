@@ -108,9 +108,10 @@ def list_uplifts(
 
 @router.patch("/category-uplifts/{uplift_id}", response_model=UpliftRead)
 def update_uplift(db: DB, org_id: OrgId, uplift_id: uuid.UUID, body: UpliftUpdate):
-    """Editing a learned value turns it into a manual prior (learned=false)."""
+    """Editing a value makes it manual: forecasts use it as is and learning never replaces it."""
     row = crud.get_scoped(db, CategoryHolidayUplift, org_id, uplift_id)
     row.uplift_pct, row.learned, row.sample_size = body.uplift_pct, False, 0
+    row.manual = True
     db.commit()
     db.refresh(row)
     return row

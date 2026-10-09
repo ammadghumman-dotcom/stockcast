@@ -2,7 +2,17 @@ import uuid
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import JSON, Boolean, Date, Enum, ForeignKey, Numeric, String, UniqueConstraint
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Date,
+    Enum,
+    ForeignKey,
+    Numeric,
+    String,
+    UniqueConstraint,
+    false,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -36,6 +46,7 @@ class CategoryHolidayUplift(OrgScoped, TimestampMixin, Base):
     """Demand multiplier for a category during a recurring event (by name, per region).
 
     `learned` = fitted from history (sample_size occurrences); otherwise an editable prior.
+    `manual` = a person set this value; nightly learning never overwrites it.
     """
 
     __tablename__ = "category_holiday_uplift"
@@ -59,6 +70,9 @@ class CategoryHolidayUplift(OrgScoped, TimestampMixin, Base):
     uplift_pct: Mapped[Decimal] = mapped_column(Numeric(8, 2), nullable=False)  # +150.00 = 2.5x
     learned: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     sample_size: Mapped[int | None] = mapped_column()
+    manual: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=false(), nullable=False
+    )
 
 
 class Promotion(OrgScoped, SampleFlag, TimestampMixin, Base):
