@@ -7,6 +7,7 @@ import type { Promotion } from "@stockcast/shared";
 import { unwrap } from "@/lib/api";
 import {
   useAction,
+  useCanEdit,
   useCategories,
   useChannels,
   useOrgQuery,
@@ -54,6 +55,7 @@ export default function CalendarPage() {
 
 function EventsTab() {
   const api = useApi();
+  const editable = useCanEdit();
   const regions = useRegions();
   const [region, setRegion] = useState("");
   const events = useOrgQuery(["holiday-events", region], async () =>
@@ -116,14 +118,16 @@ function EventsTab() {
             </option>
           ))}
         </NativeSelect>
-        <Button
-          variant="outline"
-          onClick={() => setOpen(true)}
-          disabled={!regions.data?.length}
-          data-testid="add-event"
-        >
-          Add custom event
-        </Button>
+        {editable ? (
+          <Button
+            variant="outline"
+            onClick={() => setOpen(true)}
+            disabled={!regions.data?.length}
+            data-testid="add-event"
+          >
+            Add custom event
+          </Button>
+        ) : null}
       </div>
       {events.isLoading ? (
         <TableSkeleton />
@@ -157,7 +161,7 @@ function EventsTab() {
                   </Badge>
                 </TD>
                 <TD>
-                  {e.source === "custom" ? (
+                  {editable && e.source === "custom" ? (
                     <Button
                       size="sm"
                       variant="ghost"
@@ -226,6 +230,7 @@ function EventsTab() {
 
 function PromotionsTab() {
   const api = useApi();
+  const editable = useCanEdit();
   const promos = useOrgQuery(["promotions"], async () =>
     unwrap(await api.GET("/promotions", { params: { query: { limit: 200 } } })),
   );
@@ -298,9 +303,11 @@ function PromotionsTab() {
   );
   return (
     <div className="space-y-3">
-      <Button onClick={() => setOpen(true)} data-testid="add-promotion">
-        Plan a promotion
-      </Button>
+      {editable ? (
+        <Button onClick={() => setOpen(true)} data-testid="add-promotion">
+          Plan a promotion
+        </Button>
+      ) : null}
       {promos.isLoading ? (
         <TableSkeleton />
       ) : !promos.data?.length ? (
@@ -350,13 +357,15 @@ function PromotionsTab() {
                   )}
                 </TD>
                 <TD>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => del.mutate(pr.id)}
-                  >
-                    Remove
-                  </Button>
+                  {editable ? (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => del.mutate(pr.id)}
+                    >
+                      Remove
+                    </Button>
+                  ) : null}
                 </TD>
               </TR>
             ))}
@@ -534,6 +543,7 @@ function PromotionsTab() {
 
 function UpliftsTab() {
   const api = useApi();
+  const editable = useCanEdit();
   const cats = useCategories();
   const regions = useRegions();
   const ups = useOrgQuery(["category-uplifts"], async () =>
@@ -587,6 +597,7 @@ function UpliftsTab() {
             <TD className="text-right">
               <Input
                 className="ml-auto h-8 w-24 text-right"
+                disabled={!editable}
                 value={edit[u.id] ?? String(u.uplift_pct)}
                 onChange={(e) =>
                   setEdit((x) => ({ ...x, [u.id]: e.target.value }))
@@ -601,7 +612,8 @@ function UpliftsTab() {
               )}
             </TD>
             <TD>
-              {edit[u.id] !== undefined &&
+              {editable &&
+              edit[u.id] !== undefined &&
               edit[u.id] !== String(u.uplift_pct) ? (
                 <Button
                   size="sm"
