@@ -58,7 +58,7 @@ export function BillingTab() {
   });
   if (q.isLoading || !q.data) return <Skeleton className="h-48" />;
   const b = q.data;
-  const canManage = role !== "viewer";
+  const canManage = role === "owner" || role === "admin";
   const locked = b.effective_plan === "locked";
   return (
     <div className="space-y-4">

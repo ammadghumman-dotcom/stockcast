@@ -51,6 +51,12 @@ class User(OrgScoped, TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     role: Mapped[str] = mapped_column(String(20), default="owner", nullable=False)
     external_auth_id: Mapped[str | None] = mapped_column(String(200))  # Clerk id, Step 7
+    clerk_invitation_id: Mapped[str | None] = mapped_column(String(100))  # pending invite
+
+    @property
+    def status(self) -> str:
+        """invited = asked to join, has not signed in yet; active = signed in at least once."""
+        return "invited" if self.clerk_invitation_id and not self.external_auth_id else "active"
 
 
 class Region(OrgScoped, TimestampMixin, Base):

@@ -184,6 +184,7 @@
           "orgs"
         ],
         "summary": "Create User",
+        "description": "Invite a teammate. In Clerk mode this sends a Clerk organization invitation.",
         "operationId": "create_user_users_post",
         "parameters": [
           {
@@ -390,6 +391,72 @@
         "responses": {
           "204": {
             "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me": {
+      "get": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Me",
+        "description": "Who is calling, in which workspace, with which Stockcast role (owner included).",
+        "operationId": "me_me_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeRead"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -9212,6 +9279,55 @@
         ],
         "title": "MaterialDeltaRead"
       },
+      "MeRead": {
+        "properties": {
+          "org_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Org Id"
+          },
+          "org_name": {
+            "type": "string",
+            "title": "Org Name"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          }
+        },
+        "type": "object",
+        "required": [
+          "org_id",
+          "org_name",
+          "user_id",
+          "email",
+          "role"
+        ],
+        "title": "MeRead"
+      },
       "OnboardingOut": {
         "properties": {
           "steps": {
@@ -12023,6 +12139,11 @@
           "role": {
             "type": "string",
             "title": "Role"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "active"
           }
         },
         "type": "object",
