@@ -79,6 +79,25 @@ class ReorderPlan:
     arrival_day: int | None
 
 
+TAIL_DAYS = 7  # days at the end of the forecast that set the rate beyond the horizon
+
+
+def cover_window_demand(p50: np.ndarray, arrival: int, target_cover_days: int) -> float:
+    """Demand over the `target_cover_days` after arrival.
+
+    When the window runs past the end of the forecast, the missing days are filled at the
+    average rate of the last TAIL_DAYS forecast days instead of being dropped: a truncated
+    window under-orders (a 60-day cover arriving on day 49 used to count only 40 days)."""
+    start = max(arrival + 1, 0)
+    end = arrival + 1 + target_cover_days
+    seen = p50[start:end]
+    total = float(np.sum(seen))
+    missing = (end - start) - len(seen)
+    if missing > 0 and len(p50):
+        total += float(np.mean(p50[-TAIL_DAYS:])) * missing
+    return total
+
+
 def reorder(
     on_hand: float,
     p50: np.ndarray,
@@ -135,7 +154,7 @@ def reorder(
         float(proj.stock[min(arrival, len(proj.stock) - 1)]) if arrival >= 0 else float(on_hand)
     )
     at_arrival = max(at_arrival, 0.0)
-    cover_demand = float(np.sum(p50[max(arrival + 1, 0) : arrival + 1 + target_cover_days]))
+    cover_demand = cover_window_demand(p50, arrival, target_cover_days)
     if cover_demand == 0 and daily > 0:
         cover_demand = daily * target_cover_days
     need = cover_demand + safety - at_arrival

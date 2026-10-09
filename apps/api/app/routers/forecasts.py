@@ -29,9 +29,15 @@ router = APIRouter(tags=["forecasts"])
 @router.post("/forecast-runs", response_model=ForecastRunRead, status_code=202)
 @heavy
 def trigger_forecast(
-    request: Request, db: DB, org_id: OrgId, horizon: int = Query(90, ge=7, le=365)
+    request: Request,
+    db: DB,
+    org_id: OrgId,
+    horizon: int = Query(90, ge=7, le=365),
+    then_plan: bool = Query(
+        False, description="Re-run planning automatically once this forecast succeeds"
+    ),
 ):
-    return enqueue_forecast(db, org_id, trigger="manual", horizon=horizon)
+    return enqueue_forecast(db, org_id, trigger="manual", horizon=horizon, then_plan=then_plan)
 
 
 @router.get("/forecast-runs", response_model=list[ForecastRunRead])

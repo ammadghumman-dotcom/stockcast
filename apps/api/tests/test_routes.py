@@ -118,7 +118,7 @@ def test_bom_line_crud_and_constraints(client: TestClient, headers: dict) -> Non
     )
     assert r.status_code == 409
 
-    # self-reference -> 409 (check constraint)
+    # self-reference -> 422 with a plain message (the check constraint stays as a backstop)
     r = client.post(
         "/bom-lines",
         json={
@@ -128,7 +128,7 @@ def test_bom_line_crud_and_constraints(client: TestClient, headers: dict) -> Non
         },
         headers=headers,
     )
-    assert r.status_code == 409
+    assert r.status_code == 422
 
     # zero qty -> 422 (pydantic)
     r = client.post(

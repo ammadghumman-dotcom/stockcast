@@ -17,6 +17,7 @@ from app.forecast.features import Series, load_series
 from app.forecast.models import Bands
 from app.forecast.router import forecast_batch, wape
 from app.models import Forecast, ForecastAccuracy, ForecastRun, Product
+from app.services.errors import run_error
 
 DEFAULT_HORIZON = 90
 LOOKBACK_DAYS = 730
@@ -130,7 +131,7 @@ def run_forecast(
         db.commit()
     except Exception as exc:
         db.rollback()
-        run.status, run.error, run.finished_at = "failed", str(exc)[:2000], datetime.now(UTC)
+        run.status, run.error, run.finished_at = "failed", run_error(exc), datetime.now(UTC)
         db.commit()
         raise
     return run

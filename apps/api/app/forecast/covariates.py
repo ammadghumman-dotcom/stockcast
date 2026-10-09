@@ -151,29 +151,47 @@ def load_events(db: Session, org_id: uuid.UUID, start: date, end: date) -> list[
 def load_region_shares(
     db: Session, org_id: uuid.UUID, as_of: date
 ) -> dict[uuid.UUID, dict[uuid.UUID, float]]:
-    """product_id -> {region_id: share of units in the last 365 days}. Missing region = org's
-    largest region."""
+    """product_id -> {region_id: share of units in the last 365 days}.
+
+    Sales from a channel without a region (CSV uploads, most single-store brands) count toward
+    the org's largest region, or its first region when no channel has one. Dropping them would
+    switch every holiday and event uplift off for those products."""
     rows = db.execute(
         select(SalesDaily.product_id, Channel.region_id, func.sum(SalesDaily.units))
         .join(Channel, Channel.id == SalesDaily.channel_id)
         .where(SalesDaily.org_id == org_id, SalesDaily.date > as_of - timedelta(days=365))
         .group_by(SalesDaily.product_id, Channel.region_id)
     ).all()
+    org_tot: dict[uuid.UUID, float] = defaultdict(float)
+    for _pid, rid, units in rows:
+        if rid is not None:
+            org_tot[rid] += float(units or 0)
+    fallback: uuid.UUID | None = (
+        max(org_tot, key=lambda k: org_tot[k]) if org_tot else default_region(db, org_id)
+    )
     tot: dict[uuid.UUID, float] = defaultdict(float)
     per: dict[uuid.UUID, dict[uuid.UUID, float]] = defaultdict(dict)
-    org_tot: dict[uuid.UUID, float] = defaultdict(float)
     for pid, rid, units in rows:
+        rid = rid or fallback
         if rid is None:
             continue
         u = float(units or 0)
         per[pid][rid] = per[pid].get(rid, 0.0) + u
         tot[pid] += u
-        org_tot[rid] += u
     out = {pid: {r: u / tot[pid] for r, u in d.items() if tot[pid] > 0} for pid, d in per.items()}
-    if org_tot:
-        top = max(org_tot, key=lambda k: org_tot[k])
-        out.setdefault("__default__", {top: 1.0})  # type: ignore[arg-type]
+    if fallback is not None:
+        out.setdefault("__default__", {fallback: 1.0})  # type: ignore[arg-type]
     return out
+
+
+def default_region(db: Session, org_id: uuid.UUID) -> uuid.UUID | None:
+    """The workspace's home region: the first one created (set up with the workspace)."""
+    return db.scalar(
+        select(Region.id)
+        .where(Region.org_id == org_id)
+        .order_by(Region.created_at, Region.id)
+        .limit(1)
+    )
 
 
 def load_uplifts(db: Session, org_id: uuid.UUID) -> dict[tuple, Uplift]:
@@ -403,7 +421,7 @@ def persist_uplifts(
             )
             db.add(row)
             existing[key] = row
-        else:
+        elif not row.manual:  # a person's edit wins over what history suggests
             row.uplift_pct, row.learned, row.sample_size = pct, True, up.sample_size
     for cid in cat_ids:
         for rid in regions:
@@ -578,6 +596,7 @@ __all__ = [
     "build_factors",
     "category_name_map",
     "channel_region_map",
+    "default_region",
     "fit_promo_model",
     "learn_holiday_uplifts",
     "load_events",

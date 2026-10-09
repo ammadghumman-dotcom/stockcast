@@ -30,6 +30,8 @@ from app.models import (
 )
 from app.planning import math as pm
 from app.planning.bom import Bom, explode_demand, made_in_house
+from app.services.bom import find_cycle
+from app.services.errors import run_error
 
 
 @dataclass
@@ -40,6 +42,10 @@ class SupplierPick:
     moq: float
     pack_size: float
     price: float | None
+
+
+class PlanningError(RuntimeError):
+    """A problem with the workspace's own data; the message is shown to the user as is."""
 
 
 def get_settings(db: Session, org_id: uuid.UUID) -> PlanningSettings:
@@ -71,6 +77,13 @@ def run_planning(db: Session, run: PlanningRun, *, as_of: date | None = None) ->
             )
         }
         bom = _load_bom(db, run.org_id)
+        loop = find_cycle({parent: {c for c, _ in lines} for parent, lines in bom.items()})
+        if loop:
+            names = " → ".join(products[i].sku if i in products else str(i) for i in loop)
+            raise PlanningError(
+                f"The bill of materials has a loop ({names}). Remove one of these lines "
+                "and run planning again."
+            )
         fc = _load_forecast(db, frun.id, as_of, H)  # product -> (p50, p90, factor, event)
         stock = _load_stock(db, run.org_id)
         inbound = _load_inbound(db, run.org_id, as_of, H)
@@ -145,7 +158,7 @@ def run_planning(db: Session, run: PlanningRun, *, as_of: date | None = None) ->
         db.commit()
     except Exception as exc:
         db.rollback()
-        run.status, run.error, run.finished_at = "failed", str(exc)[:2000], datetime.now(UTC)
+        run.status, run.error, run.finished_at = "failed", run_error(exc), datetime.now(UTC)
         db.commit()
         raise
     return run

@@ -62,6 +62,7 @@ class UpliftRead(Timestamped):
     uplift_pct: Decimal
     learned: bool
     sample_size: int | None
+    manual: bool = False
 
 
 class UpliftUpdate(BaseModel):
