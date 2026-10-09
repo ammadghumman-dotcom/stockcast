@@ -160,7 +160,7 @@ export function SampleDataBanner() {
         You&apos;re looking at sample data for a demo candle brand. Products and
         channels marked &ldquo;sample&rdquo; disappear when you remove it.
       </span>
-      {role !== "viewer" ? (
+      {role === "owner" || role === "admin" ? (
         <Button
           size="sm"
           variant="outline"

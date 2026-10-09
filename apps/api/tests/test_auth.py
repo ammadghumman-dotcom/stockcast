@@ -158,7 +158,8 @@ def test_clerk_token_provisions_org_and_user(client: TestClient, db, clerk) -> N
     assert body["plan"] == "trial" and body["trial_ends_at"] is not None
     org = db.query(Organization).filter_by(clerk_org_id="org_abc").one()
     user = db.query(User).filter_by(org_id=org.id, external_auth_id="user_1").one()
-    assert (user.email, user.role) == ("alice@acme.test", "admin")
+    # the first user of a new workspace is its owner (Clerk itself only knows org:admin)
+    assert (user.email, user.role) == ("alice@acme.test", "owner")
 
     # second call: same org, same user, no duplicates
     client.get("/orgs/me", headers={"Authorization": f"Bearer {tok}"})

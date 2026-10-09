@@ -13,7 +13,7 @@ from app.config import settings
 from app.deps import DB, Ctx, OrgId
 from app.models import Organization, PlanningSettings, Region, User
 from app.schemas.common import Timestamped
-from app.services import crud
+from app.services import crud, team
 
 router = APIRouter(tags=["orgs"])
 
@@ -36,7 +36,7 @@ class OrgRead(Timestamped):
 class UserCreate(BaseModel):
     email: EmailStr
     name: str = Field(min_length=1, max_length=200)
-    role: str = Field(default="viewer", pattern="^(owner|admin|viewer)$")
+    role: str = Field(default="viewer", pattern="^(owner|admin|viewer)$")  # owner -> 422
 
 
 class UserUpdate(BaseModel):
@@ -48,6 +48,15 @@ class UserRead(Timestamped):
     org_id: uuid.UUID
     email: str
     name: str
+    role: str
+    status: str = "active"  # "invited" until the person signs in
+
+
+class MeRead(BaseModel):
+    org_id: uuid.UUID
+    org_name: str
+    user_id: uuid.UUID | None
+    email: str | None
     role: str
 
 
@@ -102,19 +111,33 @@ def list_users(db: DB, org_id: OrgId):
 
 @router.post("/users", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 def create_user(db: DB, ctx: Ctx, body: UserCreate):
-    ctx.require("admin")
-    return crud.create_scoped(db, User, ctx.org_id, body)
+    """Invite a teammate. In Clerk mode this sends a Clerk organization invitation."""
+    return team.invite(db, ctx, email=body.email, name=body.name, role=body.role)
 
 
 @router.patch("/users/{user_id}", response_model=UserRead)
 def update_user(db: DB, ctx: Ctx, user_id: uuid.UUID, body: UserUpdate):
-    ctx.require("admin")
-    return crud.update_scoped(db, User, ctx.org_id, user_id, body)
+    user = None
+    if body.name is not None:
+        user = team.rename(db, ctx, user_id, body.name)
+    if body.role is not None:
+        user = team.change_role(db, ctx, user_id, body.role)
+    return user or crud.get_scoped(db, User, ctx.org_id, user_id)
 
 
 @router.delete("/users/{user_id}", status_code=204)
 def delete_user(db: DB, ctx: Ctx, user_id: uuid.UUID):
-    ctx.require("admin")
-    org_id = ctx.org_id
-    db.delete(crud.get_scoped(db, User, org_id, user_id))
-    db.commit()
+    team.remove(db, ctx, user_id)
+
+
+@router.get("/me", response_model=MeRead)
+def me(db: DB, ctx: Ctx):
+    """Who is calling, in which workspace, with which Stockcast role (owner included)."""
+    org = db.get(Organization, ctx.org_id)
+    return MeRead(
+        org_id=ctx.org_id,
+        org_name=org.name if org else "",
+        user_id=ctx.user_id,
+        email=ctx.email,
+        role=ctx.role,
+    )

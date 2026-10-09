@@ -7,7 +7,8 @@ import type { PlanningSettings, Supplier } from "@stockcast/shared";
 
 import { unwrap } from "@/lib/api";
 import { useAction, useCategories, useChannels, useOrgQuery, useRegions, useSuppliers } from "@/lib/hooks";
-import { useApi } from "@/lib/org";
+import { useApi, useOrg } from "@/lib/org";
+import { canEdit, INVITE_ROLES, memberActions } from "@/lib/team";
 import { BillingTab } from "@/components/billing";
 import { ConnectChannelDialog } from "@/components/connect-channel";
 import { SkuMapping } from "@/components/sku-mapping";
@@ -196,26 +197,68 @@ function CategoriesTab() {
 
 function TeamTab() {
   const api = useApi();
+  const { role, mode } = useOrg();
   const users = useOrgQuery(["users"], async () => unwrap(await api.GET("/users")));
-  const [u, setU] = useState({ email: "", name: "", role: "viewer" });
-  const add = useAction(async () => unwrap(await api.POST("/users", { body: u })), { success: "Member added", invalidate: ["users"], onSuccess: () => setU({ email: "", name: "", role: "viewer" }) });
-  const remove = useAction(async (id: string) => unwrap(await api.DELETE("/users/{user_id}", { params: { path: { user_id: id } } })), { success: "Member removed", invalidate: ["users"] });
+  const me = useOrgQuery(["me"], async () => unwrap(await api.GET("/me")));
+  const blank = { email: "", name: "", role: "viewer" };
+  const [u, setU] = useState(blank);
+  const invite = useAction(async () => unwrap(await api.POST("/users", { body: u })), {
+    success: mode === "clerk" ? "Invitation sent" : "Member added",
+    invalidate: ["users"],
+    onSuccess: () => setU(blank),
+  });
+  const remove = useAction(
+    async (id: string) => unwrap(await api.DELETE("/users/{user_id}", { params: { path: { user_id: id } } })),
+    { success: "Member removed", invalidate: ["users"] },
+  );
+  const setRole = useAction(
+    async ({ id, to }: { id: string; to: string }) =>
+      unwrap(await api.PATCH("/users/{user_id}", { params: { path: { user_id: id } }, body: { role: to } })),
+    { success: "Role updated", invalidate: ["users", "me"] },
+  );
+  const myEmail = me.data?.email ?? null;
   return (
     <Card>
       <CardHeader><CardTitle>Team members</CardTitle></CardHeader>
       <CardContent className="space-y-3">
-        <div className="grid gap-2 md:grid-cols-4">
-          <Input placeholder="Email" value={u.email} onChange={(e) => setU({ ...u, email: e.target.value })} />
-          <Input placeholder="Name" value={u.name} onChange={(e) => setU({ ...u, name: e.target.value })} />
-          <NativeSelect value={u.role} onChange={(e) => setU({ ...u, role: e.target.value })}><option value="owner">Owner</option><option value="admin">Admin</option><option value="viewer">Viewer</option></NativeSelect>
-          <Button variant="outline" disabled={!u.email || !u.name} loading={add.isPending} onClick={() => add.mutate()}>Invite</Button>
-        </div>
+        {canEdit(role) ? (
+          <div className="grid gap-2 md:grid-cols-4" data-testid="invite-form">
+            <Input placeholder="Email" value={u.email} onChange={(e) => setU({ ...u, email: e.target.value })} />
+            <Input placeholder="Name" value={u.name} onChange={(e) => setU({ ...u, name: e.target.value })} />
+            <NativeSelect value={u.role} onChange={(e) => setU({ ...u, role: e.target.value })}>
+              {INVITE_ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+            </NativeSelect>
+            <Button variant="outline" disabled={!u.email || !u.name} loading={invite.isPending} onClick={() => invite.mutate()}>Invite</Button>
+          </div>
+        ) : null}
         {users.isLoading ? <Skeleton className="h-16" /> : !users.data?.length ? <Empty title="No members yet" /> : (
           <Table><THead><TR><TH>Name</TH><TH>Email</TH><TH>Role</TH><TH /></TR></THead>
-            <TBody>{users.data.map((m) => <TR key={m.id}><TD>{m.name}</TD><TD className="text-xs">{m.email}</TD><TD><Badge variant="outline">{m.role}</Badge></TD><TD><Button size="sm" variant="ghost" onClick={() => remove.mutate(m.id)}>Remove</Button></TD></TR>)}</TBody>
+            <TBody>{users.data.map((m) => {
+              const can = memberActions(role, myEmail, m);
+              return (
+                <TR key={m.id}>
+                  <TD>{m.name}</TD>
+                  <TD className="text-xs">{m.email}</TD>
+                  <TD className="space-x-1">
+                    {can.canChangeRole ? (
+                      <NativeSelect aria-label={`Role for ${m.email}`} value={m.role} onChange={(e) => setRole.mutate({ id: m.id, to: e.target.value })}>
+                        {INVITE_ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+                      </NativeSelect>
+                    ) : <Badge variant="outline">{m.role}</Badge>}
+                    {m.status === "invited" ? <Badge variant="outline">invited</Badge> : null}
+                  </TD>
+                  <TD className="space-x-1 text-right">
+                    {can.canMakeOwner ? <Button size="sm" variant="ghost" onClick={() => setRole.mutate({ id: m.id, to: "owner" })}>Make owner</Button> : null}
+                    {can.canRemove ? <Button size="sm" variant="ghost" onClick={() => remove.mutate(m.id)}>{m.status === "invited" ? "Revoke" : "Remove"}</Button> : null}
+                  </TD>
+                </TR>
+              );
+            })}</TBody>
           </Table>
         )}
-        <p className="text-xs text-muted-foreground">Sign-in and invitations arrive with Clerk in Step 7.</p>
+        <p className="text-xs text-muted-foreground">
+          The owner can&apos;t be removed; hand ownership to someone else first. Invited people get an email and join when they sign up.
+        </p>
       </CardContent>
     </Card>
   );

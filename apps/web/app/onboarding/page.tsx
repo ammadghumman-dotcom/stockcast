@@ -21,8 +21,13 @@ const KINDS = ["products", "bom", "inventory", "sales"] as const;
 
 export default function Onboarding() {
   const api = useApi();
-  const { orgId, setOrgId, authHeaders, mode } = useOrg();
+  const { orgId, setOrgId, authHeaders, mode, role } = useOrg();
   const router = useRouter();
+  // Viewers can't connect stores or import; invited viewers land here after sign-up, so
+  // send them to the dashboard of the workspace they joined.
+  useEffect(() => {
+    if (role === "viewer") router.replace("/dashboard");
+  }, [role, router]);
   const channels = useChannels();
   const [shop, setShop] = useState("");
   const [orgName, setOrgName] = useState("");

@@ -48,7 +48,10 @@ export interface paths {
         /** List Users */
         get: operations["list_users_users_get"];
         put?: never;
-        /** Create User */
+        /**
+         * Create User
+         * @description Invite a teammate. In Clerk mode this sends a Clerk organization invitation.
+         */
         post: operations["create_user_users_post"];
         delete?: never;
         options?: never;
@@ -72,6 +75,26 @@ export interface paths {
         head?: never;
         /** Update User */
         patch: operations["update_user_users__user_id__patch"];
+        trace?: never;
+    };
+    "/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Me
+         * @description Who is calling, in which workspace, with which Stockcast role (owner included).
+         */
+        get: operations["me_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/products": {
@@ -2077,6 +2100,22 @@ export interface components {
             /** Delta Qty */
             delta_qty: number;
         };
+        /** MeRead */
+        MeRead: {
+            /**
+             * Org Id
+             * Format: uuid
+             */
+            org_id: string;
+            /** Org Name */
+            org_name: string;
+            /** User Id */
+            user_id: string | null;
+            /** Email */
+            email: string | null;
+            /** Role */
+            role: string;
+        };
         /** OnboardingOut */
         OnboardingOut: {
             /** Steps */
@@ -3094,6 +3133,11 @@ export interface components {
             name: string;
             /** Role */
             role: string;
+            /**
+             * Status
+             * @default active
+             */
+            status: string;
         };
         /** UserUpdate */
         UserUpdate: {
@@ -3361,6 +3405,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    me_me_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeRead"];
                 };
             };
             /** @description Validation Error */

@@ -20,10 +20,9 @@ from datetime import UTC, datetime, timedelta
 from functools import lru_cache
 from typing import Annotated, Any
 
-import httpx
 import jwt
 from fastapi import Depends, Header, HTTPException, Request, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -55,6 +54,9 @@ class AuthContext:
 
 
 # --------------------------------------------------------------------------- Clerk JWT
+CLOCK_LEEWAY_S = 30  # Clerk session tokens live 60 s; tolerate clock skew between hosts
+
+
 @lru_cache(maxsize=4)
 def _jwks_client(url: str) -> jwt.PyJWKClient:
     return jwt.PyJWKClient(url, cache_keys=True)
@@ -71,25 +73,48 @@ def verify_clerk_token(token: str) -> dict:
             algorithms=["RS256"],
             issuer=settings.clerk_issuer or None,
             options={"require": ["sub", "exp"], "verify_aud": False},
-            leeway=10,
+            leeway=CLOCK_LEEWAY_S,
         )
     except jwt.PyJWTError as exc:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, f"invalid token: {exc}") from exc
 
 
 def _clerk_fetch(path: str) -> dict | None:
-    """Best-effort name lookup via the Clerk Backend API (needs CLERK_SECRET_KEY)."""
-    if not settings.clerk_secret_key:
-        return None
-    try:
-        r = httpx.get(
-            f"https://api.clerk.com/v1{path}",
-            headers={"Authorization": f"Bearer {settings.clerk_secret_key}"},
-            timeout=5,
-        )
-        return r.json() if r.status_code == 200 else None
-    except httpx.HTTPError:
-        return None
+    """Best-effort lookup via the Clerk Backend API (needs CLERK_SECRET_KEY)."""
+    from app.services import clerk
+
+    return clerk.get(path)
+
+
+def org_claims(claims: dict) -> tuple[str | None, str]:
+    """(clerk org id, clerk org role) from a session token.
+
+    Clerk's v1 tokens carry `org_id` / `org_role`; v2 tokens nest them as `o: {id, rol}` with
+    the role unprefixed ("admin"). Both are accepted so a token-format change on Clerk's side
+    never locks every user out again."""
+    raw = claims.get("o")
+    o: dict = raw if isinstance(raw, dict) else {}
+    org_id = claims.get("org_id") or o.get("id")
+    role = claims.get("org_role") or o.get("rol") or ""
+    if role and not role.startswith("org:"):
+        role = f"org:{role}"
+    return org_id, role
+
+
+PLACEHOLDER_EMAIL_DOMAIN = "@clerk.local"
+_REFRESH_EVERY_S = 600
+_last_refresh: dict[str, float] = {}
+
+
+def _due(key: str) -> bool:
+    """Rate-limit best-effort Clerk lookups to one per key per 10 minutes per process."""
+    import time
+
+    now = time.monotonic()
+    if now - _last_refresh.get(key, -_REFRESH_EVERY_S) < _REFRESH_EVERY_S:
+        return False
+    _last_refresh[key] = now
+    return True
 
 
 def create_org(db: Session, *, name: str, slug_base: str, **fields: Any) -> Organization:
@@ -126,6 +151,11 @@ def provision_org(
     """Return (org, created). Creates org + default region/settings on first sight."""
     org = db.scalar(select(Organization).where(Organization.clerk_org_id == clerk_org_id))
     if org:
+        if org.name == f"Workspace {clerk_org_id[-6:]}" and _due(f"org:{clerk_org_id}"):
+            info = _clerk_fetch(f"/organizations/{clerk_org_id}")
+            if info and info.get("name"):
+                org.name = info["name"]
+                db.commit()
         return org, False
     info = _clerk_fetch(f"/organizations/{clerk_org_id}")
     name = name or (info or {}).get("name") or f"Workspace {clerk_org_id[-6:]}"
@@ -133,33 +163,107 @@ def provision_org(
     return create_org(db, name=name, slug_base=slug_base, clerk_org_id=clerk_org_id), True
 
 
-def provision_user(db: Session, org: Organization, claims: dict, role: str) -> User:
+def _clerk_identity(sub: str, claims: dict) -> tuple[str | None, str | None]:
+    email = claims.get("email")
+    name = claims.get("name") or claims.get("first_name")
+    if not email or not name:
+        info = _clerk_fetch(f"/users/{sub}") or {}
+        from app.services.clerk import primary_email
+
+        email = email or primary_email(info)
+        full = f"{info.get('first_name') or ''} {info.get('last_name') or ''}".strip()
+        name = name or full or None
+    return email, name
+
+
+def _is_creator(org: Organization, sub: str) -> bool:
+    if not org.clerk_org_id:
+        return False
+    info = _clerk_fetch(f"/organizations/{org.clerk_org_id}") or {}
+    return info.get("created_by") == sub
+
+
+def _has_owner(db: Session, org: Organization) -> bool:
+    return (
+        db.scalar(select(User.id).where(User.org_id == org.id, User.role == "owner").limit(1))
+        is not None
+    )
+
+
+def _sync_role(current: str, clerk_role: str) -> str:
+    """Clerk decides admin vs viewer; Stockcast keeps 'owner' on top of an org:admin."""
+    if current == "owner" and clerk_role == "admin":
+        return "owner"
+    return clerk_role
+
+
+def provision_user(
+    db: Session, org: Organization, claims: dict, role: str, *, org_created: bool = False
+) -> User:
+    """Find or create the Stockcast user behind a Clerk session.
+
+    - An invited row (same email, not yet linked) is claimed instead of adding a duplicate.
+    - The workspace creator becomes owner (Clerk only knows admin and member).
+    - A placeholder email from an earlier failed Clerk lookup is repaired when possible."""
     sub = claims["sub"]
     user = db.scalar(select(User).where(User.org_id == org.id, User.external_auth_id == sub))
     if user:
-        if user.role != role:
-            user.role = role
+        changed = False
+        new_role = _sync_role(user.role, role)
+        if new_role != user.role:
+            user.role, changed = new_role, True
+        if user.email.endswith(PLACEHOLDER_EMAIL_DOMAIN) and _due(f"user:{sub}"):
+            email, name = _clerk_identity(sub, claims)
+            if email and not _email_taken(db, org, email, user.id):
+                user.email, changed = email, True
+                if name and user.name.endswith(PLACEHOLDER_EMAIL_DOMAIN):
+                    user.name = name
+        if changed:
             db.commit()
         return user
-    email = claims.get("email")
-    name = claims.get("name") or claims.get("first_name") or ""
-    if not email or not name:
-        info = _clerk_fetch(f"/users/{sub}") or {}
-        addresses = info.get("email_addresses") or []
-        primary = next(
-            (e for e in addresses if e.get("id") == info.get("primary_email_address_id")), None
+
+    email, name = _clerk_identity(sub, claims)
+    invited = (
+        db.scalar(
+            select(User).where(
+                User.org_id == org.id,
+                User.external_auth_id.is_(None),
+                func.lower(User.email) == email.lower(),
+            )
         )
-        email = (
-            email
-            or (primary or {}).get("email_address")
-            or (addresses[0].get("email_address") if addresses else None)
-            or f"{sub}@clerk.local"
-        )
-        name = name or f"{info.get('first_name', '')} {info.get('last_name', '')}".strip() or email
-    user = User(org_id=org.id, email=email, name=name, role=role, external_auth_id=sub)
+        if email
+        else None
+    )
+    if (
+        role == "admin"
+        and (org_created or not _has_owner(db, org))
+        and (org_created or _is_creator(org, sub))
+    ):
+        role = "owner"
+    if invited:
+        invited.external_auth_id = sub
+        invited.role = role
+        invited.clerk_invitation_id = None
+        if name and not invited.name:
+            invited.name = name
+        db.commit()
+        return invited
+    email = email or f"{sub}{PLACEHOLDER_EMAIL_DOMAIN}"
+    user = User(org_id=org.id, email=email, name=name or email, role=role, external_auth_id=sub)
     db.add(user)
     db.commit()
     return user
+
+
+def _email_taken(db: Session, org: Organization, email: str, except_id: uuid.UUID) -> bool:
+    return (
+        db.scalar(
+            select(User.id).where(
+                User.org_id == org.id, func.lower(User.email) == email.lower(), User.id != except_id
+            )
+        )
+        is not None
+    )
 
 
 # --------------------------------------------------------------------------- dependency
@@ -205,12 +309,12 @@ def get_auth(
         if not authorization or not authorization.startswith("Bearer "):
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Bearer token required")
         claims = verify_clerk_token(authorization.removeprefix("Bearer ").strip())
-        clerk_org = claims.get("org_id")
+        clerk_org, clerk_role = org_claims(claims)
         if not clerk_org:
             raise HTTPException(status.HTTP_403_FORBIDDEN, "select an organization first")
-        role = CLERK_ROLE_MAP.get(claims.get("org_role", ""), "viewer")
+        role = CLERK_ROLE_MAP.get(clerk_role, "viewer")
         org, created = provision_org(db, clerk_org)
-        user = provision_user(db, org, claims, role)
+        user = provision_user(db, org, claims, role, org_created=created)
         if created:
             from app import emails
 

@@ -9,7 +9,8 @@ import {
   useOrgQuery,
   useRecommendations,
 } from "@/lib/hooks";
-import { useApi } from "@/lib/org";
+import { useApi, useOrg } from "@/lib/org";
+import { canEdit } from "@/lib/team";
 import { daysFromToday, fmtDate, fmtMoney, fmtNum } from "@/lib/utils";
 import { OnboardingChecklist } from "@/components/onboarding-checklist";
 import { PageHeader } from "@/components/shell";
@@ -22,6 +23,7 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 
 export default function Dashboard() {
   const api = useApi();
+  const { role } = useOrg();
   const run = useLatestPlanningRun();
   const recs = useRecommendations();
   const accuracy = useOrgQuery(["forecast-accuracy"], async () =>
@@ -58,14 +60,16 @@ export default function Dashboard() {
           run.data?.as_of ? `Plan as of ${fmtDate(run.data.as_of)}` : undefined
         }
         actions={
-          <Button
-            onClick={() => rerun.mutate()}
-            loading={rerun.isPending}
-            variant="outline"
-            data-testid="rerun"
-          >
-            Re-run forecast & plan
-          </Button>
+          canEdit(role) ? (
+            <Button
+              onClick={() => rerun.mutate()}
+              loading={rerun.isPending}
+              variant="outline"
+              data-testid="rerun"
+            >
+              Re-run forecast & plan
+            </Button>
+          ) : null
         }
       />
       <OnboardingChecklist />
