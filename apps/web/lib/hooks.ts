@@ -5,8 +5,15 @@ import { toast } from "sonner";
 
 import { unwrap } from "./api";
 import { useApi, useOrg } from "./org";
+import { canEdit } from "./team";
 
 /** Query helper: keys are namespaced by org so switching orgs never shows stale data. */
+/** True for owners and admins. Viewers (and the moment before the role is known) get
+ * read-only screens; the API rejects their writes anyway. */
+export function useCanEdit() {
+  return canEdit(useOrg().role);
+}
+
 export function useOrgQuery<T>(key: unknown[], fn: () => Promise<T>, enabled = true) {
   const { orgId } = useOrg();
   return useQuery({ queryKey: [orgId, ...key], queryFn: fn, enabled });

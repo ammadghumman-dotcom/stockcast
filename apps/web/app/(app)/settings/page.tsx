@@ -6,7 +6,7 @@ import { Suspense, useState } from "react";
 import type { PlanningSettings, Supplier } from "@stockcast/shared";
 
 import { unwrap } from "@/lib/api";
-import { useAction, useCategories, useChannels, useOrgQuery, useRegions, useSuppliers } from "@/lib/hooks";
+import { useAction, useCanEdit, useCategories, useChannels, useOrgQuery, useRegions, useSuppliers } from "@/lib/hooks";
 import { useApi, useOrg } from "@/lib/org";
 import { canEdit, INVITE_ROLES, memberActions } from "@/lib/team";
 import { BillingTab } from "@/components/billing";
@@ -59,6 +59,7 @@ function SettingsTabs() {
 
 function PlanningTab() {
   const api = useApi();
+  const editable = useCanEdit();
   const q = useOrgQuery(["planning-settings"], async () => unwrap(await api.GET("/planning-settings")));
   const [form, setForm] = useState<Partial<PlanningSettings> | null>(null);
   const save = useAction(async (body: Partial<PlanningSettings>) => unwrap(await api.PATCH("/planning-settings", { body: body as never })), { success: "Planning settings saved", invalidate: ["planning-settings"] });
@@ -66,7 +67,7 @@ function PlanningTab() {
   const v = { ...q.data, ...form };
   const num = (k: keyof PlanningSettings, label: string, step = 1) => (
     <Field key={k} label={label}>
-      <Input type="number" step={step} value={String(v[k] ?? "")} onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.value }))} data-testid={`setting-${k}`} />
+      <Input type="number" step={step} disabled={!editable} value={String(v[k] ?? "")} onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.value }))} data-testid={`setting-${k}`} />
     </Field>
   );
   return (
@@ -82,7 +83,7 @@ function PlanningTab() {
           {num("at_risk_buffer_days", "At-risk buffer (days)")}
           {num("horizon_days", "Planning horizon (days)")}
         </div>
-        <Button loading={save.isPending} disabled={!form} onClick={() => save.mutate(form!)} data-testid="save-planning">Save</Button>
+        {editable ? <Button loading={save.isPending} disabled={!form} onClick={() => save.mutate(form!)} data-testid="save-planning">Save</Button> : null}
         <p className="text-xs text-muted-foreground">Per-product overrides (lead time, cover, service level, preferred supplier) are set from the product page via the API.</p>
       </CardContent>
     </Card>
@@ -91,6 +92,7 @@ function PlanningTab() {
 
 function SuppliersTab() {
   const api = useApi();
+  const editable = useCanEdit();
   const suppliers = useSuppliers();
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState<Partial<Supplier>>({});
@@ -106,13 +108,13 @@ function SuppliersTab() {
   );
   return (
     <div className="space-y-3">
-      <Button onClick={() => { setEdit({ lead_time_days: 14, moq: 1, currency: "USD" }); setOpen(true); }} data-testid="add-supplier">Add supplier</Button>
+      {editable ? <Button onClick={() => { setEdit({ lead_time_days: 14, moq: 1, currency: "USD" }); setOpen(true); }} data-testid="add-supplier">Add supplier</Button> : null}
       {suppliers.isLoading ? <Skeleton className="h-32" /> : !suppliers.data?.length ? <Empty title="No suppliers" body="Add suppliers to get purchase-order recommendations with lead times and MOQs." /> : (
         <Table>
           <THead><TR><TH>Name</TH><TH>Email</TH><TH className="text-right">Lead (d)</TH><TH className="text-right">MOQ</TH><TH>Currency</TH><TH /></TR></THead>
           <TBody>{suppliers.data.map((s) => (
             <TR key={s.id}><TD className="font-medium">{s.name}</TD><TD className="text-xs">{s.email ?? "–"}</TD><TD className="text-right">{s.lead_time_days}</TD><TD className="text-right">{s.moq}</TD><TD>{s.currency}</TD>
-              <TD><Button size="sm" variant="ghost" onClick={() => { setEdit(s); setOpen(true); }}>Edit</Button></TD></TR>
+              <TD>{editable ? <Button size="sm" variant="ghost" onClick={() => { setEdit(s); setOpen(true); }}>Edit</Button> : null}</TD></TR>
           ))}</TBody>
         </Table>
       )}
@@ -129,6 +131,7 @@ function SuppliersTab() {
 
 function ChannelsTab() {
   const api = useApi();
+  const editable = useCanEdit();
   const channels = useChannels();
   const regions = useRegions();
   const [code, setCode] = useState("");
@@ -147,20 +150,20 @@ function ChannelsTab() {
       <Card>
         <CardHeader><CardTitle>Regions</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex gap-2"><Input placeholder="e.g. UK, AE, PK" value={code} onChange={(e) => setCode(e.target.value)} className="w-32" data-testid="region-code" /><Button variant="outline" disabled={code.length < 2} loading={addRegion.isPending} onClick={() => addRegion.mutate()} data-testid="add-region">Add</Button></div>
+          {editable ? <div className="flex gap-2"><Input placeholder="e.g. UK, AE, PK" value={code} onChange={(e) => setCode(e.target.value)} className="w-32" data-testid="region-code" /><Button variant="outline" disabled={code.length < 2} loading={addRegion.isPending} onClick={() => addRegion.mutate()} data-testid="add-region">Add</Button></div> : null}
           <div className="flex flex-wrap gap-2">{regions.data?.map((r) => <Badge key={r.id} variant="secondary">{r.code} · {r.currency}</Badge>)}</div>
         </CardContent>
       </Card>
       <Card>
-        <CardHeader><CardTitle className="flex items-center justify-between">Channels <Button size="sm" variant="outline" onClick={() => setConnectOpen(true)} data-testid="add-channel">Add channel</Button></CardTitle></CardHeader>
+        <CardHeader><CardTitle className="flex items-center justify-between">Channels {editable ? <Button size="sm" variant="outline" onClick={() => setConnectOpen(true)} data-testid="add-channel">Add channel</Button> : null}</CardTitle></CardHeader>
         <CardContent>
           {!channels.data?.length ? <Empty title="No channels" body="Connect Amazon, eBay, WooCommerce or upload CSVs." /> : (
             <div className="space-y-2">{channels.data.map((c) => (
               <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded border p-2 text-sm" data-testid="channel-row">
                 <span className="flex items-center gap-2">{c.name} <Badge variant="outline">{c.type}</Badge> <Badge variant={c.is_connected ? "success" : "secondary"}>{c.is_connected ? "connected" : c.type === "csv" ? "uploads" : "not connected"}</Badge></span>
                 <span className="flex items-center gap-2">
-                  {c.is_connected && c.type !== "csv" ? <Button size="sm" variant="ghost" loading={sync.isPending} onClick={() => sync.mutate(c.id)}>Sync now</Button> : null}
-                  <NativeSelect className="w-28" value={c.region_id ?? ""} onChange={(e) => setRegion.mutate({ id: c.id, region_id: e.target.value || null })}>
+                  {editable && c.is_connected && c.type !== "csv" ? <Button size="sm" variant="ghost" loading={sync.isPending} onClick={() => sync.mutate(c.id)}>Sync now</Button> : null}
+                  <NativeSelect className="w-28" disabled={!editable} value={c.region_id ?? ""} onChange={(e) => setRegion.mutate({ id: c.id, region_id: e.target.value || null })}>
                     <option value="">no region</option>{regions.data?.map((r) => <option key={r.id} value={r.id}>{r.code}</option>)}
                   </NativeSelect>
                 </span>
@@ -169,17 +172,20 @@ function ChannelsTab() {
           )}
         </CardContent>
       </Card>
-      <Card className="md:col-span-2">
-        <CardHeader><CardTitle>SKU mapping</CardTitle></CardHeader>
-        <CardContent>{channels.isLoading ? <Skeleton className="h-24" /> : <SkuMapping channels={channels.data ?? []} />}</CardContent>
-      </Card>
-      <ConnectChannelDialog open={connectOpen} onOpenChange={setConnectOpen} />
+      {editable ? (
+        <Card className="md:col-span-2">
+          <CardHeader><CardTitle>SKU mapping</CardTitle></CardHeader>
+          <CardContent>{channels.isLoading ? <Skeleton className="h-24" /> : <SkuMapping channels={channels.data ?? []} />}</CardContent>
+        </Card>
+      ) : null}
+      {editable ? <ConnectChannelDialog open={connectOpen} onOpenChange={setConnectOpen} /> : null}
     </div>
   );
 }
 
 function CategoriesTab() {
   const api = useApi();
+  const editable = useCanEdit();
   const cats = useCategories();
   const [name, setName] = useState("");
   const add = useAction(async () => unwrap(await api.POST("/product-categories", { body: { name } })), { success: "Category added", invalidate: ["product-categories"], onSuccess: () => setName("") });
@@ -187,7 +193,7 @@ function CategoriesTab() {
     <Card>
       <CardHeader><CardTitle>Product categories</CardTitle></CardHeader>
       <CardContent className="space-y-3">
-        <div className="flex gap-2"><Input placeholder="New category" value={name} onChange={(e) => setName(e.target.value)} className="max-w-xs" /><Button variant="outline" disabled={!name.trim()} loading={add.isPending} onClick={() => add.mutate()}>Add</Button></div>
+        {editable ? <div className="flex gap-2"><Input placeholder="New category" value={name} onChange={(e) => setName(e.target.value)} className="max-w-xs" /><Button variant="outline" disabled={!name.trim()} loading={add.isPending} onClick={() => add.mutate()}>Add</Button></div> : null}
         <div className="flex flex-wrap gap-2">{cats.data?.map((c) => <Badge key={c.id} variant="secondary">{c.name}</Badge>)}</div>
         <p className="text-xs text-muted-foreground">Category names drive holiday priors (candle, gift, beauty, perfume, apparel, electronics, toy, food).</p>
       </CardContent>

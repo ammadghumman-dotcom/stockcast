@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { unwrap } from "@/lib/api";
-import { useAction, useLatestPlanningRun, useRecommendations, useSuppliers } from "@/lib/hooks";
+import { useAction, useCanEdit, useLatestPlanningRun, useRecommendations, useSuppliers } from "@/lib/hooks";
 import { useApi } from "@/lib/org";
 import { fmtDate, fmtNum } from "@/lib/utils";
 import { PageHeader } from "@/components/shell";
@@ -27,9 +27,10 @@ export default function RecommendationsPage() {
   const run = useLatestPlanningRun();
   const recs = useRecommendations({ supplier_id: supplier || undefined, health: health || undefined, action: action || undefined });
   const suppliers = useSuppliers();
+  const editable = useCanEdit();
 
   const rows = useMemo(() => (recs.data ?? []).filter((r) => r.action !== "none" || health), [recs.data, health]);
-  const orderable = rows.filter((r) => r.action === "reorder" && !r.po_id && r.supplier_id);
+  const orderable = editable ? rows.filter((r) => r.action === "reorder" && !r.po_id && r.supplier_id) : [];
   const chosen = orderable.filter((r) => selected.has(r.id));
 
   const createPO = useAction(
@@ -48,7 +49,7 @@ export default function RecommendationsPage() {
       <PageHeader
         title="Recommendations"
         sub={run.data ? `${run.data.n_reorder} reorders · ${run.data.n_produce} production runs · as of ${fmtDate(run.data.as_of)}` : undefined}
-        actions={<Button disabled={!chosen.length} loading={createPO.isPending} onClick={() => createPO.mutate()} data-testid="create-po">Create PO ({chosen.length})</Button>}
+        actions={editable ? <Button disabled={!chosen.length} loading={createPO.isPending} onClick={() => createPO.mutate()} data-testid="create-po">Create PO ({chosen.length})</Button> : undefined}
       />
       <div className="mb-3 flex flex-wrap gap-2">
         <NativeSelect value={supplier} onChange={(e) => setSupplier(e.target.value)} className="w-48" data-testid="filter-supplier">
@@ -68,7 +69,7 @@ export default function RecommendationsPage() {
         <Table>
           <THead>
             <TR>
-              <TH><input type="checkbox" aria-label="select all" checked={orderable.length > 0 && selected.size === orderable.length} onChange={toggleAll} data-testid="select-all" /></TH>
+              <TH>{editable ? <input type="checkbox" aria-label="select all" checked={orderable.length > 0 && selected.size === orderable.length} onChange={toggleAll} data-testid="select-all" /> : null}</TH>
               <TH>SKU</TH><TH className="hidden md:table-cell">Channels</TH><TH>Health</TH><TH>Action</TH><TH className="text-right">Qty</TH><TH>Order by</TH><TH className="hidden md:table-cell">Supplier</TH><TH className="hidden lg:table-cell">Why</TH><TH>PO</TH>
             </TR>
           </THead>
@@ -77,7 +78,7 @@ export default function RecommendationsPage() {
               const can = r.action === "reorder" && !r.po_id && !!r.supplier_id;
               return (
                 <TR key={r.id} data-testid="rec-row">
-                  <TD><input type="checkbox" aria-label={`select ${r.sku}`} disabled={!can} checked={selected.has(r.id)} onChange={() => setSelected((s) => { const n = new Set(s); if (n.has(r.id)) n.delete(r.id); else n.add(r.id); return n; })} data-testid="rec-select" /></TD>
+                  <TD>{editable ? <input type="checkbox" aria-label={`select ${r.sku}`} disabled={!can} checked={selected.has(r.id)} onChange={() => setSelected((s) => { const n = new Set(s); if (n.has(r.id)) n.delete(r.id); else n.add(r.id); return n; })} data-testid="rec-select" /> : null}</TD>
                   <TD><Link href={`/products/${r.product_id}`} className="font-medium hover:underline">{r.sku}</Link></TD>
                   <TD className="hidden md:table-cell"><ChannelMixBar parts={r.channel_mix ?? []} /></TD>
                   <TD><HealthBadge health={r.health} /></TD>

@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 
 import { API_URL, unwrap } from "@/lib/api";
-import { useAction, useOrgQuery } from "@/lib/hooks";
+import { useAction, useCanEdit, useOrgQuery } from "@/lib/hooks";
 import { useApi, useOrg } from "@/lib/org";
 import { fmtDate, fmtMoney, fmtNum } from "@/lib/utils";
 import { PageHeader } from "@/components/shell";
@@ -20,6 +20,7 @@ export default function PurchaseOrderDetail() {
   const { id } = useParams<{ id: string }>();
   const api = useApi();
   const { authHeaders } = useOrg();
+  const editable = useCanEdit();
   const po = useOrgQuery(["purchase-orders", id], async () => unwrap(await api.GET("/purchase-orders/{po_id}", { params: { path: { po_id: id } } })));
   const [receiving, setReceiving] = useState(false);
   const [qty, setQty] = useState<Record<string, string>>({});
@@ -57,13 +58,13 @@ export default function PurchaseOrderDetail() {
           <>
             <Button variant="outline" size="sm" onClick={() => download("csv")}>CSV</Button>
             <Button variant="outline" size="sm" onClick={() => download("pdf")}>PDF</Button>
-            {p.status === "draft" ? (
+            {editable && p.status === "draft" ? (
               <>
                 <Button size="sm" variant="secondary" loading={markSent.isPending} onClick={() => markSent.mutate()} data-testid="mark-sent">Mark sent</Button>
                 <Button size="sm" loading={send.isPending} onClick={() => send.mutate()} data-testid="send">Email supplier</Button>
               </>
             ) : null}
-            {p.status === "sent" ? (
+            {editable && p.status === "sent" ? (
               <>
                 <Button size="sm" variant="secondary" onClick={() => setReceiving(true)}>Receive partially</Button>
                 <Button size="sm" loading={receiveAll.isPending} onClick={() => receiveAll.mutate()} data-testid="receive-all">Receive all</Button>
