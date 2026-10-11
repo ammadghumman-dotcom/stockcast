@@ -2,10 +2,12 @@
 
 import { useParams } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { API_URL, unwrap } from "@/lib/api";
 import { useAction, useCanEdit, useOrgQuery } from "@/lib/hooks";
 import { useApi, useOrg } from "@/lib/org";
+import { poEditBody } from "@/lib/po";
 import { fmtDate, fmtMoney, fmtNum } from "@/lib/utils";
 import { PageHeader } from "@/components/shell";
 import { StatusBadge } from "@/components/ui/badge";
@@ -24,6 +26,12 @@ export default function PurchaseOrderDetail() {
   const po = useOrgQuery(["purchase-orders", id], async () => unwrap(await api.GET("/purchase-orders/{po_id}", { params: { path: { po_id: id } } })));
   const [receiving, setReceiving] = useState(false);
   const [qty, setQty] = useState<Record<string, string>>({});
+  const [edits, setEdits] = useState<Record<string, string>>({});
+  const saveEdits = useAction(
+    async (body: { lines: Record<string, string> }) =>
+      unwrap(await api.PATCH("/purchase-orders/{po_id}", { params: { path: { po_id: id } }, body })),
+    { invalidate: ["purchase-orders", "recommendations"], success: "Purchase order updated", onSuccess: () => setEdits({}) },
+  );
 
   const usePoAction = (path: "send" | "mark-sent" | "receive", body?: { lines: Record<string, string> }) =>
     useAction(
@@ -38,6 +46,16 @@ export default function PurchaseOrderDetail() {
   if (po.isLoading) return <Skeleton className="h-48" />;
   if (!po.data) return <Empty title="Purchase order not found" action={{ label: "All purchase orders", href: "/purchase-orders" }} />;
   const p = po.data;
+  const editing = editable && p.status === "draft";
+  const qtyOf = (l: { id: string; qty: string | number }) => Number(edits[l.id] ?? l.qty);
+  const liveTotal = p.lines.reduce((t, l) => t + qtyOf(l) * Number(l.unit_price), 0);
+  const changed = Object.keys(edits).length > 0;
+  const submitEdits = () => {
+    const r = poEditBody(p.lines, edits);
+    if ("error" in r) toast.error(r.error);
+    else if (r.body) saveEdits.mutate(r.body);
+    else setEdits({});
+  };
   const download = (ext: "csv" | "pdf") => {
     const u = `${API_URL}/purchase-orders/${id}/export.${ext}`;
     authHeaders().then((h) => fetch(u, { headers: h })).then(async (r) => {
@@ -80,15 +98,26 @@ export default function PurchaseOrderDetail() {
           {p.lines.map((l) => (
             <TR key={l.id} data-testid="po-line">
               <TD>{l.line_no}</TD><TD className="font-medium">{l.sku}</TD>
-              <TD className="text-right tabular-nums">{fmtNum(l.qty)}</TD>
+              <TD className="text-right tabular-nums">
+                {editing ? (
+                  <Input type="number" min={0} className="ml-auto h-8 w-28 text-right" value={edits[l.id] ?? String(Number(l.qty))} onChange={(e) => setEdits((x) => ({ ...x, [l.id]: e.target.value }))} aria-label={`quantity for ${l.sku}`} data-testid="po-line-qty" />
+                ) : fmtNum(l.qty)}
+              </TD>
               <TD className="text-right tabular-nums">{fmtNum(l.received_qty)}</TD>
               <TD className="text-right tabular-nums">{fmtNum(l.unit_price, 4)}</TD>
-              <TD className="text-right tabular-nums">{fmtMoney(Number(l.qty) * Number(l.unit_price), p.currency)}</TD>
+              <TD className="text-right tabular-nums">{fmtMoney(qtyOf(l) * Number(l.unit_price), p.currency)}</TD>
             </TR>
           ))}
-          <TR><TD colSpan={5} className="text-right font-medium">Total</TD><TD className="text-right font-medium tabular-nums">{fmtMoney(p.total, p.currency)}</TD></TR>
+          <TR><TD colSpan={5} className="text-right font-medium">Total</TD><TD className="text-right font-medium tabular-nums">{fmtMoney(changed ? liveTotal : p.total, p.currency)}</TD></TR>
         </TBody>
       </Table>
+      {editing ? (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Button size="sm" disabled={!changed} loading={saveEdits.isPending} onClick={submitEdits} data-testid="save-po-edits">Save changes</Button>
+          {changed ? <Button size="sm" variant="ghost" onClick={() => setEdits({})}>Discard</Button> : null}
+          <span className="text-xs text-muted-foreground">Quantities can be changed until the PO is sent. Set a line to 0 to remove it.</span>
+        </div>
+      ) : null}
       {p.notes ? <p className="mt-3 text-xs text-muted-foreground">{p.notes}</p> : null}
 
       <Dialog open={receiving} onOpenChange={setReceiving}>

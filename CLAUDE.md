@@ -112,7 +112,8 @@ apps/api/            FastAPI service
                      POST /forecasts/simulate), calendar (/regions, /holiday-events, /category-uplifts,
                      /promotions), planning (/planning-settings, /products/{id}/planning,
                      /planning-runs, /recommendations), purchase_orders (/purchase-orders
-                     from-recommendations, export.csv|pdf, send, mark-sent, receive),
+                     from-recommendations, PATCH draft lines/notes, export.csv|pdf, send,
+                     mark-sent, receive),
                      billing (GET /billing, POST /billing/checkout|portal, POST /webhooks/stripe),
                      connect (GET /amazon|ebay/install -> {url}; /amazon|ebay/callback), listings
                      (GET/POST /listings, POST /listings/match, POST /listings/{id}/override)
@@ -139,7 +140,8 @@ apps/web/            Next.js 15 app (client components + TanStack Query)
                      CSP frame-ancestors to the shop's admin; root layout swaps head + providers
   app/onboarding     create workspace, connect Shopify or upload CSVs (sync progress), run pipeline
   app/(app)/         Shell (sidebar nav, mobile menu): dashboard, products(+[id]: forecast chart
-                     p10/p50/p90 + history, inventory, BOM), raw-materials, recommendations
+                     p10/p50/p90 + history, inventory, BOM, Planning tab = preferred supplier +
+                     overrides, components/product-planning.tsx), raw-materials, recommendations
                      (filters, multi-select -> create PO), purchase-orders(+[id]: CSV/PDF, send,
                      mark-sent, receive), settings (planning, suppliers, channels+regions,
                      categories, team, billing), calendar (events, promotions + simulate, uplifts)

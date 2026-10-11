@@ -121,6 +121,16 @@ class PurchaseOrderRead(Timestamped):
     lines: list[POLineRead]
 
 
+class POUpdate(BaseModel):
+    """Edit a draft PO. Line qty 0 removes the line (at least one must remain)."""
+
+    lines: dict[uuid.UUID, Decimal] | None = Field(
+        default=None, description="line id -> new qty; 0 removes the line"
+    )
+    expected_date: date | None = None
+    notes: str | None = Field(default=None, max_length=2000)
+
+
 class ReceiveRequest(BaseModel):
     lines: dict[uuid.UUID, Decimal] | None = Field(
         default=None, description="line id -> qty received; omit = all in full"

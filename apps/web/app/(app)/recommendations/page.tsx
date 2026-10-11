@@ -85,7 +85,7 @@ export default function RecommendationsPage() {
                   <TD><ActionBadge action={r.action} /></TD>
                   <TD className="text-right tabular-nums">{fmtNum(r.qty)}</TD>
                   <TD className="whitespace-nowrap">{fmtDate(r.order_by_date)}</TD>
-                  <TD className="hidden md:table-cell">{r.supplier_name ?? <span className="text-xs text-amber-600">none</span>}</TD>
+                  <TD className="hidden md:table-cell">{r.supplier_name ?? <Link href={`/products/${r.product_id}?tab=planning`} className="text-xs text-amber-600 underline">none: set one</Link>}</TD>
                   <TD className="hidden max-w-md text-xs text-muted-foreground lg:table-cell">{r.reason}</TD>
                   <TD>{r.po_id ? <Link href={`/purchase-orders/${r.po_id}`} className="text-xs underline">view</Link> : null}</TD>
                 </TR>

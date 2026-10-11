@@ -1113,7 +1113,11 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update Po
+         * @description Edit a draft: line quantities (0 removes a line), expected date, notes.
+         */
+        patch: operations["update_po_purchase_orders__po_id__patch"];
         trace?: never;
     };
     "/purchase-orders/{po_id}/export.csv": {
@@ -2218,6 +2222,23 @@ export interface components {
          * @enum {string}
          */
         POStatus: "draft" | "sent" | "received";
+        /**
+         * POUpdate
+         * @description Edit a draft PO. Line qty 0 removes the line (at least one must remain).
+         */
+        POUpdate: {
+            /**
+             * Lines
+             * @description line id -> new qty; 0 removes the line
+             */
+            lines?: {
+                [key: string]: number | string;
+            } | null;
+            /** Expected Date */
+            expected_date?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
         /** PlanInfo */
         PlanInfo: {
             /** Key */
@@ -6141,6 +6162,44 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseOrderRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_po_purchase_orders__po_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                po_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["POUpdate"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
