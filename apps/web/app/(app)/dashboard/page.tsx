@@ -11,7 +11,8 @@ import {
 } from "@/lib/hooks";
 import { useApi, useOrg } from "@/lib/org";
 import { canEdit } from "@/lib/team";
-import { daysFromToday, fmtDate, fmtMoney, fmtNum } from "@/lib/utils";
+import { accuracyTile, daysFromToday, fmtMoney, fmtNum, planStamp } from "@/lib/utils";
+import { OrderBy } from "@/components/order-by";
 import { OnboardingChecklist } from "@/components/onboarding-checklist";
 import { PageHeader } from "@/components/shell";
 import { ActionBadge, HealthBadge } from "@/components/ui/badge";
@@ -51,13 +52,14 @@ export default function Dashboard() {
     return d !== null && d <= 30;
   }).length;
   const actions = list.filter((r) => r.action !== "none").slice(0, 20);
+  const acc = accuracyTile(accuracy.data?.wape, accuracy.data?.measured_skus ?? 0);
 
   return (
     <>
       <PageHeader
         title="Dashboard"
         sub={
-          run.data?.as_of ? `Plan as of ${fmtDate(run.data.as_of)}` : undefined
+          planStamp(run.data?.as_of, run.data?.finished_at)
         }
         actions={
           canEdit(role) ? (
@@ -105,16 +107,8 @@ export default function Dashboard() {
           />
           <Tile
             label="Forecast accuracy"
-            value={
-              accuracy.data?.wape != null
-                ? `${(100 * (1 - Number(accuracy.data.wape))).toFixed(0)}%`
-                : "–"
-            }
-            sub={
-              accuracy.data?.wape != null
-                ? `WAPE ${Number(accuracy.data.wape).toFixed(2)} on ${accuracy.data.skus} SKUs`
-                : "no backtest yet"
-            }
+            value={acc.value}
+            sub={acc.sub}
             testId="tile-accuracy"
           />
         </div>
@@ -162,7 +156,7 @@ export default function Dashboard() {
                 </TD>
                 <TD className="text-right tabular-nums">{fmtNum(r.qty)}</TD>
                 <TD className="whitespace-nowrap">
-                  {fmtDate(r.order_by_date)}
+                  <OrderBy d={r.order_by_date} />
                 </TD>
                 <TD className="hidden max-w-xl text-xs text-muted-foreground md:table-cell">
                   {r.reason}

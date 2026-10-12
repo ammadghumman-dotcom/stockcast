@@ -31,6 +31,12 @@ REGION_COUNTRY = {
 }
 
 
+EID_FITR = ("eid al-fitr", "eid-ul-fitr", "eid ul-fitr", "eid al fitr")
+EID_ADHA = ("eid al-adha", "eid-ul-adha", "eid ul-adha", "eid al adha")
+# regions whose public calendar follows the Islamic holidays
+MUSLIM_CALENDAR = ("PK", "AE", "SA", "MY")
+
+
 @dataclass(frozen=True)
 class Event:
     name: str
@@ -82,17 +88,26 @@ def builtin_events(region_code: str, year: int) -> list[Event]:
         ms = _nth_weekday(year, 5, 6, 2)
     ev.append(Event("Mother's Day", ms - timedelta(days=14), ms))
 
-    # ---- religious (calendar from `holidays`): Ramadan is the 30 days before Eid al-Fitr
+    # ---- religious (calendar from `holidays`). "Ramadan/Eid" is the shopping season (the 30
+    # days up to Eid ul-Fitr); the Eid days themselves are separate events so they show on the
+    # calendar and learn their own uplift (staging bug #23).
     eid_country = country if country in ("AE", "SA", "PK", "IN", "GB", "US") else "AE"
-    eid = _find(eid_country, year, "eid al-fitr", "eid-ul-fitr", "eid ul-fitr", "eid al fitr")
+    eid = _find(eid_country, year, *EID_FITR)
     if eid:
         ev.append(Event("Ramadan/Eid", eid[0] - timedelta(days=30), eid[0], "religious"))
+    if code in MUSLIM_CALENDAR:
+        if eid:
+            ev.append(Event("Eid ul-Fitr", eid[0] - timedelta(days=7), eid[-1], "religious"))
+        adha = _find(eid_country, year, *EID_ADHA)
+        if adha:
+            ev.append(Event("Eid ul-Adha", adha[0] - timedelta(days=10), adha[-1], "religious"))
     if code in ("IN", "UK", "GB", "US", "AE", "SG", "MY"):
         diwali = _find("IN", year, "diwali", "deepavali")
         if diwali:
             ev.append(Event("Diwali", diwali[0] - timedelta(days=14), diwali[0], "religious"))
 
-    # ---- national holidays (single days, lead-in 3 days) excluding ones covered above
+    # ---- national holidays (lead-in 3 days) excluding ones covered above. A holiday spread
+    # over consecutive days (Ashura x2) is one event; "A; B" names on one day are split.
     if country:
         cal: dict = {}
         try:
@@ -100,10 +115,20 @@ def builtin_events(region_code: str, year: int) -> list[Event]:
         except Exception:
             cal = {}
         covered = ("christmas", "eid", "diwali", "thanksgiving", "new year")
-        for d, name in sorted(cal.items()):
-            if any(c in name.lower() for c in covered):
-                continue
-            ev.append(Event(name.split(" (")[0][:100], d - timedelta(days=3), d, "national"))
+        spans: dict[str, list[date]] = {}
+        for d, full in sorted(cal.items()):
+            for part in str(full).split(";"):
+                name = part.strip().split(" (")[0][:100]
+                if not name or any(c in name.lower() for c in covered):
+                    continue
+                days = spans.setdefault(name, [])
+                if days and (d - days[-1]).days > 1:  # same name again later in the year
+                    ev.append(Event(name, days[0] - timedelta(days=3), days[-1], "national"))
+                    days.clear()
+                days.append(d)
+        for name, days in spans.items():
+            if days:
+                ev.append(Event(name, days[0] - timedelta(days=3), days[-1], "national"))
     return ev
 
 

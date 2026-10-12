@@ -104,7 +104,14 @@ def accuracy(
     )
     if run is None:
         return AccuracySummary(
-            run_id=None, as_of=None, skus=0, wape=None, median_sku_wape=None, by_model={}, worst=[]
+            run_id=None,
+            as_of=None,
+            skus=0,
+            measured_skus=0,
+            wape=None,
+            median_sku_wape=None,
+            by_model={},
+            worst=[],
         )
     base = select(ForecastAccuracy).where(ForecastAccuracy.run_id == run.id)
     by_model = dict(
@@ -119,6 +126,11 @@ def accuracy(
             ForecastAccuracy.run_id == run.id, ForecastAccuracy.wape.is_not(None)
         )
     )
+    measured = db.scalar(
+        select(func.count()).where(
+            ForecastAccuracy.run_id == run.id, ForecastAccuracy.wape.is_not(None)
+        )
+    )
     worst_rows = db.scalars(
         base.where(ForecastAccuracy.wape.is_not(None))
         .order_by(ForecastAccuracy.wape.desc())
@@ -128,6 +140,7 @@ def accuracy(
         run_id=run.id,
         as_of=run.as_of,
         skus=run.skus_total,
+        measured_skus=measured or 0,
         wape=run.wape,
         median_sku_wape=Decimal(f"{median:.4f}") if median is not None else None,
         by_model=by_model,

@@ -224,8 +224,28 @@ def test_forecast_duration_alert(db, org, alert_sink) -> None:
     db.add_all([fast, slow, stuck])
     db.flush()
     raised = ops.run_checks(db, now)
-    assert {r["run_id"] for r in raised} == {str(slow.id), str(stuck.id)}
-    assert all(r["check"] == "forecast_duration" for r in raised)
+    durations = [r for r in raised if r["check"] == "forecast_duration"]
+    assert {r["run_id"] for r in durations} == {str(slow.id), str(stuck.id)}
+    assert len(raised) == len(durations)  # 45 min is not yet orphaned
+
+
+def test_orphaned_runs_are_closed(db, org, alert_sink) -> None:
+    """Staging #21: a run cut off by a deploy stayed "running" forever."""
+    from app.models import PlanningRun
+
+    now = datetime.now(UTC)
+    orphan = ForecastRun(org_id=org.id, status="running", started_at=now - timedelta(hours=3))
+    live = ForecastRun(org_id=org.id, status="running", started_at=now - timedelta(minutes=10))
+    stuck_plan = PlanningRun(org_id=org.id, status="queued", created_at=now - timedelta(hours=2))
+    db.add_all([orphan, live, stuck_plan])
+    db.flush()
+    raised = ops.run_checks(db, now)
+    assert {"check": "stale_runs", "closed": 2} in raised
+    db.refresh(orphan)
+    db.refresh(live)
+    db.refresh(stuck_plan)
+    assert orphan.status == "failed" and "interrupted" in (orphan.error or "")
+    assert stuck_plan.status == "failed" and live.status == "running"
 
 
 def test_alert_posts_to_webhook(monkeypatch) -> None:

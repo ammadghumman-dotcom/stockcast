@@ -115,6 +115,7 @@ def test_forecast_api(mclient, mdb, seeded_run) -> None:
     acc = r.json()
     assert acc["skus"] == 20 and acc["wape"] is not None and acc["median_sku_wape"] is not None
     assert sum(acc["by_model"].values()) == 20
+    assert 0 < acc["measured_skus"] <= 20
     assert len(acc["worst"]) == 10
     assert float(acc["worst"][0]["wape"]) >= float(acc["worst"][-1]["wape"])
 

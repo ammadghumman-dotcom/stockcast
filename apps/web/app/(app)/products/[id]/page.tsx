@@ -6,7 +6,7 @@ import { Suspense, useMemo } from "react";
 import { unwrap } from "@/lib/api";
 import { useOrgQuery, useRecommendations, useSuppliers } from "@/lib/hooks";
 import { useApi } from "@/lib/org";
-import { fmtDate, fmtNum } from "@/lib/utils";
+import { fmtDate, fmtNum, orderByLabel } from "@/lib/utils";
 import { PageHeader } from "@/components/shell";
 import { ChannelSplit } from "@/components/channel-mix";
 import { ProductPlanning } from "@/components/product-planning";
@@ -64,7 +64,7 @@ function ProductDetail() {
         <Tile label="Health" value={<HealthBadge health={rec?.health} />} />
         <Tile label="On hand" value={fmtNum(rec?.on_hand)} sub={rec ? `${fmtNum(rec.inbound)} inbound` : undefined} />
         <Tile label="Days of cover" value={rec ? (rec.days_of_cover ?? "90+") : "–"} sub={rec?.stockout_date ? `runs out ${fmtDate(rec.stockout_date)}` : undefined} tone={rec?.days_of_cover != null && rec.days_of_cover < 14 ? "warn" : undefined} />
-        <Tile label="Next action" value={<ActionBadge action={rec?.action} />} sub={rec && rec.action !== "none" ? `${fmtNum(rec.qty)} by ${fmtDate(rec.order_by_date)}` : undefined} />
+        <Tile label="Next action" value={<ActionBadge action={rec?.action} />} sub={rec && rec.action !== "none" ? `${fmtNum(rec.qty)} · ${orderByLabel(rec.order_by_date).overdue ? orderByLabel(rec.order_by_date).text.toLowerCase() : `by ${fmtDate(rec.order_by_date)}`}` : undefined} />
       </div>
       {rec ? <p className="mb-4 rounded-md border bg-muted/40 p-3 text-sm" data-testid="reason">{rec.reason}</p> : null}
 
@@ -108,7 +108,7 @@ function ProductDetail() {
                   return (
                     <TR key={l.id}>
                       <TD><a className="hover:underline" href={`/products/${l.component_product_id}`}>{c?.sku ?? l.component_product_id.slice(0, 8)}</a> <span className="text-xs text-muted-foreground">{c?.name}</span></TD>
-                      <TD className="text-right tabular-nums">{fmtNum(l.qty_per_unit, 2)} {c?.unit}</TD>
+                      <TD className="text-right tabular-nums">{fmtNum(l.qty_per_unit, 4)} {c?.unit}</TD>
                       <TD className="text-xs text-muted-foreground">{sup?.name ?? "–"}</TD>
                     </TR>
                   );

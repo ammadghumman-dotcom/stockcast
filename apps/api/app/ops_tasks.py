@@ -15,6 +15,7 @@ log = get_task_logger(__name__)
 def check_health() -> int:
     with SessionLocal() as db:
         raised = run_checks(db)
+        db.commit()
     if raised:
         log.warning("ops alerts raised: %s", raised)
     return len(raised)

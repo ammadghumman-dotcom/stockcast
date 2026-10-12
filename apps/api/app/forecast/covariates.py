@@ -64,13 +64,21 @@ CATEGORY_PRIORS: dict[str, dict[str, float]] = {
         "Black Friday": 1.7,
         "Mother's Day": 1.6,
         "Ramadan/Eid": 1.8,
+        "Eid ul-Fitr": 1.8,
+        "Eid ul-Adha": 1.4,
         "Valentine's Day": 1.5,
     },
-    "fragrance": {"Christmas": 1.8, "Black Friday": 1.7, "Ramadan/Eid": 1.8},
+    "fragrance": {
+        "Christmas": 1.8,
+        "Black Friday": 1.7,
+        "Ramadan/Eid": 1.8,
+        "Eid ul-Fitr": 1.8,
+        "Eid ul-Adha": 1.4,
+    },
     "apparel": {"Christmas": 1.6, "Black Friday": 2.0, "Cyber Monday": 1.6},
     "electronics": {"Black Friday": 2.4, "Cyber Monday": 2.2, "Prime Day": 2.0, "Christmas": 1.5},
     "toy": {"Christmas": 3.0, "Black Friday": 2.0},
-    "food": {"Christmas": 1.6, "Ramadan/Eid": 1.5, "Diwali": 1.4},
+    "food": {"Christmas": 1.6, "Ramadan/Eid": 1.5, "Eid ul-Adha": 1.6, "Diwali": 1.4},
 }
 GENERIC_PRIOR = {
     "Christmas": 1.4,
@@ -81,6 +89,8 @@ GENERIC_PRIOR = {
     "Valentine's Day": 1.1,
     "Mother's Day": 1.1,
     "Ramadan/Eid": 1.2,
+    "Eid ul-Fitr": 1.2,
+    "Eid ul-Adha": 1.1,
     "Diwali": 1.2,
 }
 

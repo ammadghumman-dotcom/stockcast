@@ -7,7 +7,8 @@ import { useMemo, useState } from "react";
 import { unwrap } from "@/lib/api";
 import { useAction, useCanEdit, useLatestPlanningRun, useRecommendations, useSuppliers } from "@/lib/hooks";
 import { useApi } from "@/lib/org";
-import { fmtDate, fmtNum } from "@/lib/utils";
+import { fmtNum, planStamp } from "@/lib/utils";
+import { OrderBy } from "@/components/order-by";
 import { PageHeader } from "@/components/shell";
 import { ChannelMixBar } from "@/components/channel-mix";
 import { ActionBadge, HealthBadge } from "@/components/ui/badge";
@@ -48,7 +49,7 @@ export default function RecommendationsPage() {
     <>
       <PageHeader
         title="Recommendations"
-        sub={run.data ? `${run.data.n_reorder} reorders · ${run.data.n_produce} production runs · as of ${fmtDate(run.data.as_of)}` : undefined}
+        sub={run.data ? `${run.data.n_reorder} reorders · ${run.data.n_produce} production runs · ${planStamp(run.data.as_of, run.data.finished_at)}` : undefined}
         actions={editable ? <Button disabled={!chosen.length} loading={createPO.isPending} onClick={() => createPO.mutate()} data-testid="create-po">Create PO ({chosen.length})</Button> : undefined}
       />
       <div className="mb-3 flex flex-wrap gap-2">
@@ -84,7 +85,7 @@ export default function RecommendationsPage() {
                   <TD><HealthBadge health={r.health} /></TD>
                   <TD><ActionBadge action={r.action} /></TD>
                   <TD className="text-right tabular-nums">{fmtNum(r.qty)}</TD>
-                  <TD className="whitespace-nowrap">{fmtDate(r.order_by_date)}</TD>
+                  <TD className="whitespace-nowrap"><OrderBy d={r.order_by_date} /></TD>
                   <TD className="hidden md:table-cell">{r.supplier_name ?? <Link href={`/products/${r.product_id}?tab=planning`} className="text-xs text-amber-600 underline">none: set one</Link>}</TD>
                   <TD className="hidden max-w-md text-xs text-muted-foreground lg:table-cell">{r.reason}</TD>
                   <TD>{r.po_id ? <Link href={`/purchase-orders/${r.po_id}`} className="text-xs underline">view</Link> : null}</TD>

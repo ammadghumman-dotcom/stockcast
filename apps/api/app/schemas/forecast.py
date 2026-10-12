@@ -70,6 +70,7 @@ class AccuracySummary(BaseModel):
     run_id: uuid.UUID | None
     as_of: date | None
     skus: int
+    measured_skus: int = 0  # SKUs with a backtest score (enough history for the holdout)
     wape: Decimal | None
     median_sku_wape: Decimal | None
     by_model: dict[str, int]

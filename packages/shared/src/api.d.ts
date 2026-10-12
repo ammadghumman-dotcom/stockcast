@@ -1421,6 +1421,11 @@ export interface components {
             as_of: string | null;
             /** Skus */
             skus: number;
+            /**
+             * Measured Skus
+             * @default 0
+             */
+            measured_skus: number;
             /** Wape */
             wape: string | null;
             /** Median Sku Wape */
@@ -1935,6 +1940,11 @@ export interface components {
              * @default 0
              */
             skipped: number;
+            /**
+             * Unchanged
+             * @default 0
+             */
+            unchanged: number;
             /** Errors */
             errors?: components["schemas"]["RowError"][];
         };
