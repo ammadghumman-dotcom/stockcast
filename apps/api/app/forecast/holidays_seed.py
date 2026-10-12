@@ -21,6 +21,19 @@ def seed_region_holidays(
         date.today().year,
         date.today().year + 1,
     ]
+    wanted = {(ev.name, ev.start) for ev in events_for_years(region.code, years)}
+    # Built-in rows from an older calendar (e.g. a duplicate Ashura, staging bug #23) are
+    # removed for the seeded years; custom events are never touched.
+    removed = 0
+    for e in db.scalars(
+        select(HolidayEvent).where(
+            HolidayEvent.region_id == region.id, HolidayEvent.source == HolidaySource.builtin
+        )
+    ):
+        if e.start_date.year in years and (e.name, e.start_date) not in wanted:
+            db.delete(e)
+            removed += 1
+    db.flush()
     existing = {
         (e.name, e.start_date)
         for e in db.scalars(select(HolidayEvent).where(HolidayEvent.region_id == region.id))
