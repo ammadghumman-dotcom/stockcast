@@ -211,3 +211,69 @@ def test_planning_run_endpoint_and_recommendation_filters(
     one = client.get(f"/recommendations/{produce[0]['id']}", headers=headers).json()
     assert one["product_name"] == "Vanilla Candle"
     assert client.get("/planning-runs", headers=headers).json()[0]["id"] == run["id"]
+
+
+def test_draft_po_can_be_edited_until_sent(client, db, headers, planned) -> None:
+    """Staging bug #20: draft quantities were read-only."""
+    pos = client.post("/purchase-orders/from-recommendations", json={}, headers=headers).json()
+    glass = next(p for p in pos if p["supplier_name"] == "ClearGlass")
+    jar = next(ln for ln in glass["lines"] if ln["sku"] == "JAR")
+    wick = next(ln for ln in glass["lines"] if ln["sku"] == "WICK")
+    url = f"/purchase-orders/{glass['id']}"
+
+    r = client.patch(url, json={"lines": {jar["id"]: "500"}, "notes": "rounded"}, headers=headers)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert Decimal(next(x for x in body["lines"] if x["sku"] == "JAR")["qty"]) == 500
+    assert body["notes"] == "rounded"
+    assert Decimal(body["total"]) == sum(
+        Decimal(x["qty"]) * Decimal(x["unit_price"]) for x in body["lines"]
+    )
+
+    # qty 0 drops the line and frees its recommendation for another PO
+    r = client.patch(url, json={"lines": {wick["id"]: "0"}}, headers=headers)
+    assert [x["sku"] for x in r.json()["lines"]] == ["JAR"]
+    assert r.json()["lines"][0]["line_no"] == 1
+    recs = client.get("/recommendations", params={"action": "reorder"}, headers=headers).json()
+    assert next(x for x in recs if x["sku"] == "WICK")["po_id"] is None
+
+    # the last line can't go, negatives and foreign lines are refused
+    assert client.patch(url, json={"lines": {jar["id"]: "0"}}, headers=headers).status_code == 422
+    assert client.patch(url, json={"lines": {jar["id"]: "-1"}}, headers=headers).status_code == 422
+    assert client.patch(url, json={"lines": {wick["id"]: "5"}}, headers=headers).status_code == 422
+
+    # viewers can't edit; sent POs are frozen; the change is audited
+    viewer = {**headers, "X-Role": "viewer"}
+    assert client.patch(url, json={"notes": "x"}, headers=viewer).status_code == 403
+    client.post(f"{url}/mark-sent", headers=headers)
+    assert client.patch(url, json={"notes": "late"}, headers=headers).status_code == 422
+    from app.models import AuditLog
+
+    assert db.scalar(select(AuditLog).where(AuditLog.action == "po.update")) is not None
+
+
+def test_preferred_supplier_override_sets_and_clears(client, headers, other_headers) -> None:
+    """Staging bug #19: the product planning panel sets these through the API."""
+    p = client.post(
+        "/products", json={"sku": "PS", "name": "PS", "type": "finished"}, headers=headers
+    ).json()
+    s = client.post("/suppliers", json={"name": "Pref Co"}, headers=headers).json()
+    foreign = client.post("/suppliers", json={"name": "Not mine"}, headers=other_headers).json()
+    url = f"/products/{p['id']}/planning"
+
+    r = client.patch(url, json={"preferred_supplier_id": s["id"]}, headers=headers)
+    assert r.status_code == 200 and r.json()["preferred_supplier_id"] == s["id"]
+    got = client.get(f"/products/{p['id']}", headers=headers).json()
+    assert got["preferred_supplier_id"] == s["id"]
+
+    # null clears overrides back to the org defaults
+    r = client.patch(
+        url, json={"preferred_supplier_id": None, "lead_time_days": None}, headers=headers
+    )
+    assert r.json()["preferred_supplier_id"] is None and r.json()["lead_time_days"] is None
+    assert (
+        client.patch(
+            url, json={"preferred_supplier_id": foreign["id"]}, headers=headers
+        ).status_code
+        == 422  # not your supplier
+    )

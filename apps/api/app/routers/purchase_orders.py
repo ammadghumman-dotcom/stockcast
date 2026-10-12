@@ -10,7 +10,13 @@ from app.deps import DB, Ctx, OrgId
 from app.models import PlanningRun, Product, PurchaseOrder, Supplier
 from app.planning import po as po_svc
 from app.planning.engine import latest_planning_run
-from app.schemas.planning import DraftPORequest, POLineRead, PurchaseOrderRead, ReceiveRequest
+from app.schemas.planning import (
+    DraftPORequest,
+    POLineRead,
+    POUpdate,
+    PurchaseOrderRead,
+    ReceiveRequest,
+)
 from app.services import audit, crud
 
 router = APIRouter(prefix="/purchase-orders", tags=["purchase-orders"])
@@ -112,6 +118,45 @@ def po_pdf(db: DB, org_id: OrgId, po_id: uuid.UUID):
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{po.number}.pdf"'},
     )
+
+
+def _lines_snapshot(po: PurchaseOrder) -> dict:
+    return {
+        "lines": {str(ln.id): str(ln.qty) for ln in po.lines},
+        "expected_date": po.expected_date.isoformat() if po.expected_date else None,
+        "notes": po.notes,
+    }
+
+
+@router.patch("/{po_id}", response_model=PurchaseOrderRead)
+def update_po(db: DB, ctx: Ctx, po_id: uuid.UUID, body: POUpdate):
+    """Edit a draft: line quantities (0 removes a line), expected date, notes."""
+    po = crud.get_scoped(db, PurchaseOrder, ctx.org_id, po_id)
+    before = _lines_snapshot(po)
+    try:
+        po_svc.update_draft(
+            db,
+            po,
+            body.lines,
+            expected_date=body.expected_date,
+            notes=body.notes,
+            fields=set(body.model_fields_set),
+        )
+    except po_svc.POError as exc:
+        db.rollback()
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
+    audit.record(
+        db,
+        ctx,
+        action="po.update",
+        entity="purchase_order",
+        entity_id=po.id,
+        before=before,
+        after=_lines_snapshot(po),
+    )
+    db.commit()
+    db.refresh(po)
+    return _read(db, po)
 
 
 @router.post("/{po_id}/send", response_model=PurchaseOrderRead)

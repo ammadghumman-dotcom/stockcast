@@ -277,6 +277,52 @@ def send_po(db: Session, po: PurchaseOrder, *, client: httpx.Client | None = Non
     return res.json()
 
 
+def update_draft(
+    db: Session,
+    po: PurchaseOrder,
+    lines: dict[uuid.UUID, Decimal] | None = None,
+    *,
+    expected_date: date | None = None,
+    notes: str | None = None,
+    fields: set[str] | None = None,
+) -> PurchaseOrder:
+    """Change quantities (0 = drop the line), expected date or notes of a draft PO.
+
+    A dropped line frees its recommendation so it can go on another PO."""
+    if po.status != POStatus.draft:
+        raise POError(f"PO {po.number} is {po.status.value}; only drafts can be edited")
+    fields = fields or set()
+    if lines:
+        by_id = {ln.id: ln for ln in po.lines}
+        unknown = [str(k) for k in lines if k not in by_id]
+        if unknown:
+            raise POError(f"line not on this PO: {', '.join(unknown)}")
+        if any(Decimal(q) < 0 for q in lines.values()):
+            raise POError("quantities can't be negative")
+        if all(Decimal(lines.get(ln.id, ln.qty)) == 0 for ln in po.lines):
+            raise POError("a PO needs at least one line; delete the draft instead")
+        for line_id, qty in lines.items():
+            ln = by_id[line_id]
+            if Decimal(qty) == 0:
+                for rec in db.scalars(
+                    select(Recommendation).where(
+                        Recommendation.po_id == po.id, Recommendation.product_id == ln.product_id
+                    )
+                ):
+                    rec.po_id = None
+                po.lines.remove(ln)
+            else:
+                ln.qty = Decimal(qty)
+        for i, ln in enumerate(sorted(po.lines, key=lambda x: x.line_no), start=1):
+            ln.line_no = i
+    if "expected_date" in fields:
+        po.expected_date = expected_date
+    if "notes" in fields:
+        po.notes = notes
+    db.flush()
+    return po
+
+
 def receive_po(
     db: Session, po: PurchaseOrder, received: dict[uuid.UUID, Decimal] | None = None
 ) -> PurchaseOrder:

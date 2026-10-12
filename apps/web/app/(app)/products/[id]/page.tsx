@@ -1,7 +1,7 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { useMemo } from "react";
+import { useParams, useSearchParams } from "next/navigation";
+import { Suspense, useMemo } from "react";
 
 import { unwrap } from "@/lib/api";
 import { useOrgQuery, useRecommendations, useSuppliers } from "@/lib/hooks";
@@ -9,6 +9,7 @@ import { useApi } from "@/lib/org";
 import { fmtDate, fmtNum } from "@/lib/utils";
 import { PageHeader } from "@/components/shell";
 import { ChannelSplit } from "@/components/channel-mix";
+import { ProductPlanning } from "@/components/product-planning";
 import { ForecastChart, type ChartPoint } from "@/components/charts/forecast-chart";
 import { ActionBadge, HealthBadge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, Tile } from "@/components/ui/card";
@@ -17,8 +18,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export default function ProductDetail() {
+export default function ProductPage() {
+  return (
+    <Suspense>
+      <ProductDetail />
+    </Suspense>
+  );
+}
+
+function ProductDetail() {
   const { id } = useParams<{ id: string }>();
+  const tab = useSearchParams().get("tab") ?? "forecast";
   const api = useApi();
   const product = useOrgQuery(["product", id], async () => unwrap(await api.GET("/products/{product_id}", { params: { path: { product_id: id } } })));
   const sales = useOrgQuery(["sales", id], async () => unwrap(await api.GET("/products/{product_id}/sales", { params: { path: { product_id: id }, query: { days: 180 } } })));
@@ -58,11 +68,12 @@ export default function ProductDetail() {
       </div>
       {rec ? <p className="mb-4 rounded-md border bg-muted/40 p-3 text-sm" data-testid="reason">{rec.reason}</p> : null}
 
-      <Tabs defaultValue="forecast">
+      <Tabs defaultValue={tab}>
         <TabsList>
           <TabsTrigger value="forecast">Forecast</TabsTrigger>
           <TabsTrigger value="inventory">Inventory</TabsTrigger>
           <TabsTrigger value="bom">BOM</TabsTrigger>
+          <TabsTrigger value="planning" data-testid="tab-planning">Planning</TabsTrigger>
         </TabsList>
         <TabsContent value="forecast">
           <Card>
@@ -106,6 +117,7 @@ export default function ProductDetail() {
             </Table>
           )}
         </TabsContent>
+        <TabsContent value="planning"><ProductPlanning product={p} /></TabsContent>
       </Tabs>
     </>
   );
