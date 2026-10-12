@@ -12,8 +12,9 @@ from collections import defaultdict
 from collections.abc import Iterable
 from datetime import UTC, datetime
 from decimal import Decimal
+from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import literal_column, or_, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
@@ -171,7 +172,7 @@ def upsert_sales(
         pid = resolver.resolve(rec.sku, rec.external_id)
         if pid is None:
             res.errors.append(
-                RowError(row=i, message=f"unknown product sku={rec.sku!r} ext={rec.external_id!r}")
+                RowError(row=rec.row(i), message=f"unknown SKU {rec.sku or rec.external_id!r}")
             )
             continue
         key = (rec.date, pid)
@@ -190,17 +191,25 @@ def upsert_sales(
         for (d, pid), (u, r) in agg.items()
     ]
     for chunk in _chunks(rows, 2000):
-        stmt = pg_insert(SalesDaily).values(chunk)
-        stmt = stmt.on_conflict_do_update(
+        ins = pg_insert(SalesDaily).values(chunk)
+        stmt: Any = ins.on_conflict_do_update(
             index_elements=["date", "product_id", "channel_id"],
             set_={
-                "units": stmt.excluded.units,
-                "revenue": stmt.excluded.revenue,
-                "region_id": stmt.excluded.region_id,
+                "units": ins.excluded.units,
+                "revenue": ins.excluded.revenue,
+                "region_id": ins.excluded.region_id,
             },
-        )
-        db.execute(stmt)
-    res.inserted = len(rows)
+            # identical rows are left alone, so a re-import reports them as unchanged (#25)
+            where=or_(
+                SalesDaily.units.is_distinct_from(ins.excluded.units),
+                SalesDaily.revenue.is_distinct_from(ins.excluded.revenue),
+                SalesDaily.region_id.is_distinct_from(ins.excluded.region_id),
+            ),
+        ).returning(literal_column("xmax = 0").label("inserted"))
+        written = [bool(r[0]) for r in db.execute(stmt)]
+        res.inserted += sum(written)
+        res.updated += len(written) - sum(written)
+        res.unchanged += len(chunk) - len(written)
     db.flush()
     return res
 
@@ -215,7 +224,9 @@ def increment_sales(
         res.received += 1
         pid = resolver.resolve(rec.sku, rec.external_id)
         if pid is None:
-            res.errors.append(RowError(row=i, message=f"unknown product ext={rec.external_id!r}"))
+            res.errors.append(
+                RowError(row=rec.row(i), message=f"unknown listing {rec.external_id!r}")
+            )
             continue
         stmt = pg_insert(SalesDaily).values(
             date=rec.date,
@@ -259,7 +270,7 @@ def upsert_inventory(
         pid = resolver.resolve(rec.sku, rec.external_id)
         if pid is None:
             res.errors.append(
-                RowError(row=i, message=f"unknown product sku={rec.sku!r} ext={rec.external_id!r}")
+                RowError(row=rec.row(i), message=f"unknown SKU {rec.sku or rec.external_id!r}")
             )
             continue
         lid = locations.get(rec.location)
@@ -299,15 +310,17 @@ def upsert_bom(db: Session, org_id: uuid.UUID, records: Iterable[BomRecord]) -> 
         comp = resolver.resolve(rec.component_sku, None)
         if parent is None or comp is None:
             missing = rec.parent_sku if parent is None else rec.component_sku
-            res.errors.append(RowError(row=i, message=f"unknown product sku={missing!r}"))
+            res.errors.append(RowError(row=rec.row(i), message=f"unknown SKU {missing!r}"))
             continue
         if parent == comp:
-            res.errors.append(RowError(row=i, message="parent and component are the same sku"))
+            res.errors.append(
+                RowError(row=rec.row(i), message="parent and component are the same sku")
+            )
             continue
         if comp not in graph.get(parent, ()) and creates_cycle(graph, parent, comp):
             res.errors.append(
                 RowError(
-                    row=i,
+                    row=rec.row(i),
                     message=f"{rec.component_sku} already contains {rec.parent_sku}; "
                     "this line would make a loop in the bill of materials",
                 )

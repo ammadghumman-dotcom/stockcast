@@ -40,6 +40,7 @@ export default function Onboarding() {
         received: number;
         inserted: number;
         updated: number;
+        unchanged?: number;
         errors: { row: number; message: string }[];
       }[]
     | null
@@ -300,13 +301,18 @@ export default function Onboarding() {
               <ul className="space-y-1 text-xs" data-testid="import-result">
                 {result.map((r) => (
                   <li key={r.kind}>
-                    <strong>{r.kind}</strong>: {r.inserted} new, {r.updated}{" "}
-                    updated
+                    <strong>{r.kind}</strong>: {r.inserted} new, {r.updated} updated
+                    {r.unchanged ? `, ${r.unchanged} unchanged` : ""}
                     {r.errors.length ? (
-                      <span className="text-red-600">
-                        , {r.errors.length} row errors (first: row{" "}
-                        {r.errors[0].row} — {r.errors[0].message})
-                      </span>
+                      <>
+                        <span className="text-red-600">, {r.errors.length} row{r.errors.length === 1 ? "" : "s"} skipped:</span>
+                        <ul className="ml-4 list-disc text-red-600" data-testid="import-errors">
+                          {[...r.errors].sort((a, b) => a.row - b.row).slice(0, 20).map((e) => (
+                            <li key={`${e.row}-${e.message}`}>row {e.row}: {e.message}</li>
+                          ))}
+                          {r.errors.length > 20 ? <li>…and {r.errors.length - 20} more</li> : null}
+                        </ul>
+                      </>
                     ) : null}
                   </li>
                 ))}

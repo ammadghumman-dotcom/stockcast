@@ -12,7 +12,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.models import ForecastRun, SyncRun
+from app.models import ForecastRun, PlanningRun, SyncRun
 from app.observability import alert
 
 
@@ -44,6 +44,34 @@ def slow_forecast_runs(db: Session, since: datetime, max_minutes: int) -> list[F
     return out
 
 
+# A run still queued/running after this long was orphaned (worker restarted mid-job, e.g. by a
+# deploy) and would otherwise show "running" forever (staging bug #21).
+STALE_AFTER: list[tuple[type[ForecastRun] | type[PlanningRun] | type[SyncRun], timedelta]] = [
+    (ForecastRun, timedelta(hours=2)),
+    (PlanningRun, timedelta(hours=1)),
+    (SyncRun, timedelta(hours=3)),
+]
+STALE_ERROR = "Stopped: the job was interrupted (for example by a deploy). Run it again."
+
+
+def fail_stale_runs(db: Session, now: datetime | None = None) -> int:
+    """Mark orphaned queued/running runs as failed. Returns how many were closed."""
+    now = now or datetime.now(UTC)
+    closed = 0
+    for model, age in STALE_AFTER:
+        started = func.coalesce(model.started_at, model.created_at)
+        runs: list[ForecastRun | PlanningRun | SyncRun] = list(
+            db.scalars(
+                select(model).where(model.status.in_(("queued", "running")), started < now - age)
+            )
+        )
+        for r in runs:
+            r.status, r.finished_at, r.error = "failed", now, STALE_ERROR
+            closed += 1
+    db.flush()
+    return closed
+
+
 def run_checks(db: Session, now: datetime | None = None) -> list[dict]:
     """Evaluate every check; fire alerts; return the alerts raised (for tests / logs)."""
     now = now or datetime.now(UTC)
@@ -66,4 +94,7 @@ def run_checks(db: Session, now: datetime | None = None) -> list[dict]:
         }
         alert("Forecast run exceeded time budget", detail, level="warning")
         raised.append({"check": "forecast_duration", **detail})
+    closed = fail_stale_runs(db, now)
+    if closed:
+        raised.append({"check": "stale_runs", "closed": closed})
     return raised

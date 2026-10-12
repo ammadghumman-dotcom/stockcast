@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import type { Product, Recommendation } from "@stockcast/shared";
 
 import { fmtDate, fmtNum } from "@/lib/utils";
+import { OrderBy } from "@/components/order-by";
 import { ActionBadge, HealthBadge } from "@/components/ui/badge";
 import { Empty } from "@/components/ui/empty";
 import { Input, NativeSelect } from "@/components/ui/input";
@@ -62,7 +63,7 @@ export function ProductsTable({
                 <TD><HealthBadge health={r?.health} /></TD>
                 <TD className="text-right tabular-nums">{fmtNum(r?.on_hand)}</TD>
                 <TD className="text-right tabular-nums">{r?.days_of_cover ?? (r ? "90+" : "–")}</TD>
-                <TD><ActionBadge action={r?.action} />{r && r.action !== "none" ? <span className="ml-2 text-xs text-muted-foreground">{fmtNum(r.qty)} by {fmtDate(r.order_by_date)}</span> : null}</TD>
+                <TD><ActionBadge action={r?.action} />{r && r.action !== "none" ? <span className="ml-2 text-xs text-muted-foreground">{fmtNum(r.qty)} · <OrderBy d={r.order_by_date} /></span> : null}</TD>
                 <TD className="hidden lg:table-cell">{fmtDate(r?.stockout_date)}</TD>
               </TR>
             ))}

@@ -135,3 +135,34 @@ def test_seed_round_trips_through_csv_exactly(client: TestClient, db, other_head
     # and exporting the copy yields byte-identical products/bom/inventory CSVs
     for k in ("products", "bom", "inventory"):
         assert client.get(f"/exports/{k}.csv", headers=other_headers).text == exported[k]
+
+
+def test_row_errors_keep_csv_row_numbers_and_reimport_is_unchanged(
+    client: TestClient, headers: dict
+) -> None:
+    """Staging #22: the 2nd bad row was reported as row 1. #25: re-import said 'inserted'."""
+    client.post(
+        "/imports", files=_files(products="sku,name,type\nCND,Candle,finished\n"), headers=headers
+    )
+    sales = (
+        "date,sku,units,revenue\n"
+        "2026-03-01,CND,3,42\n"  # row 1 ok
+        "2026-03-02,CND,-5,0\n"  # row 2 negative units (parse error)
+        "2026-03-03,CND,2,28\n"  # row 3 ok
+        "2026-03-04,NOPE,1,1\n"  # row 4 unknown sku (upsert error)
+    )
+    res = client.post("/imports", files=_files(sales=sales), headers=headers).json()["results"][0]
+    rows = sorted(e["row"] for e in res["errors"])
+    assert rows == [2, 4], res["errors"]
+    msgs = {e["row"]: e["message"] for e in res["errors"]}
+    assert "NOPE" in msgs[4] and "units" in msgs[2]
+    assert res["inserted"] == 2 and res["updated"] == 0
+
+    again = client.post("/imports", files=_files(sales=sales), headers=headers).json()["results"][0]
+    assert again["inserted"] == 0 and again["updated"] == 0 and again["unchanged"] == 2
+
+    changed = sales.replace("2026-03-03,CND,2,28", "2026-03-03,CND,4,56")
+    third = client.post("/imports", files=_files(sales=changed), headers=headers).json()["results"][
+        0
+    ]
+    assert third["updated"] == 1 and third["unchanged"] == 1 and third["inserted"] == 0

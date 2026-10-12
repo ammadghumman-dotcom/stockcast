@@ -7676,6 +7676,11 @@
             "type": "integer",
             "title": "Skus"
           },
+          "measured_skus": {
+            "type": "integer",
+            "title": "Measured Skus",
+            "default": 0
+          },
           "wape": {
             "anyOf": [
               {
@@ -8967,6 +8972,11 @@
           "skipped": {
             "type": "integer",
             "title": "Skipped",
+            "default": 0
+          },
+          "unchanged": {
+            "type": "integer",
+            "title": "Unchanged",
             "default": 0
           },
           "errors": {

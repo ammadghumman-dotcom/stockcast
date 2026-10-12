@@ -24,6 +24,7 @@ from app.ingest.records import (
     BomRecord,
     InventoryRecord,
     ProductRecord,
+    Record,
     RowError,
     SalesRecord,
 )
@@ -88,7 +89,10 @@ def parse_csv(
         if not any(payload.values()):
             continue  # blank line
         try:
-            records.append(model.model_validate(payload))
+            rec = model.model_validate(payload)
+            if isinstance(rec, Record):
+                rec._source_row = row_no
+            records.append(rec)
         except ValidationError as exc:
             msg = "; ".join(f"{'.'.join(map(str, e['loc']))}: {e['msg']}" for e in exc.errors())
             errors.append(RowError(row=row_no, message=msg))

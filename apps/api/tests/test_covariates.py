@@ -39,6 +39,19 @@ def test_builtin_events_have_lead_in_windows_and_regional_rules() -> None:
     assert "Diwali" in {e.name for e in builtin_events("IN", 2025)}
 
 
+def test_pakistan_calendar_has_both_eids_and_no_duplicates() -> None:
+    """Staging #23: Eid ul-Adha missing, Ashura twice, Eid ul-Fitr only inside Ramadan/Eid."""
+    pk = builtin_events("PK", 2026)
+    names = [e.name for e in pk]
+    assert len(names) == len(set(names)), names
+    by = {e.name: e for e in pk}
+    assert by["Eid ul-Fitr"].end == date(2026, 3, 22) and by["Eid ul-Fitr"].kind == "religious"
+    assert by["Eid ul-Adha"].start <= date(2026, 5, 27) <= by["Eid ul-Adha"].end
+    assert (by["Ashura"].start, by["Ashura"].end) == (date(2026, 6, 21), date(2026, 6, 25))
+    assert "Youm-e-Takbeer" in by and "Pakistan Day" in by and "Ramadan/Eid" in by
+    assert "Eid ul-Adha" not in {e.name for e in builtin_events("US", 2026)}
+
+
 # ---- uplift learning ----
 def test_learn_uplift_recovers_synthetic_peak() -> None:
     """Flat 10/day, except a 20-day event window at 25/day in 2024 -> learned ~2.5x."""

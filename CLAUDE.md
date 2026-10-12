@@ -59,7 +59,9 @@ apps/api/            FastAPI service
                      first_forecast_viewed, first_po_created) + PostHog capture via Celery
                      (analytics.capture); analytics_tasks.weekly_cohort_report (Mon 08:00 UTC)
                      emails REPORT_EMAILS / posts to ALERT_WEBHOOK_URL
-  app/ops.py         checks -> alerts: sync failure rate > 5 %/24 h, forecast run > 30 min
+  app/ops.py         checks -> alerts: sync failure rate > 5 %/24 h, forecast run > 30 min;
+                     fail_stale_runs closes orphaned queued/running runs (forecast 2 h,
+                     planning 1 h, sync 3 h) left behind by a worker restart
   app/ops_tasks.py   Celery: ops.check_health every 15 min
   app/routers/amazon_webhooks.py  POST /webhooks/amazon (HMAC/token verified, deduped -> sync)
   app/models/        SQLAlchemy 2 models (core, catalog, inventory, calendar, enums)
@@ -70,7 +72,9 @@ apps/api/            FastAPI service
     base.py          BaseConnector contract (fetch_products/sales/inventory, push_inventory)
     records.py       normalized Pydantic records every connector emits
     upsert.py        idempotent org-scoped upserts (SET semantics; increment_sales for webhooks)
-    csv_connector.py CSV parse with column mapping + row errors; export.py = round-trip CSV
+    csv_connector.py CSV parse with column mapping + row errors (records keep their CSV row via
+                     Record._source_row so upsert errors point at the right row); sales re-imports
+                     report unchanged rows; export.py = round-trip CSV
     shopify/         GraphQL client (pagination, throttle retry), connector, oauth + webhook HMAC
     http.py          TokenBucket + RateLimitedHttp (per-endpoint buckets, 429/5xx retry) for REST APIs
     amazon/          SP-API: client (LWA refresh, regional hosts, usage-plan buckets, Reports
@@ -89,7 +93,9 @@ apps/api/            FastAPI service
                      >50% zeros -> croston; <60d -> fallback w/ category prior), 28-day holdout
     engine.py        run_forecast: load -> covariates -> forecast_batch on de-seasonalised history ->
                      re-apply factors -> persist forecasts (factor, event) + forecast_accuracy; wape_base
-    calendar.py      built-in events per region (retail windows + `holidays` pkg: Eid, Diwali, national)
+    calendar.py      built-in events per region (retail windows + `holidays` pkg: "Ramadan/Eid"
+                     shopping window, separate Eid ul-Fitr / Eid ul-Adha events for PK/AE/SA/MY,
+                     Diwali, national holidays merged per name across consecutive days)
     holidays_seed.py idempotent seeding of holiday_events for a region
     covariates.py    uplift learning (actual / counterfactual, leak-free before holdout, shrinkage),
                      editable category priors, promo lift measurement + ridge model, build_factors
