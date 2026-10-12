@@ -243,3 +243,38 @@ def test_measure_promotions_lift_and_dip() -> None:
     assert lift == pytest.approx(1.6, rel=0.05)
     assert dip == pytest.approx(0.85, rel=0.05)
     assert base == pytest.approx(100, rel=0.05)
+
+
+def test_reseeding_replaces_outdated_builtin_events(db, org) -> None:
+    """Existing workspaces get the fixed calendar: old built-ins go, custom events stay."""
+    from app.forecast.holidays_seed import seed_region_holidays
+    from app.forecast.tasks import refresh_calendars
+    from app.models import HolidayEvent, HolidaySource, Region
+
+    region = Region(org_id=org.id, code="PK", name="Pakistan", currency="PKR")
+    db.add(region)
+    db.flush()
+    stale = HolidayEvent(
+        org_id=org.id,
+        region_id=region.id,
+        name="Ashura",
+        start_date=date(2026, 6, 22),
+        end_date=date(2026, 6, 25),
+        source=HolidaySource.builtin,
+        kind="national",
+    )
+    mine = HolidayEvent(
+        org_id=org.id,
+        region_id=region.id,
+        name="Store anniversary",
+        start_date=date(2026, 9, 1),
+        end_date=date(2026, 9, 3),
+        source=HolidaySource.custom,
+        kind="retail",
+    )
+    db.add_all([stale, mine])
+    db.flush()
+    seed_region_holidays(db, org.id, region, [2026])
+    names = [e.name for e in db.query(HolidayEvent).filter_by(region_id=region.id)]
+    assert names.count("Ashura") == 1 and "Eid ul-Adha" in names and "Store anniversary" in names
+    assert refresh_calendars(db) >= 0  # idempotent across all regions

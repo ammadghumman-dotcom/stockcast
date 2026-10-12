@@ -40,9 +40,27 @@ def _plan_after(db: Session, run: ForecastRun) -> None:
     enqueue_planning(db, run.org_id, trigger="after_forecast")
 
 
+def refresh_calendars(db: Session) -> int:
+    """Re-seed every region's built-in holidays so calendar fixes and next year's dates reach
+    existing workspaces (custom events untouched). Returns events added."""
+    from app.forecast.holidays_seed import seed_region_holidays
+    from app.models import Region
+
+    added = 0
+    for region in db.scalars(select(Region)).all():
+        added += seed_region_holidays(db, region.org_id, region)
+    db.commit()
+    return added
+
+
 @celery.task(name="forecast.run_all_orgs")
 def forecast_all_orgs() -> int:
     with SessionLocal() as db:
+        try:
+            refresh_calendars(db)
+        except Exception:  # a calendar problem must never stop the nightly forecast
+            db.rollback()
+            log.exception("calendar refresh failed")
         n = 0
         for org_id in db.scalars(select(Organization.id)).all():
             run = ForecastRun(org_id=org_id, trigger="nightly", horizon_days=DEFAULT_HORIZON)
