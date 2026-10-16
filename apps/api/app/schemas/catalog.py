@@ -68,6 +68,33 @@ class SupplierRead(Timestamped):
     currency: str
 
 
+# ---- Supplier items (what a supplier charges per product) ----
+class SupplierItemCreate(BaseModel):
+    product_id: uuid.UUID
+    price: Decimal = Field(ge=0)
+    pack_size: int = Field(default=1, ge=1)
+    lead_time_days: int | None = Field(default=None, ge=0, le=365)
+
+
+class SupplierItemUpdate(BaseModel):
+    price: Decimal | None = Field(default=None, ge=0)
+    pack_size: int | None = Field(default=None, ge=1)
+    # explicit null clears the override (falls back to the supplier's lead time)
+    lead_time_days: int | None = Field(default=None, ge=0, le=365)
+
+
+class SupplierItemRead(Timestamped):
+    supplier_id: uuid.UUID
+    product_id: uuid.UUID
+    sku: str
+    product_name: str
+    unit: str
+    price: Decimal
+    pack_size: int
+    lead_time_days: int | None
+    effective_lead_time_days: int
+
+
 # ---- BOM lines ----
 class BomLineCreate(BaseModel):
     parent_product_id: uuid.UUID

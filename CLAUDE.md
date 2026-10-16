@@ -66,7 +66,9 @@ apps/api/            FastAPI service
   app/routers/amazon_webhooks.py  POST /webhooks/amazon (HMAC/token verified, deduped -> sync)
   app/models/        SQLAlchemy 2 models (core, catalog, inventory, calendar, enums)
   app/schemas/       Pydantic request/response models
-  app/routers/       products, suppliers, bom_lines, locations (list/get/create/patch)
+  app/routers/       products, suppliers, bom_lines, locations (list/get/create/patch); suppliers also
+                     /suppliers/{id}/items (price, pack size, lead-time override per product;
+                     services/supplier_items.py, admin-only writes, audited)
   app/services/      business logic; crud.py = generic org-scoped CRUD
   app/ingest/        ingestion layer
     base.py          BaseConnector contract (fetch_products/sales/inventory, push_inventory)
@@ -149,7 +151,8 @@ apps/web/            Next.js 15 app (client components + TanStack Query)
                      p10/p50/p90 + history, inventory, BOM, Planning tab = preferred supplier +
                      overrides, components/product-planning.tsx), raw-materials, recommendations
                      (filters, multi-select -> create PO), purchase-orders(+[id]: CSV/PDF, send,
-                     mark-sent, receive), settings (planning, suppliers, channels+regions,
+                     mark-sent, receive), settings (planning, suppliers + Items dialog
+                     (components/supplier-items.tsx), channels+regions,
                      categories, team, billing), calendar (events, promotions + simulate, uplifts)
   app/sign-in, sign-up  Clerk pages; middleware.ts protects everything else when Clerk is enabled
   components/ui/     shadcn-style primitives (button, input, table, dialog, tabs, badge, skeleton, empty)
