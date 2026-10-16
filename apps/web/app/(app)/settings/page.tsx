@@ -12,6 +12,7 @@ import { canEdit, INVITE_ROLES, memberActions } from "@/lib/team";
 import { BillingTab } from "@/components/billing";
 import { ConnectChannelDialog } from "@/components/connect-channel";
 import { SkuMapping } from "@/components/sku-mapping";
+import { SupplierItemsDialog } from "@/components/supplier-items";
 import { PageHeader } from "@/components/shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -96,6 +97,7 @@ function SuppliersTab() {
   const suppliers = useSuppliers();
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState<Partial<Supplier>>({});
+  const [itemsFor, setItemsFor] = useState<Supplier | null>(null);
   const save = useAction(
     async (s: Partial<Supplier>) =>
       s.id
@@ -110,13 +112,13 @@ function SuppliersTab() {
     <div className="space-y-3">
       {editable ? <Button onClick={() => { setEdit({ lead_time_days: 14, moq: 1, currency: "USD" }); setOpen(true); }} data-testid="add-supplier">Add supplier</Button> : null}
       {suppliers.isLoading ? <Skeleton className="h-32" /> : !suppliers.data?.length ? <Empty title="No suppliers" body="Add suppliers to get purchase-order recommendations with lead times and MOQs." /> : (
-        <Table>
+        <div className="overflow-x-auto"><Table>
           <THead><TR><TH>Name</TH><TH>Email</TH><TH className="text-right">Lead (d)</TH><TH className="text-right">MOQ</TH><TH>Currency</TH><TH /></TR></THead>
           <TBody>{suppliers.data.map((s) => (
             <TR key={s.id}><TD className="font-medium">{s.name}</TD><TD className="text-xs">{s.email ?? "–"}</TD><TD className="text-right">{s.lead_time_days}</TD><TD className="text-right">{s.moq}</TD><TD>{s.currency}</TD>
-              <TD>{editable ? <Button size="sm" variant="ghost" onClick={() => { setEdit(s); setOpen(true); }}>Edit</Button> : null}</TD></TR>
+              <TD className="whitespace-nowrap text-right"><Button size="sm" variant="ghost" onClick={() => setItemsFor(s)} data-testid="supplier-items">Items</Button>{editable ? <Button size="sm" variant="ghost" onClick={() => { setEdit(s); setOpen(true); }}>Edit</Button> : null}</TD></TR>
           ))}</TBody>
-        </Table>
+        </Table></div>
       )}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent title={edit.id ? "Edit supplier" : "New supplier"}>
@@ -125,6 +127,7 @@ function SuppliersTab() {
           <Button loading={save.isPending} disabled={!edit.name} onClick={() => save.mutate(edit)} data-testid="save-supplier">Save</Button>
         </DialogContent>
       </Dialog>
+      <SupplierItemsDialog supplier={itemsFor} onClose={() => setItemsFor(null)} />
     </div>
   );
 }

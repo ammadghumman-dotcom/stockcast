@@ -238,6 +238,42 @@ export interface paths {
         patch: operations["update_supplier_suppliers__supplier_id__patch"];
         trace?: never;
     };
+    "/suppliers/{supplier_id}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Supplier Items */
+        get: operations["list_supplier_items_suppliers__supplier_id__items_get"];
+        put?: never;
+        /** Create Supplier Item */
+        post: operations["create_supplier_item_suppliers__supplier_id__items_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/suppliers/{supplier_id}/items/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Supplier Item */
+        delete: operations["delete_supplier_item_suppliers__supplier_id__items__item_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Supplier Item */
+        patch: operations["update_supplier_item_suppliers__supplier_id__items__item_id__patch"];
+        trace?: never;
+    };
     "/bom-lines": {
         parameters: {
             query?: never;
@@ -2975,6 +3011,74 @@ export interface components {
              */
             currency: string;
         };
+        /** SupplierItemCreate */
+        SupplierItemCreate: {
+            /**
+             * Product Id
+             * Format: uuid
+             */
+            product_id: string;
+            /** Price */
+            price: number | string;
+            /**
+             * Pack Size
+             * @default 1
+             */
+            pack_size: number;
+            /** Lead Time Days */
+            lead_time_days?: number | null;
+        };
+        /** SupplierItemRead */
+        SupplierItemRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Supplier Id
+             * Format: uuid
+             */
+            supplier_id: string;
+            /**
+             * Product Id
+             * Format: uuid
+             */
+            product_id: string;
+            /** Sku */
+            sku: string;
+            /** Product Name */
+            product_name: string;
+            /** Unit */
+            unit: string;
+            /** Price */
+            price: string;
+            /** Pack Size */
+            pack_size: number;
+            /** Lead Time Days */
+            lead_time_days: number | null;
+            /** Effective Lead Time Days */
+            effective_lead_time_days: number;
+        };
+        /** SupplierItemUpdate */
+        SupplierItemUpdate: {
+            /** Price */
+            price?: number | string | null;
+            /** Pack Size */
+            pack_size?: number | null;
+            /** Lead Time Days */
+            lead_time_days?: number | null;
+        };
         /** SupplierRead */
         SupplierRead: {
             /**
@@ -3930,6 +4034,150 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SupplierRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_supplier_items_suppliers__supplier_id__items_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                supplier_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplierItemRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_supplier_item_suppliers__supplier_id__items_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                supplier_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupplierItemCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplierItemRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_supplier_item_suppliers__supplier_id__items__item_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                supplier_id: string;
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_supplier_item_suppliers__supplier_id__items__item_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path: {
+                supplier_id: string;
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupplierItemUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplierItemRead"];
                 };
             };
             /** @description Validation Error */

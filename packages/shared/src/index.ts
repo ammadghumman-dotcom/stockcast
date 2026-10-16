@@ -13,6 +13,7 @@ export type Schemas = components["schemas"];
 export type Health = Schemas["Health"];
 export type Product = Schemas["ProductRead"];
 export type Supplier = Schemas["SupplierRead"];
+export type SupplierItem = Schemas["SupplierItemRead"];
 export type BomLine = Schemas["BomLineRead"];
 export type Location = Schemas["LocationRead"];
 export type Channel = Schemas["ChannelRead"];
