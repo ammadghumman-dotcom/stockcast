@@ -31,14 +31,28 @@ export class ApiError extends Error {
   }
 }
 
+/** Human-readable text from a FastAPI error body's `detail`: a string, a plan-limit object
+ * ({detail, plan}), or a list of validation errors ([{loc, msg}]). */
+export function errorText(detail: unknown, fallback = "Something went wrong"): string {
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    const msgs = detail.map((d) => (d && typeof d === "object" && "msg" in d ? String((d as { msg: unknown }).msg) : String(d)));
+    return msgs.join("; ").slice(0, 300) || fallback;
+  }
+  if (detail && typeof detail === "object") {
+    const o = detail as Record<string, unknown>;
+    for (const k of ["detail", "message", "error"]) if (typeof o[k] === "string") return o[k] as string;
+    return JSON.stringify(detail).slice(0, 300);
+  }
+  return fallback;
+}
+
 /** Unwrap an openapi-fetch result or throw a readable error for toasts. */
 export function unwrap<T>(res: { data?: T; error?: unknown; response: Response }): T {
   if (res.error !== undefined || !res.response.ok) {
     const e = res.error as { detail?: unknown } | undefined;
     let msg = `${res.response.status}`;
-    if (e?.detail) {
-      msg = typeof e.detail === "string" ? e.detail : JSON.stringify(e.detail).slice(0, 300);
-    }
+    if (e?.detail) msg = errorText(e.detail, msg);
     throw new ApiError(res.response.status, msg);
   }
   return res.data as T;
