@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { API_URL, unwrap } from "@/lib/api";
+import { API_URL, errorText, unwrap } from "@/lib/api";
 import { useAction, useChannels, useOrgQuery } from "@/lib/hooks";
 import { useApi, useOrg } from "@/lib/org";
 import { Badge } from "@/components/ui/badge";
@@ -85,10 +85,10 @@ export default function Onboarding() {
         body: fd,
         headers: await authHeaders(),
       });
-      if (!res.ok)
-        throw new Error(
-          (await res.json()).detail ?? `Upload failed (${res.status})`,
-        );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(errorText(body.detail, `Upload failed (${res.status})`));
+      }
       return (await res.json()) as { results: NonNullable<typeof result> };
     },
     {
