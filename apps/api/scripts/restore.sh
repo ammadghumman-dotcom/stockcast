@@ -17,7 +17,13 @@ esac
 PG_URL="$(printf '%s' "$RESTORE_TARGET_URL" | sed 's#^postgresql+psycopg://#postgresql://#')"
 echo "restore: ${FILE} -> ${PG_URL%%@*}@…"
 psql "$PG_URL" -v ON_ERROR_STOP=1 -qc "CREATE EXTENSION IF NOT EXISTS timescaledb;" || true
+# TimescaleDB: hypertables and continuous aggregates restore correctly only between
+# timescaledb_pre_restore() and timescaledb_post_restore() (this is also why pg_dump warns about
+# "circular foreign-key constraints ... continuous_agg"). Skipped on plain Postgres.
+TSDB="$(psql "$PG_URL" -Atc "select count(*) from pg_extension where extname='timescaledb'")"
+[ "$TSDB" = "1" ] && psql "$PG_URL" -v ON_ERROR_STOP=1 -qc "SELECT timescaledb_pre_restore();"
 pg_restore --no-owner --no-privileges --clean --if-exists --dbname "$PG_URL" "$FILE"
+[ "$TSDB" = "1" ] && psql "$PG_URL" -v ON_ERROR_STOP=1 -qc "SELECT timescaledb_post_restore();"
 echo "restore: verifying"
 psql "$PG_URL" -Atc "select count(*) from organizations;" | sed 's/^/organizations: /'
 psql "$PG_URL" -Atc "select count(*) from sales_daily;" | sed 's/^/sales_daily rows: /'
