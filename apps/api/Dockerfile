@@ -1,6 +1,6 @@
 # Production image for api / worker / beat (same image, different start command).
 # Build: docker build -t stockcast-api apps/api
-FROM python:3.12-slim AS base
+FROM python:3.14-slim AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 UV_COMPILE_BYTECODE=1 \
     HF_HOME=/app/.hf-cache PORT=8000 \
