@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { daysFromToday, fmtDate, fmtMoney, fmtNum, orderByLabel, planStamp, accuracyTile, chartTop } from "@/lib/utils";
+import { daysFromToday, fmtDate, fmtMoney, fmtNum, orderByLabel, planStamp, accuracyTile, chartTop, staleSalesNote } from "@/lib/utils";
 
 describe("formatters", () => {
   it("fmtNum handles strings, nulls and digits", () => {
@@ -58,5 +58,17 @@ describe("chart headroom (#27)", () => {
     expect(chartTop([20, 20, 20])).toBeLessThanOrEqual(30);
     expect(chartTop([0, null, undefined])).toBe(1);
     expect(chartTop([3.4, 9.9, 7])).toBeGreaterThanOrEqual(11.3);
+  });
+});
+
+describe("stale sales (staging: uploads stopped Oct 8, plan on Oct 17)", () => {
+  it("stamps the newest real sales day, not the plan's as-of day", () => {
+    expect(planStamp("2026-10-17", "2026-10-18T04:30:00Z", "2026-10-08")).toContain(`sales data to ${fmtDate("2026-10-08")}`);
+    expect(planStamp("2026-10-17", null, null)).toBe(`Sales data to ${fmtDate("2026-10-17")}`);
+  });
+  it("warns only past a normal sync delay", () => {
+    expect(staleSalesNote("2026-10-08", "2026-10-17")).toMatch(/9 days before this plan/);
+    expect(staleSalesNote("2026-10-14", "2026-10-17")).toBeUndefined();
+    expect(staleSalesNote(null, "2026-10-17")).toBeUndefined();
   });
 });

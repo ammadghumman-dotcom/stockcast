@@ -11,7 +11,7 @@ import {
 } from "@/lib/hooks";
 import { useApi, useOrg } from "@/lib/org";
 import { canEdit } from "@/lib/team";
-import { accuracyTile, daysFromToday, fmtMoney, fmtNum, planStamp } from "@/lib/utils";
+import { accuracyTile, daysFromToday, fmtMoney, fmtNum, planStamp, staleSalesNote } from "@/lib/utils";
 import { OrderBy } from "@/components/order-by";
 import { OnboardingChecklist } from "@/components/onboarding-checklist";
 import { PageHeader } from "@/components/shell";
@@ -59,7 +59,7 @@ export default function Dashboard() {
       <PageHeader
         title="Dashboard"
         sub={
-          planStamp(run.data?.as_of, run.data?.finished_at)
+          planStamp(run.data?.as_of, run.data?.finished_at, run.data?.data_through)
         }
         actions={
           canEdit(role) ? (
@@ -75,6 +75,11 @@ export default function Dashboard() {
         }
       />
       <OnboardingChecklist />
+      {staleSalesNote(run.data?.data_through, run.data?.as_of) ? (
+        <p className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900" data-testid="stale-sales">
+          {staleSalesNote(run.data?.data_through, run.data?.as_of)}
+        </p>
+      ) : null}
       {run.isLoading ? (
         <TilesSkeleton />
       ) : !run.data ? (

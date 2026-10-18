@@ -48,6 +48,18 @@ class Series:
         return self.y[~np.isnan(self.y)]
 
 
+def org_data_through(db: Session, org_id: uuid.UUID, as_of: date) -> date | None:
+    """Newest day with any sales row for the org (all channels, all products), capped at as_of.
+
+    Days after it are not "zero sales": nothing has been uploaded or synced for them yet.
+    """
+    return db.scalar(
+        select(func.max(SalesDaily.date)).where(
+            SalesDaily.org_id == org_id, SalesDaily.date <= as_of
+        )
+    )
+
+
 def load_series(
     db: Session,
     org_id: uuid.UUID,
@@ -55,9 +67,17 @@ def load_series(
     as_of: date,
     lookback_days: int = 730,
     product_ids: list[uuid.UUID] | None = None,
+    data_through: date | None = None,
 ) -> list[Series]:
-    """One Series per sellable product (finished + bundle), summed across channels."""
+    """One Series per sellable product (finished + bundle), summed across channels.
+
+    `data_through` (default: the org's newest sales day) ends the observed history: later days
+    up to `as_of` are masked as unobserved, so a workspace that uploads weekly, or a channel
+    that has stopped syncing, does not see its forecasts collapse toward zero.
+    """
     start = as_of - timedelta(days=lookback_days - 1)
+    if data_through is None:
+        data_through = org_data_through(db, org_id, as_of)
     prod_q = select(Product.id, Product.sku, Product.category_id).where(
         Product.org_id == org_id,
         Product.is_active.is_(True),
@@ -138,6 +158,8 @@ def load_series(
         y = y[first:]
         dates = idx[first:]
         mask = stockout_days(y, on_hand_now=stock.get(pid, 0.0)) | sync_lag_days(y)
+        if data_through is not None and data_through < as_of:
+            mask |= np.asarray(dates.date > data_through)
         y_masked = y.copy()
         y_masked[mask] = np.nan
         out.append(Series(pid, sku, cat, dates, y_masked, mask))

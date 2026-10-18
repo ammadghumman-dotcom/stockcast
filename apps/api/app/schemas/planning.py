@@ -42,6 +42,7 @@ class PlanningRunRead(Timestamped):
     status: str
     trigger: str
     as_of: date | None
+    data_through: date | None = None
     started_at: datetime | None
     finished_at: datetime | None
     products_total: int

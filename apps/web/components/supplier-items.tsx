@@ -7,8 +7,7 @@ import type { Supplier, SupplierItem } from "@stockcast/shared";
 import { unwrap } from "@/lib/api";
 import { useAction, useCanEdit, useOrgQuery, useProducts } from "@/lib/hooks";
 import { useApi } from "@/lib/org";
-import { emptyItem, itemBody, toItemForm, type ItemForm } from "@/lib/supplier-items";
-import { fmtNum } from "@/lib/utils";
+import { emptyItem, fmtPrice, itemBody, toItemForm, type ItemForm } from "@/lib/supplier-items";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Empty } from "@/components/ui/empty";
@@ -68,7 +67,10 @@ function SupplierItems({ supplier }: { supplier: Supplier }) {
   );
 
   const start = (id: string, f: ItemForm) => { setEditing(id); setForm(f); setError(null); };
-  const set = (k: keyof ItemForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm((x) => ({ ...x, [k]: e.target.value }));
+  const set = (k: keyof ItemForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setError(null);
+    setForm((x) => ({ ...x, [k]: e.target.value }));
+  };
   const submit = () => { const r = itemBody(form); if ("error" in r) setError(r.error); else save.mutate(undefined); };
 
   const editor = (isNew: boolean) => (
@@ -84,7 +86,7 @@ function SupplierItems({ supplier }: { supplier: Supplier }) {
         <Field label="Pack size"><Input type="number" min={1} step={1} value={form.pack_size} onChange={set("pack_size")} data-testid="item-pack" /></Field>
         <Field label="Lead time (days)"><Input type="number" min={0} step={1} placeholder={`${supplier.lead_time_days} (supplier)`} value={form.lead_time_days} onChange={set("lead_time_days")} data-testid="item-lead" /></Field>
       </div>
-      {error ? <p className="text-xs text-destructive" data-testid="item-error">{error}</p> : null}
+      {error ? <p className="text-xs text-red-600" data-testid="item-error">{error}</p> : null}
       <div className="flex gap-2">
         <Button size="sm" loading={save.isPending} onClick={submit} data-testid="save-item">Save</Button>
         <Button size="sm" variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
@@ -96,7 +98,8 @@ function SupplierItems({ supplier }: { supplier: Supplier }) {
   const rows = items.data ?? [];
   return (
     <div className="space-y-3">
-      {!rows.length && editing !== "new" ? (
+      {!rows.length ? (
+        editing === "new" ? null : 
         <Empty title="No items yet" body="Add the products this supplier sells you, with their price, pack size and lead time." />
       ) : (
         <div className="overflow-x-auto">
@@ -106,7 +109,7 @@ function SupplierItems({ supplier }: { supplier: Supplier }) {
               {rows.map((i) => (
                 <TR key={i.id} data-testid="supplier-item-row">
                   <TD><span className="font-medium">{i.sku}</span> <span className="text-xs text-muted-foreground">{i.product_name}</span></TD>
-                  <TD className="text-right tabular-nums">{fmtNum(i.price, 4)} <span className="text-xs text-muted-foreground">/{i.unit}</span></TD>
+                  <TD className="text-right tabular-nums">{fmtPrice(i.price)} <span className="text-xs text-muted-foreground">/{i.unit}</span></TD>
                   <TD className="text-right tabular-nums">{i.pack_size}</TD>
                   <TD className="text-right tabular-nums">{i.effective_lead_time_days}{i.lead_time_days == null ? <span className="text-xs text-muted-foreground"> (supplier)</span> : null}</TD>
                   <TD className="whitespace-nowrap text-right">

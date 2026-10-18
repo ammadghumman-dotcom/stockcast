@@ -49,7 +49,7 @@ export default function RecommendationsPage() {
     <>
       <PageHeader
         title="Recommendations"
-        sub={run.data ? `${run.data.n_reorder} reorders · ${run.data.n_produce} production runs · ${planStamp(run.data.as_of, run.data.finished_at)}` : undefined}
+        sub={run.data ? `${run.data.n_reorder} reorders · ${run.data.n_produce} production runs · ${planStamp(run.data.as_of, run.data.finished_at, run.data.data_through)}` : undefined}
         actions={editable ? <Button disabled={!chosen.length} loading={createPO.isPending} onClick={() => createPO.mutate()} data-testid="create-po">Create PO ({chosen.length})</Button> : undefined}
       />
       <div className="mb-3 flex flex-wrap gap-2">

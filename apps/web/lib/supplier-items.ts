@@ -28,3 +28,10 @@ export function toItemForm(i: { product_id: string; price: string | number; pack
     lead_time_days: i.lead_time_days == null ? "" : String(i.lead_time_days),
   };
 }
+
+/** Unit price with at least 2 decimals (3.1 -> "3.10"), up to 4 when the supplier quotes them. */
+export function fmtPrice(v: string | number): string {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return "–";
+  return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+}

@@ -46,9 +46,23 @@ export function orderByLabel(d: string | null | undefined, today: Date = new Dat
 }
 
 /** "Plan from Oct 9 · data to Oct 8": when the plan ran and the last day of sales it used. */
-export function planStamp(asOf: string | null | undefined, ranAt: string | null | undefined): string | undefined {
-  if (!asOf) return undefined;
-  return ranAt ? `Plan from ${fmtDate(ranAt)} · sales data to ${fmtDate(asOf)}` : `Sales data to ${fmtDate(asOf)}`;
+export function planStamp(
+  asOf: string | null | undefined,
+  ranAt: string | null | undefined,
+  dataThrough?: string | null,
+): string | undefined {
+  const upTo = dataThrough ?? asOf; // the newest day that actually has sales, not just "yesterday"
+  if (!upTo) return undefined;
+  return ranAt ? `Plan from ${fmtDate(ranAt)} · sales data to ${fmtDate(upTo)}` : `Sales data to ${fmtDate(upTo)}`;
+}
+
+/** Warn when the newest sales are older than a normal sync delay (staging: data stopped Oct 8). */
+export const STALE_SALES_DAYS = 3;
+export function staleSalesNote(dataThrough: string | null | undefined, asOf: string | null | undefined): string | undefined {
+  if (!dataThrough || !asOf) return undefined;
+  const days = Math.round((Date.parse(asOf) - Date.parse(dataThrough)) / 86_400_000);
+  if (days <= STALE_SALES_DAYS) return undefined;
+  return `Your newest sales are from ${fmtDate(dataThrough)}, ${days} days before this plan. Days after that are treated as missing, not as zero sales. Upload or sync newer sales to keep forecasts current.`;
 }
 
 /** Dashboard accuracy tile (staging bug #10): a score from a handful of SKUs, or a "perfect"

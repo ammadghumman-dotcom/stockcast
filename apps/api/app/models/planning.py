@@ -48,6 +48,7 @@ class PlanningRun(OrgScoped, TimestampMixin, Base):
     status: Mapped[str] = mapped_column(String(20), default="queued", nullable=False)
     trigger: Mapped[str] = mapped_column(String(20), default="manual", nullable=False)
     as_of: Mapped[date | None] = mapped_column(Date)
+    data_through: Mapped[date | None] = mapped_column(Date)  # copied from the forecast run
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     products_total: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

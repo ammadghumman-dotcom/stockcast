@@ -8939,6 +8939,18 @@
             ],
             "title": "As Of"
           },
+          "data_through": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Through"
+          },
           "started_at": {
             "anyOf": [
               {
@@ -10198,6 +10210,18 @@
               }
             ],
             "title": "As Of"
+          },
+          "data_through": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Through"
           },
           "started_at": {
             "anyOf": [

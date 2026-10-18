@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.forecast import covariates as cov
 from app.forecast.channels import compute_channel_shares
-from app.forecast.features import Series, load_series
+from app.forecast.features import Series, load_series, org_data_through
 from app.forecast.models import Bands
 from app.forecast.router import forecast_batch, wape
 from app.models import Forecast, ForecastAccuracy, ForecastRun, Product
@@ -35,8 +35,14 @@ def run_forecast(
     run.status, run.started_at, run.as_of = "running", datetime.now(UTC), as_of
     db.commit()
     try:
+        run.data_through = org_data_through(db, run.org_id, as_of)
         series = load_series(
-            db, run.org_id, as_of=as_of, lookback_days=LOOKBACK_DAYS, product_ids=product_ids
+            db,
+            run.org_id,
+            as_of=as_of,
+            lookback_days=LOOKBACK_DAYS,
+            product_ids=product_ids,
+            data_through=run.data_through,
         )
         run.skus_total = len(series)
         priors = _category_priors(series)
