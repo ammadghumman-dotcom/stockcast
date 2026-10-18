@@ -119,7 +119,12 @@ Any S3-compatible store (R2, B2, S3) works the same way.
 - `backup` service runs `apps/api/scripts/backup.sh` daily at 03:00 UTC: `pg_dump --format=custom`
   → `s3://$BACKUP_S3_BUCKET/$BACKUP_PREFIX/stockcast-<env>-<timestamp>.dump`, then prunes objects
   older than `BACKUP_RETENTION_DAYS` (30). Railway's own volume backups are a second copy.
-- **Restore drill (quarterly, ~20 min)** — proves the backups are usable, never touches production:
+- **Automatic restore drill (staging, nightly)** — staging's `backup` has `RESTORE_DRILL=1`: after
+  uploading, it restores the dump into `stockcast_restore_drill` on the staging server, checks
+  organizations / products / sales_daily counts against the source, drops the database, and fails
+  the cron run (red in Railway) on any mismatch. Never set `RESTORE_DRILL` in production.
+- **Manual restore drill (quarterly, ~20 min)** — proves the production backups are usable, never
+  touches production:
   1. Create a scratch database on the staging Postgres: `railway run -e staging --service api psql
      $DATABASE_URL -c "CREATE DATABASE restore_drill"`.
   2. `RESTORE_TARGET_URL=postgresql://…/restore_drill sh apps/api/scripts/restore.sh
