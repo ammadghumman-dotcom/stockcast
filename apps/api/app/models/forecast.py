@@ -30,6 +30,8 @@ class ForecastRun(OrgScoped, TimestampMixin, Base):
     trigger: Mapped[str] = mapped_column(String(20), default="manual", nullable=False)
     horizon_days: Mapped[int] = mapped_column(Integer, default=90, nullable=False)
     as_of: Mapped[date | None] = mapped_column(Date)  # last day of history used
+    # newest day with any sales data; days after it (up to as_of) were treated as missing
+    data_through: Mapped[date | None] = mapped_column(Date)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     skus_total: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

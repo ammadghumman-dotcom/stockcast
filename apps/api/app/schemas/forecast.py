@@ -13,6 +13,7 @@ class ForecastRunRead(Timestamped):
     trigger: str
     horizon_days: int
     as_of: date | None
+    data_through: date | None = None
     started_at: datetime | None
     finished_at: datetime | None
     skus_total: int

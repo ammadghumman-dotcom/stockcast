@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { emptyItem, itemBody, toItemForm } from "@/lib/supplier-items";
+import { emptyItem, fmtPrice, itemBody, toItemForm } from "@/lib/supplier-items";
 
 describe("itemBody", () => {
   const ok = { ...emptyItem, product_id: "p1", price: "3.25", pack_size: "20" };
@@ -23,5 +23,13 @@ describe("itemBody", () => {
     const f = toItemForm({ product_id: "p1", price: "3.2500", pack_size: 20, lead_time_days: null });
     expect(f).toEqual({ product_id: "p1", price: "3.25", pack_size: "20", lead_time_days: "" });
     expect(itemBody(f)).toMatchObject({ body: { price: "3.25", pack_size: 20 } });
+  });
+});
+
+describe("fmtPrice", () => {
+  it("shows money with 2-4 decimals", () => {
+    expect(fmtPrice("3.1000")).toBe("3.10");
+    expect(fmtPrice("0.0525")).toBe("0.0525");
+    expect(fmtPrice("x")).toBe("–");
   });
 });

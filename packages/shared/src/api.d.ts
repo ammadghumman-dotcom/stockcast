@@ -1811,6 +1811,8 @@ export interface components {
             horizon_days: number;
             /** As Of */
             as_of: string | null;
+            /** Data Through */
+            data_through?: string | null;
             /** Started At */
             started_at: string | null;
             /** Finished At */
@@ -2343,6 +2345,8 @@ export interface components {
             trigger: string;
             /** As Of */
             as_of: string | null;
+            /** Data Through */
+            data_through?: string | null;
             /** Started At */
             started_at: string | null;
             /** Finished At */

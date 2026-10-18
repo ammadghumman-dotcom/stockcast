@@ -68,6 +68,7 @@ def run_planning(db: Session, run: PlanningRun, *, as_of: date | None = None) ->
         run.forecast_run_id = frun.id
         as_of = as_of or frun.as_of or date.today()
         run.as_of = as_of
+        run.data_through = frun.data_through
         H = settings.horizon_days
 
         products = {

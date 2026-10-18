@@ -89,7 +89,9 @@ apps/api/            FastAPI service
     tasks.py         Celery: sync_channel (backoff retries), nightly sync_all_channels, enqueue_sync
     registry.py      ChannelType -> connector class
   app/forecast/      forecast engine
-    features.py      org-level daily demand per SKU, gap fill, stockout masking (NaN = masked)
+    features.py      org-level daily demand per SKU, gap fill, stockout masking (NaN = masked);
+                     days after the org's newest sales day (org_data_through) are masked too, not
+                     zeros; runs store it as data_through and the dashboard warns when it is >3 d old
     models.py        ChronosModel (batched, CPU), StatsModel (AutoETS), CrostonModel, FallbackModel
     router.py        per-SKU routing (>=60d & non-intermittent -> chronos vs autoets backtest;
                      >50% zeros -> croston; <60d -> fallback w/ category prior), 28-day holdout

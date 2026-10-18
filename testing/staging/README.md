@@ -17,6 +17,10 @@ quantity = 30 days of cover raised to the supplier's MOQ, raw-material demand = 
 quantity per unit. On staging (which also runs Chronos) allow ±2 % on demand and quantities and
 ±1 day on dates; dates are relative to the test day.
 
-Known gaps found while building this (expected failures):
-- No API or screen sets a supplier's item price, pack size or per-item lead time (FR-CAT-6).
-- A BOM line that creates a loop is accepted (FR-CAT-7); planning still completes.
+Regenerate the CSVs and `expected_results.json` for the day of a regression round, then upload
+the new `sales.csv` (and `inventory.csv`) to each workspace: re-importing is idempotent, and
+history must reach the day before the test day. If it stops earlier, the dashboard shows a
+"newest sales are from ..." warning and those days are treated as missing.
+
+Gaps found while building the first round, both fixed since: supplier items (price, pack size,
+per-item lead time; Settings -> Suppliers -> Items) and BOM loops (rejected on write).
