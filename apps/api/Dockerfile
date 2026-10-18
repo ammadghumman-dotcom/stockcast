@@ -8,7 +8,19 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 UV_COMPILE_BYTECODE=1 \
 # Runtime commands call the venv binaries directly (uvicorn, celery, alembic, python): no `uv run`,
 # so the non-root user never needs a uv cache or a writable venv.
 
-RUN apt-get update && apt-get install -y --no-install-recommends curl postgresql-client \
+# Postgres client tools must match the server's major version (TimescaleDB pg16): Debian's default
+# postgresql-client is newer, and a newer pg_dump writes settings (transaction_timeout) that a
+# pg16 server rejects on restore -- the nightly restore drill caught this. PG_MAJOR = server major.
+ARG PG_MAJOR=16
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
+    && install -d /usr/share/postgresql-common/pgdg \
+    && curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+         https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+    && . /etc/os-release \
+    && echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt ${VERSION_CODENAME}-pgdg main" \
+         > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update && apt-get install -y --no-install-recommends postgresql-client-${PG_MAJOR} \
+    && pg_dump --version | grep -q " ${PG_MAJOR}\." \
     && rm -rf /var/lib/apt/lists/* \
     && pip install --no-cache-dir uv \
     && useradd -r -m -u 1000 app
