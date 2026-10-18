@@ -64,6 +64,16 @@ PREFERRED = {
         "QA-GFT-BOX": "QA Vendor Beta",
     },
 }
+# Regions the cases add (Settings -> Channels & regions), in the same order: CSV sales count
+# toward the first region, and each region seeds its built-in holidays, whose uplifts change
+# the forecast. Without them the oracle had no holidays and staging did (round 2, Oct 18).
+REGIONS = {
+    "maker": [
+        {"code": "US", "name": "United States", "currency": "USD"},
+        {"code": "PK", "name": "Pakistan", "currency": "PKR"},
+    ],
+    "reseller": [{"code": "US", "name": "United States", "currency": "USD"}],
+}
 SETTINGS = {
     "service_level": "0.95",
     "default_lead_time_days": 14,
@@ -100,6 +110,9 @@ def run(kind: str, client, end: date) -> dict:
         db.add(org)
         db.commit()
         h = {"X-Org-Id": str(org.id), "X-Role": "owner"}
+
+    for reg in REGIONS[kind]:
+        client.post("/regions", headers=h, json=reg).raise_for_status()
 
     folder = HERE / kind
     files = {
@@ -163,6 +176,7 @@ def main() -> None:
             "settings": SETTINGS,
             "suppliers": SUPPLIERS,
             "preferred": PREFERRED,
+            "regions": REGIONS,
             "maker": run("maker", client, a.end),
             "reseller": run("reseller", client, a.end),
         }
