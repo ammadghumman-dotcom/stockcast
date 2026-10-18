@@ -41,7 +41,8 @@ runs:
       run: |
         railway up --ci --environment "${{ inputs.environment }}" --service worker
         railway up --ci --environment "${{ inputs.environment }}" --service beat
-        railway up --ci --environment "${{ inputs.environment }}" --service backup || echo "backup service not configured yet"
+        # no "|| true": production ran without any backups for weeks because this step was optional
+        railway up --ci --environment "${{ inputs.environment }}" --service backup
 
     # ---- Web: build on the runner with the environment's variables, deploy prebuilt
     - name: Deploy web

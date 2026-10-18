@@ -78,8 +78,11 @@ Grafana Cloud (free tier)
 - Alert rules on logs (optional; Railway → Grafana via Loki push) are not required because the
   worker raises the failure-rate / duration alerts itself (§5).
 
-Backups — bucket `stockcast-backups` (R2 or S3), lifecycle rule 35 days as a belt-and-braces;
-credentials only on the `backup` service.
+Backups — one Railway Bucket per environment (staging `resilient-holster`, production
+`functional-burrito`), wired to the `backup` service with the bucket's **Add to Service** button
+(reference variables, renamed `BACKUP_S3_BUCKET` / `BACKUP_S3_ENDPOINT`; `AWS_ACCESS_KEY_ID`,
+`AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION` as offered). Nobody copies the keys by hand.
+Any S3-compatible store (R2, B2, S3) works the same way.
 
 ## 4. Routine checks (daily, 2 minutes)
 
