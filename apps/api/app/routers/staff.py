@@ -122,12 +122,14 @@ def _ws(org) -> WorkspaceOut:
 
 @router.post("/beta/grant", response_model=WorkspaceOut)
 def beta_grant(db: DB, ctx: Staff, body: GrantIn) -> WorkspaceOut:
-    org = beta_svc.find_org(db, body.key)
+    try:
+        org = beta_svc.find_org(db, body.key)
+    except beta_svc.AmbiguousWorkspace as e:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(e)) from e
     if org is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"No workspace found for {body.key!r}")
     before = {"is_beta": org.is_beta}
-    org = beta_svc.set_beta(db, body.key, body.on)
-    assert org is not None
+    org.is_beta = body.on
     audit.record(
         db,
         ctx,

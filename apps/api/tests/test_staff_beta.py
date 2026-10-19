@@ -109,6 +109,27 @@ def test_grant_workspaces_and_feedback(client, db, org, staff) -> None:
     assert fb[0]["message"] == "love it" and fb[0]["workspace"] == org.name
 
 
+def test_grant_by_workspace_id_and_ambiguous_email(client, db, org, staff) -> None:
+    other = Organization(name="Second Shop", slug="second-shop")
+    db.add(other)
+    db.flush()
+    db.add_all(
+        [
+            User(org_id=org.id, email="both@acme.co", name="B", role="owner"),
+            User(org_id=other.id, email="both@acme.co", name="B", role="owner"),
+        ]
+    )
+    db.flush()
+    r = client.post("/staff/beta/grant", json={"key": "both@acme.co"}, headers=staff)
+    assert r.status_code == 409
+    assert "second-shop" in r.json()["detail"] and org.slug in r.json()["detail"]
+    assert db.get(Organization, other.id).is_beta is False
+    r = client.post("/staff/beta/grant", json={"key": f" {other.id} "}, headers=staff)
+    assert r.status_code == 200 and r.json()["slug"] == "second-shop" and r.json()["is_beta"]
+    unknown = "00000000-0000-0000-0000-000000000001"
+    assert client.post("/staff/beta/grant", json={"key": unknown}, headers=staff).status_code == 404
+
+
 def test_invited_signup_gets_beta_automatically(db, org) -> None:
     db.add(
         WaitlistSignup(email="fit@candles.co", channels=["shopify", "amazon"], makes_products=True)
