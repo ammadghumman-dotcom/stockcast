@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import html
 import logging
+import uuid
 from datetime import UTC, datetime, timedelta
 
 import httpx
@@ -98,14 +99,36 @@ def send_invites(
     return out
 
 
+class AmbiguousWorkspace(ValueError):
+    """An email that belongs to several workspaces; the message names them by slug."""
+
+    def __init__(self, key: str, orgs: list[Organization]) -> None:
+        names = ", ".join(f"{o.name} ({o.slug})" for o in orgs)
+        super().__init__(f"{key!r} is in {len(orgs)} workspaces: {names}. Use the slug instead.")
+        self.orgs = orgs
+
+
 def find_org(db: Session, key: str) -> Organization | None:
+    """Find a workspace by slug, Shopify shop domain, workspace id or member email.
+
+    Raises AmbiguousWorkspace when an email belongs to more than one workspace.
+    """
     key = key.strip()
+    try:
+        org_id: uuid.UUID | None = uuid.UUID(key)
+    except ValueError:
+        org_id = None
+    if org_id is not None:
+        return db.get(Organization, org_id)
     org = db.scalar(
         select(Organization).where(or_(Organization.slug == key, Organization.shopify_shop == key))
     )
     if org is None and "@" in key:
-        user = db.scalar(select(User).where(User.email == key.lower()))
-        org = db.get(Organization, user.org_id) if user else None
+        org_ids = db.scalars(select(User.org_id).where(User.email == key.lower()).distinct()).all()
+        orgs = [o for o in (db.get(Organization, i) for i in org_ids) if o is not None]
+        if len(orgs) > 1:
+            raise AmbiguousWorkspace(key, sorted(orgs, key=lambda o: o.slug))
+        org = orgs[0] if orgs else None
     return org
 
 

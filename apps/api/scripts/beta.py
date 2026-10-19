@@ -64,7 +64,11 @@ def main(argv: list[str] | None = None) -> None:
                     f"makes={r.makes_products}\t{status}\t{(r.notes or '')[:60]}"
                 )
         elif args.cmd == "grant":
-            org = grant(db, args.key)
+            try:
+                org = grant(db, args.key)
+            except beta_svc.AmbiguousWorkspace as e:
+                print(e)
+                return
             print(f"beta granted to {org.name} ({org.slug})" if org else "no such workspace")
         elif args.cmd == "invited":
             print(f"marked {mark_invited(db, args.emails)} invite(s)")

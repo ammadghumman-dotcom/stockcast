@@ -113,7 +113,7 @@ export default function StaffBetaPage() {
           <CardContent className="space-y-3">
             <p className="text-xs text-muted-foreground">Invited brands get beta pricing (50% off for 6 months) automatically when they create their workspace. Use this for anyone else.</p>
             <div className="flex gap-2">
-              <Input placeholder="workspace slug, shop domain or owner email" value={grantKey} onChange={(e) => setGrantKey(e.target.value)} data-testid="grant-key" />
+              <Input placeholder="workspace slug, id, shop domain or owner email" value={grantKey} onChange={(e) => setGrantKey(e.target.value)} data-testid="grant-key" />
               <Button disabled={grantKey.trim().length < 2} loading={grant.isPending} onClick={() => grant.mutate({ key: grantKey.trim(), on: true })} data-testid="grant-beta">Grant beta</Button>
             </div>
             {!workspaces.data?.length ? <p className="text-sm text-muted-foreground">No beta workspaces yet.</p> : (
