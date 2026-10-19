@@ -1381,6 +1381,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/staff/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Staff Me */
+        get: operations["staff_me_staff_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/staff/beta/waitlist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Beta Waitlist */
+        get: operations["beta_waitlist_staff_beta_waitlist_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/staff/beta/invites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Beta Invite */
+        post: operations["beta_invite_staff_beta_invites_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/staff/beta/grant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Beta Grant */
+        post: operations["beta_grant_staff_beta_grant_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/staff/beta/workspaces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Beta Workspaces */
+        get: operations["beta_workspaces_staff_beta_workspaces_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/staff/beta/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Beta Feedback */
+        get: operations["beta_feedback_staff_beta_feedback_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -1763,6 +1865,29 @@ export interface components {
             /** Id */
             id: string;
         };
+        /** FeedbackRow */
+        FeedbackRow: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Workspace */
+            workspace: string | null;
+            /** Actor */
+            actor: string;
+            /** Rating */
+            rating: number | null;
+            /** Page */
+            page: string | null;
+            /** Message */
+            message: string;
+        };
         /** ForecastPoint */
         ForecastPoint: {
             /**
@@ -1831,6 +1956,19 @@ export interface components {
             wape_base: string | null;
             /** Error */
             error: string | null;
+        };
+        /** GrantIn */
+        GrantIn: {
+            /**
+             * Key
+             * @description workspace slug, shop or email
+             */
+            key: string;
+            /**
+             * On
+             * @default true
+             */
+            on: boolean;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -2004,6 +2142,27 @@ export interface components {
             on_hand: string;
             /** Inbound */
             inbound: string;
+        };
+        /** InviteIn */
+        InviteIn: {
+            /** Emails */
+            emails: string[];
+            /**
+             * Resend
+             * @default false
+             */
+            resend: boolean;
+        };
+        /** InviteOut */
+        InviteOut: {
+            /** Sent */
+            sent: string[];
+            /** Skipped */
+            skipped: string[];
+            /** Failed */
+            failed: string[];
+            /** Unknown */
+            unknown: string[];
         };
         /**
          * ListingCreate
@@ -2954,6 +3113,11 @@ export interface components {
             /** Materials */
             materials: components["schemas"]["MaterialDeltaRead"][];
         };
+        /** StaffMe */
+        StaffMe: {
+            /** Staff */
+            staff: boolean;
+        };
         /** StepOut */
         StepOut: {
             /** Key */
@@ -3335,6 +3499,39 @@ export interface components {
             /** Beta Fit */
             beta_fit: boolean;
         };
+        /** WaitlistRow */
+        WaitlistRow: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Email */
+            email: string;
+            /** Name */
+            name: string | null;
+            /** Company */
+            company: string | null;
+            /** Website */
+            website: string | null;
+            /** Channels */
+            channels: string[];
+            /** Makes Products */
+            makes_products: boolean;
+            /** Notes */
+            notes: string | null;
+            /** Source */
+            source: string;
+            /** Beta Fit */
+            beta_fit: boolean;
+            /** Invited At */
+            invited_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** WebhookAck */
         WebhookAck: {
             /**
@@ -3344,6 +3541,22 @@ export interface components {
             received: boolean;
             /** Result */
             result: string;
+        };
+        /** WorkspaceOut */
+        WorkspaceOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+            /** Is Beta */
+            is_beta: boolean;
+            /** Plan */
+            plan: string;
         };
     };
     responses: never;
@@ -6940,6 +7153,210 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FeedbackOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    staff_me_staff_me_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffMe"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    beta_waitlist_staff_beta_waitlist_get: {
+        parameters: {
+            query?: {
+                all?: boolean;
+            };
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaitlistRow"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    beta_invite_staff_beta_invites_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    beta_grant_staff_beta_grant_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrantIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkspaceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    beta_workspaces_staff_beta_workspaces_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkspaceOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    beta_feedback_staff_beta_feedback_get: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: {
+                authorization?: string | null;
+                "X-Org-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackRow"][];
                 };
             };
             /** @description Validation Error */

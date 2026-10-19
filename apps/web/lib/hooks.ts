@@ -90,3 +90,10 @@ export function useChannels() {
   const api = useApi();
   return useOrgQuery(["channels"], async () => unwrap(await api.GET("/channels", { params: { query: { limit: 100 } } })));
 }
+
+/** True only for Stockcast staff (STAFF_EMAILS on the API); everyone else never sees /staff. */
+export function useIsStaff() {
+  const api = useApi();
+  const q = useOrgQuery(["staff-me"], async () => unwrap(await api.GET("/staff/me")));
+  return q.data?.staff === true;
+}

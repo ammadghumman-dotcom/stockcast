@@ -47,6 +47,12 @@ apps/api/            FastAPI service
                      deletes it; plan limits (usage_for) ignore sample rows
   app/routers/onboarding.py  GET /onboarding checklist (own data only), POST|DELETE /sample-data
   app/routers/feedback.py  POST /feedback (in-app, beta) -> feedback table + REPORT_EMAILS / alert hook
+  app/routers/staff.py  staff-only (STAFF_EMAILS, others get 404) beta admin: GET /staff/me,
+                     /staff/beta/waitlist|workspaces|feedback, POST /staff/beta/invites (Resend,
+                     marks beta_invited_at, never re-sends unless resend=true) and /staff/beta/grant;
+                     services/beta.py (shared with scripts/beta.py). An invited email that creates a
+                     workspace gets is_beta automatically (deps -> beta.flag_invited_workspace).
+                     Web: app/(app)/staff/beta (nav link only for staff)
   app/routers/waitlist.py  POST /waitlist (public, 5/min per IP, honeypot `fax`) -> waitlist_signups;
                      services/waitlist.beta_fit = makes products + 2+ channels
   app/services/listings.py  SKU mapping: suggest() (rapidfuzz on SKU + name), override() moves the

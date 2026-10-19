@@ -333,6 +333,9 @@ def get_auth(
         org, created = provision_org(db, clerk_org)
         user = provision_user(db, org, claims, role, org_created=created)
         if created:
+            from app.services import beta as beta_svc
+
+            beta_svc.flag_invited_workspace(db, org, user.email)
             from app import emails
 
             emails.send_welcome(db, org, user.email)
@@ -349,7 +352,8 @@ def get_auth(
         if db.scalar(select(Organization.id).where(Organization.id == org_id)) is None:
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Unknown organization")
         role = request.headers.get("X-Role", "owner")  # dev/e2e: pretend a role
-        ctx = AuthContext(org_id, None, role if role in ROLE_RANK else "owner", None, "header")
+        email = request.headers.get("X-User-Email")  # dev/e2e only (header mode never runs live)
+        ctx = AuthContext(org_id, None, role if role in ROLE_RANK else "owner", email, "header")
 
     if request.method not in READ_METHODS and ctx.role == "viewer":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "viewers are read-only")

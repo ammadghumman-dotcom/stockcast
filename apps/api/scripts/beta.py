@@ -1,4 +1,6 @@
-"""Beta program ops (run on the api service: `railway run uv run python -m scripts.beta ...`).
+"""Beta program ops from a shell. Day to day, use the staff Beta page (/staff/beta) instead.
+
+Run on the api service: `railway run uv run python -m scripts.beta ...`.
 
 candidates [--all]          waitlist rows that fit the beta (make products + 2+ channels)
 grant <slug|shop|email>     mark a workspace as beta (50% off 6 months via Shopify billing)
@@ -11,35 +13,23 @@ from __future__ import annotations
 import argparse
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import or_, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import SessionLocal
-from app.models import Feedback, Organization, User, WaitlistSignup
-from app.services.waitlist import beta_fit
+from app.models import Feedback, Organization, WaitlistSignup
+from app.services import beta as beta_svc
+
+# Same logic as the staff Beta page (app/services/beta.py); kept for shell use.
+find_org = beta_svc.find_org
 
 
 def candidates(db: Session, include_all: bool = False) -> list[WaitlistSignup]:
-    rows = db.scalars(select(WaitlistSignup).order_by(WaitlistSignup.created_at)).all()
-    return [r for r in rows if include_all or beta_fit(r.channels, r.makes_products)]
-
-
-def find_org(db: Session, key: str) -> Organization | None:
-    org = db.scalar(
-        select(Organization).where(or_(Organization.slug == key, Organization.shopify_shop == key))
-    )
-    if org is None and "@" in key:
-        user = db.scalar(select(User).where(User.email == key.lower()))
-        org = db.get(Organization, user.org_id) if user else None
-    return org
+    return beta_svc.waitlist(db, include_all)
 
 
 def grant(db: Session, key: str) -> Organization | None:
-    org = find_org(db, key)
-    if org is not None:
-        org.is_beta = True
-        db.commit()
-    return org
+    return beta_svc.set_beta(db, key, True)
 
 
 def mark_invited(db: Session, emails: list[str], now: datetime | None = None) -> int:
