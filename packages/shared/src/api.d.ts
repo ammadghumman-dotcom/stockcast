@@ -1312,6 +1312,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/webhooks/lemonsqueezy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Lemonsqueezy Webhook
+         * @description Signed with X-Signature (HMAC of the raw body); org comes from checkout custom data.
+         */
+        post: operations["lemonsqueezy_webhook_webhooks_lemonsqueezy_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/webhooks/paddle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Paddle Webhook
+         * @description Signed with Paddle-Signature (ts + HMAC); org comes from transaction custom_data.
+         */
+        post: operations["paddle_webhook_webhooks_paddle_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/waitlist": {
         parameters: {
             query?: never;
@@ -1606,6 +1646,8 @@ export interface components {
             has_subscription: boolean;
             /** Billing Enabled */
             billing_enabled: boolean;
+            /** Billing Provider */
+            billing_provider: string | null;
             /** Limits */
             limits: {
                 [key: string]: number | null;
@@ -6997,6 +7039,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    lemonsqueezy_webhook_webhooks_lemonsqueezy_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookAck"];
+                };
+            };
+        };
+    };
+    paddle_webhook_webhooks_paddle_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookAck"];
                 };
             };
         };

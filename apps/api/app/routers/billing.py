@@ -1,4 +1,4 @@
-"""Billing: plan + usage, Stripe Checkout / Customer Portal, Stripe webhook."""
+"""Billing: plan + usage, checkout / portal via the active provider, provider webhooks."""
 
 from __future__ import annotations
 
@@ -8,7 +8,15 @@ from fastapi import APIRouter, Header, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.billing import PLANS, effective_plan, limits_for, stripe_service, usage_for
+from app.billing import (
+    PLANS,
+    effective_plan,
+    events,
+    limits_for,
+    providers,
+    stripe_service,
+    usage_for,
+)
 from app.config import settings
 from app.deps import DB, Ctx
 from app.models import Organization
@@ -33,6 +41,7 @@ class BillingRead(BaseModel):
     billing_email: str | None
     has_subscription: bool
     billing_enabled: bool  # false -> no payment provider configured; hide checkout in the UI
+    billing_provider: str | None  # who takes new payments: lemonsqueezy | paddle | stripe
     limits: dict[str, int | None]
     usage: dict[str, int]
     plans: list[PlanInfo]
@@ -62,8 +71,9 @@ def read_billing(db: DB, ctx: Ctx) -> BillingRead:
         effective_plan=eff.key,
         trial_ends_at=org.trial_ends_at,
         billing_email=org.billing_email,
-        has_subscription=org.stripe_subscription_id is not None,
+        has_subscription=bool(org.stripe_subscription_id or org.billing_subscription_id),
         billing_enabled=settings.billing_enabled,
+        billing_provider=settings.active_billing_provider or None,
         limits=limits_for(org),
         usage=usage_for(db, org.id),
         plans=[
@@ -83,14 +93,15 @@ def read_billing(db: DB, ctx: Ctx) -> BillingRead:
 def checkout(db: DB, ctx: Ctx, body: CheckoutRequest) -> UrlResponse:
     ctx.require("admin")
     org = _org(db, ctx)
-    url = stripe_service.create_checkout(db, org, body.plan, ctx.email)
+    provider = providers.active()
+    url = provider.checkout_url(db, org, body.plan, ctx.email)
     audit.record(
         db,
         ctx,
         action="billing.checkout_started",
         entity="organization",
         entity_id=org.id,
-        after={"plan": body.plan},
+        after={"plan": body.plan, "provider": provider.name},
     )
     db.commit()
     return UrlResponse(url=url)
@@ -99,7 +110,11 @@ def checkout(db: DB, ctx: Ctx, body: CheckoutRequest) -> UrlResponse:
 @router.post("/billing/portal", response_model=UrlResponse)
 def portal(db: DB, ctx: Ctx) -> UrlResponse:
     ctx.require("admin")
-    return UrlResponse(url=stripe_service.create_portal(db, _org(db, ctx), ctx.email))
+    org = _org(db, ctx)
+    if org.billing_provider is None and org.stripe_subscription_id:
+        return UrlResponse(url=stripe_service.create_portal(db, org, ctx.email))
+    provider = providers.for_org(org.billing_provider, org.stripe_customer_id is not None)
+    return UrlResponse(url=provider.portal_url(db, org))
 
 
 class WebhookAck(BaseModel):
@@ -114,3 +129,19 @@ async def stripe_webhook(
     payload = await request.body()
     event = stripe_service.parse_event(payload, stripe_signature)
     return WebhookAck(result=stripe_service.handle_event(db, event))
+
+
+@router.post("/webhooks/lemonsqueezy", response_model=WebhookAck)
+async def lemonsqueezy_webhook(request: Request, db: DB) -> WebhookAck:
+    """Signed with X-Signature (HMAC of the raw body); org comes from checkout custom data."""
+    payload = await request.body()
+    upd = providers.get("lemonsqueezy").parse_webhook(payload, request.headers)
+    return WebhookAck(result=events.apply(db, "lemonsqueezy", upd))
+
+
+@router.post("/webhooks/paddle", response_model=WebhookAck)
+async def paddle_webhook(request: Request, db: DB) -> WebhookAck:
+    """Signed with Paddle-Signature (ts + HMAC); org comes from transaction custom_data."""
+    payload = await request.body()
+    upd = providers.get("paddle").parse_webhook(payload, request.headers)
+    return WebhookAck(result=events.apply(db, "paddle", upd))

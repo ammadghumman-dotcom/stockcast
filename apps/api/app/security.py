@@ -62,8 +62,14 @@ def production_guard() -> list[str]:
         problems.append("FORCE_HTTPS must be true")
     if any(o.startswith("http://") and "localhost" not in o for o in cors_origins()):
         problems.append("CORS_ORIGINS must be https")
-    if settings.billing_enabled and not settings.stripe_webhook_secret:
+    if settings.stripe_secret_key and not settings.stripe_webhook_secret:
         problems.append("STRIPE_WEBHOOK_SECRET missing (required when STRIPE_SECRET_KEY is set)")
+    if settings.lemonsqueezy_api_key and not settings.lemonsqueezy_webhook_secret:
+        problems.append("LEMONSQUEEZY_WEBHOOK_SECRET missing (required with LEMONSQUEEZY_API_KEY)")
+    if settings.paddle_api_key and not settings.paddle_webhook_secret:
+        problems.append("PADDLE_WEBHOOK_SECRET missing (required with PADDLE_API_KEY)")
+    if settings.billing_provider and not settings.active_billing_provider:
+        problems.append(f"BILLING_PROVIDER={settings.billing_provider!r} has no keys configured")
     return problems
 
 

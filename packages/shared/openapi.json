@@ -7536,6 +7536,50 @@
         }
       }
     },
+    "/webhooks/lemonsqueezy": {
+      "post": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Lemonsqueezy Webhook",
+        "description": "Signed with X-Signature (HMAC of the raw body); org comes from checkout custom data.",
+        "operationId": "lemonsqueezy_webhook_webhooks_lemonsqueezy_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookAck"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhooks/paddle": {
+      "post": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Paddle Webhook",
+        "description": "Signed with Paddle-Signature (ts + HMAC); org comes from transaction custom_data.",
+        "operationId": "paddle_webhook_webhooks_paddle_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookAck"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/waitlist": {
       "post": {
         "tags": [
@@ -8595,6 +8639,17 @@
             "type": "boolean",
             "title": "Billing Enabled"
           },
+          "billing_provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Billing Provider"
+          },
           "limits": {
             "additionalProperties": {
               "anyOf": [
@@ -8633,6 +8688,7 @@
           "billing_email",
           "has_subscription",
           "billing_enabled",
+          "billing_provider",
           "limits",
           "usage",
           "plans"

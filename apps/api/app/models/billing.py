@@ -19,6 +19,21 @@ class StripeEvent(Base):
     received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
+class BillingEvent(Base):
+    """Processed Lemon Squeezy / Paddle webhook deliveries (dedupe key per provider)."""
+
+    __tablename__ = "billing_events"
+    __table_args__ = (
+        UniqueConstraint("provider", "event_id", name="uq_billing_events_provider_event"),
+    )
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    provider: Mapped[str] = mapped_column(String(20), nullable=False)
+    event_id: Mapped[str] = mapped_column(String(200), nullable=False)
+    type: Mapped[str] = mapped_column(String(100), nullable=False)
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
 class AuditLog(OrgScoped, Base):
     """Who changed what: purchase orders, planning settings, product planning, billing."""
 
