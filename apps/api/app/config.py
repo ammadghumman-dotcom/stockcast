@@ -91,6 +91,8 @@ class Settings(BaseSettings):
     posthog_host: str = "https://us.i.posthog.com"
     # Weekly activation cohort report recipients (comma-separated); also posted to the alert hook
     report_emails: str = ""
+    # Stockcast staff (comma-separated emails): may open /staff/* (beta program admin)
+    staff_emails: str = ""
     alert_sync_failure_rate: float = 0.05  # over the last 24 h
     alert_forecast_max_minutes: int = 30
     # Security

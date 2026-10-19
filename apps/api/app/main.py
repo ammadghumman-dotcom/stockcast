@@ -35,6 +35,7 @@ from app.routers import (
     purchase_orders,
     shopify,
     shopify_embedded,
+    staff,
     suppliers,
     waitlist,
 )
@@ -101,6 +102,7 @@ app.include_router(billing.router)
 app.include_router(waitlist.router)
 app.include_router(onboarding.router)
 app.include_router(feedback.router)
+app.include_router(staff.router)
 
 
 class Health(BaseModel):

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 import { clerkEnabled } from "@/lib/auth";
+import { useIsStaff } from "@/lib/hooks";
 import { useOrg } from "@/lib/org";
 import { cn } from "@/lib/utils";
 
@@ -26,9 +27,11 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
   const { orgId, role, mode } = useOrg();
+  const staff = useIsStaff();
+  const items = staff ? [...NAV, { href: "/staff/beta", label: "Beta (staff)" }] : NAV;
   const nav = (
     <nav className="flex flex-col gap-1">
-      {NAV.map((n) => {
+      {items.map((n) => {
         const active = path === n.href || path.startsWith(n.href + "/");
         return (
           <Link
