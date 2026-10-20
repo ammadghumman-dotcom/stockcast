@@ -33,6 +33,10 @@ class Organization(TimestampMixin, Base):
     stripe_customer_id: Mapped[str | None] = mapped_column(String(100), unique=True)
     stripe_subscription_id: Mapped[str | None] = mapped_column(String(100))
     billing_email: Mapped[str | None] = mapped_column(String(320))
+    # Lemon Squeezy / Paddle (Stripe keeps its own columns above)
+    billing_provider: Mapped[str | None] = mapped_column(String(20))
+    billing_customer_id: Mapped[str | None] = mapped_column(String(100))
+    billing_subscription_id: Mapped[str | None] = mapped_column(String(100))
     # Installed from the Shopify App Store: the owning shop, billed through Shopify
     shopify_shop: Mapped[str | None] = mapped_column(String(200))
     shopify_subscription_id: Mapped[str | None] = mapped_column(String(100))

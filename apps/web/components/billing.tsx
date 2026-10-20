@@ -35,6 +35,13 @@ export function planLabel(
   return `${cap(b.plan)} · ${b.plan_status.replace("_", " ")}`;
 }
 
+export function providerNote(p: string | null | undefined): string {
+  const names: Record<string, string> = { lemonsqueezy: "Lemon Squeezy", paddle: "Paddle", stripe: "Stripe" };
+  if (!p || !names[p]) return "";
+  const mor = p === "stripe" ? "" : ", our reseller, which handles sales tax and VAT";
+  return ` Payments are processed by ${names[p]}${mor}.`;
+}
+
 function cap(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
@@ -96,7 +103,7 @@ export function BillingTab() {
           <PlanCard key={p.key} plan={p} current={b.plan === p.key && !locked} canManage={canManage && b.billing_enabled} busy={checkout.isPending} onPick={() => checkout.mutate(p.key)} />
         ))}
       </div>
-      <p className="text-xs text-muted-foreground">All plans include nightly forecasts, holiday & promotion uplift, raw-material planning, purchase orders and email alerts.{b.billing_enabled ? " 14-day free trial, cancel any time." : ""}</p>
+      <p className="text-xs text-muted-foreground">All plans include nightly forecasts, holiday & promotion uplift, raw-material planning, purchase orders and email alerts.{b.billing_enabled ? " 14-day free trial, cancel any time." : ""}{providerNote(b.billing_provider)}</p>
     </div>
   );
 }

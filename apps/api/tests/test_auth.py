@@ -32,6 +32,8 @@ PUBLIC = {
     ("POST", "/webhooks/shopify/shop-redact"),
     ("POST", "/webhooks/shopify/app-subscriptions-update"),  # HMAC-signed
     ("POST", "/webhooks/stripe"),  # Stripe-Signature
+    ("POST", "/webhooks/lemonsqueezy"),  # X-Signature HMAC
+    ("POST", "/webhooks/paddle"),  # Paddle-Signature ts+HMAC
     ("POST", "/webhooks/amazon"),  # shared-secret HMAC
     ("GET", "/health/ready"),
     ("POST", "/waitlist"),  # public landing-page form, IP rate-limited

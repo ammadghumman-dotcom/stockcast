@@ -50,20 +50,49 @@ class Settings(BaseSettings):
     rate_limit_default: str = "600/minute"
     rate_limit_heavy: str = "30/minute"
 
-    # Billing (Stripe)
+    # Billing. BILLING_PROVIDER picks who takes payment: stripe | lemonsqueezy | paddle. Empty =
+    # the first one with keys (lemonsqueezy, paddle, stripe). Lemon Squeezy and Paddle are
+    # merchants of record and pay out to Pakistan, which Stripe cannot.
+    billing_provider: str = ""
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
     stripe_price_starter: str = ""
     stripe_price_growth: str = ""
     stripe_price_scale: str = ""
+    lemonsqueezy_api_key: str = ""
+    lemonsqueezy_store_id: str = ""
+    lemonsqueezy_webhook_secret: str = ""
+    lemonsqueezy_variant_starter: str = ""
+    lemonsqueezy_variant_growth: str = ""
+    lemonsqueezy_variant_scale: str = ""
+    lemonsqueezy_beta_discount_code: str = ""  # applied at checkout for beta workspaces
+    paddle_api_key: str = ""
+    paddle_environment: str = "sandbox"  # sandbox | production
+    paddle_webhook_secret: str = ""
+    paddle_price_starter: str = ""
+    paddle_price_growth: str = ""
+    paddle_price_scale: str = ""
+    paddle_beta_discount_id: str = ""  # dsc_... applied at checkout for beta workspaces
     trial_days: int = 14
 
     @property
+    def active_billing_provider(self) -> str:
+        """Which provider new checkouts go to ('' = none configured)."""
+        configured = {
+            "lemonsqueezy": bool(self.lemonsqueezy_api_key and self.lemonsqueezy_store_id),
+            "paddle": bool(self.paddle_api_key),
+            "stripe": bool(self.stripe_secret_key),
+        }
+        if self.billing_provider:
+            name = self.billing_provider.strip().lower()
+            return name if configured.get(name) else ""
+        return next((n for n, on in configured.items() if on), "")
+
+    @property
     def billing_enabled(self) -> bool:
-        """Billing is on only when a payment provider is configured. Without it (e.g. a Stripe
-        account isn't available in the founder's country) the app runs with trials that never lock,
-        and checkout/portal return 503."""
-        return bool(self.stripe_secret_key)
+        """Billing is on only when a payment provider is configured. Without it the app runs with
+        trials that never lock, and checkout/portal return 503."""
+        return bool(self.active_billing_provider)
 
     # Email (Resend) for sending POs to suppliers and transactional mail
     resend_api_key: str = ""

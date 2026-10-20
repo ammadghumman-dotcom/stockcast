@@ -12,6 +12,7 @@ const isPublic = createRouteMatcher([
   "/privacy",
   "/terms",
   "/support",
+  "/billing/pay", // Paddle default payment link: only opens a checkout for a txn id
 ]);
 
 const withClerk = clerkMiddleware(async (auth, req) => {

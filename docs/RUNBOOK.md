@@ -18,7 +18,7 @@ change reaches production, what to do when something breaks, and the drills we p
                                            ├── postgres TimescaleDB 16 (volume)
                                            └── redis    broker db1, rate limit db2
                                  ──deploy──▶ Vercel project "stockcast-web"  (preview = staging alias, production)
-Clerk (auth) · Stripe (billing) · Resend (email) · Shopify / Amazon SP-API / eBay / WooCommerce (connectors)
+Clerk (auth) · Lemon Squeezy / Paddle / Stripe (billing, one active — see §3) · Resend (email) · Shopify / Amazon SP-API / eBay / WooCommerce (connectors)
 ```
 
 Nightly schedule (UTC, `apps/api/app/worker.py`): sync 02:00 → forecast 03:30 → planning 04:30 ·
@@ -78,6 +78,46 @@ Grafana Cloud (free tier)
 - Alert rules on logs (optional; Railway → Grafana via Loki push) are not required because the
   worker raises the failure-rate / duration alerts itself (§5).
 
+Billing providers — `BILLING_PROVIDER` picks who takes new payments (`lemonsqueezy` | `paddle` |
+`stripe`; empty = first with keys in that order). Lemon Squeezy and Paddle are merchants of
+record: they sell to the customer, collect VAT/sales tax, and pay out to a Pakistani bank. Stripe
+does not onboard Pakistan. All configured providers keep receiving webhooks, so switching the
+active one never strands existing subscribers. Set variables on Railway `api` (staging first,
+test mode), then production with live keys; nothing else changes.
+
+Lemon Squeezy
+1. Sign up, create a store, add the payout bank account (Settings → Payouts) and complete identity
+   verification. Use **Test mode** for staging.
+2. One product "Stockcast" with three monthly subscription variants: Starter $39, Growth $99,
+   Scale $249 (no free trial in Lemon Squeezy — the 14-day trial is ours). Copy each variant id
+   → `LEMONSQUEEZY_VARIANT_STARTER|GROWTH|SCALE`; Settings → Stores → id → `LEMONSQUEEZY_STORE_ID`.
+3. Settings → API → new key → `LEMONSQUEEZY_API_KEY`.
+4. Settings → Webhooks → `$APP_BASE_URL/webhooks/lemonsqueezy`, tick every `subscription_*`
+   event, choose a signing secret → `LEMONSQUEEZY_WEBHOOK_SECRET`.
+5. Beta pricing: Discounts → 50 %, duration "repeating" 6 months, code e.g. `BETA50` →
+   `LEMONSQUEEZY_BETA_DISCOUNT_CODE` (applied automatically for `is_beta` workspaces).
+6. Set `BILLING_PROVIDER=lemonsqueezy`. Test: Settings → Billing → Choose Starter, pay with the
+   test card `4242 4242 4242 4242`; the plan badge flips once the webhook lands.
+
+Paddle (Billing, not Classic)
+1. Sign up (sandbox account for staging at sandbox-vendors.paddle.com), complete verification and
+   payout details. Paddle reviews the website: live domain, pricing, terms, privacy, refund policy.
+2. Catalog → product "Stockcast" with three monthly prices → `PADDLE_PRICE_STARTER|GROWTH|SCALE`
+   (`pri_…`).
+3. Developer tools → Authentication → API key → `PADDLE_API_KEY`; client-side token →
+   Vercel `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN`, and `NEXT_PUBLIC_PADDLE_ENV` / `PADDLE_ENVIRONMENT`
+   = `sandbox` or `production`.
+4. Checkout → Checkout settings → **Default payment link** = `$WEB_BASE_URL/billing/pay` (that
+   page loads Paddle.js and opens the checkout; without it Paddle returns no checkout url).
+5. Developer tools → Notifications → destination `$APP_BASE_URL/webhooks/paddle`, events
+   `subscription.*` and `transaction.payment_failed` → secret → `PADDLE_WEBHOOK_SECRET`.
+6. Beta pricing: Catalog → Discounts → 50 %, recurring for 6 billing periods → id
+   `PADDLE_BETA_DISCOUNT_ID`.
+7. Set `BILLING_PROVIDER=paddle`. Sandbox test card `4242 4242 4242 4242`.
+
+The api refuses to boot in staging/production if a provider key is set without its webhook
+secret, or `BILLING_PROVIDER` names a provider with no keys (`security.production_guard`).
+
 Backups — one Railway Bucket per environment (staging `resilient-holster`, production
 `functional-burrito`), wired to the `backup` service with the bucket's **Add to Service** button
 (reference variables, renamed `BACKUP_S3_BUCKET` / `BACKUP_S3_ENDPOINT`; `AWS_ACCESS_KEY_ID`,
@@ -102,7 +142,7 @@ Any S3-compatible store (R2, B2, S3) works the same way.
 | **Channel sync failure rate above threshold** (> 5 % of syncs in 24 h) | `ops.check_health` | `SELECT channel_id, error FROM sync_runs WHERE status='failed' AND created_at > now()-interval '1 day'`. Clusters by error: `401`/`token rejected` → the merchant must reconnect (they were emailed `sync_failed`); `PlanLimit` → expected; `Shopify 5xx`/`throttled repeatedly` → upstream incident, retries continue. |
 | **Forecast run exceeded time budget** (> 30 min) | `ops.check_health` | Which org (`run_id` in the alert)? SKU count vs capacity (§9). If the run is `running` and the worker is idle, the task died: `UPDATE forecast_runs SET status='failed', error='stale' WHERE id=...` and re-trigger `POST /forecast-runs`. If many orgs: scale the worker (more vCPU or a second replica) before the next night. |
 | Sentry spike from api | Sentry | Open the issue; the `request_id` tag matches the `X-Request-Id` the browser received and the JSON log line. |
-| Stripe webhook errors (Stripe dashboard shows 4xx/5xx) | Stripe | 400 = signature: the endpoint secret differs between Stripe and `STRIPE_WEBHOOK_SECRET`. Stripe retries for 3 days; plans update on the next successful delivery, nothing is lost. |
+| Billing webhook errors (Lemon Squeezy / Paddle / Stripe dashboard shows 4xx/5xx) | provider | 400 = signature: the secret differs from `LEMONSQUEEZY_`/`PADDLE_`/`STRIPE_WEBHOOK_SECRET` (Paddle also rejects deliveries >5 min old — check the api clock). Providers retry for days; plans update on the next successful delivery, nothing is lost. |
 | Dependabot PR | GitHub | Merge when CI is green; majors get a look at the changelog first. |
 
 ## 6. Rollback
@@ -145,7 +185,7 @@ Any S3-compatible store (R2, B2, S3) works the same way.
 - **Production guard** (`app/security.py`): the api refuses to boot in `ENV=staging|production` with
   `AUTH_MODE=header`, the dev `CREDENTIALS_KEY`, `FORCE_HTTPS` off, http CORS origins or no Stripe
   webhook secret. Fix the variable rather than the guard.
-- Webhook signatures: Shopify (`X-Shopify-Hmac-Sha256`), Stripe (`Stripe-Signature`, event ids
+- Webhook signatures: Shopify (`X-Shopify-Hmac-Sha256`), Lemon Squeezy (`X-Signature`), Paddle (`Paddle-Signature`, 5-min replay window; both deduped in `billing_events`), Stripe (`Stripe-Signature`, event ids
   deduped), Amazon (`X-Amz-Webhook-Signature` HMAC or `X-Amz-Webhook-Token`, notification ids
   deduped). Unsigned requests are 401 and never touch data.
 - Secrets live only in Railway/Vercel/GitHub environments; `.env.example` documents names.

@@ -1,6 +1,6 @@
 from app.models.analytics import OrgMilestone
 from app.models.base import Base, OrgScoped, TimestampMixin
-from app.models.billing import AuditLog, EmailLog, StripeEvent
+from app.models.billing import AuditLog, BillingEvent, EmailLog, StripeEvent
 from app.models.calendar import CategoryHolidayUplift, HolidayEvent, PromoLiftModel, Promotion
 from app.models.catalog import (
     BomLine,
@@ -64,6 +64,7 @@ __all__ = [
     "Region",
     "SalesDaily",
     "StripeEvent",
+    "BillingEvent",
     "Supplier",
     "SyncRun",
     "SupplierProduct",
