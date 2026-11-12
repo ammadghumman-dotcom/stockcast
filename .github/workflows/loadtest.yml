@@ -20,7 +20,7 @@ jobs:
       - name: Free runner disk
         run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
       - run: cp .env.example .env
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
       - uses: docker/bake-action@v5
         with:
           files: docker-compose.yml,docker-compose.ci.yml
